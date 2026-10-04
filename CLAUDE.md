@@ -40,42 +40,53 @@ npm run lint       # eslint
 
 ```
 src/
-  main.ts
+  main.ts                  # Phaser config: canvas ขนาด device pixel, zoom 1/dpr
+  storage.ts               # localStorage ห่อ try/catch (อยู่นอก core)
   scenes/
     BootScene.ts           # สร้าง texture ทั้งหมด (procedural) แล้วไป WorldScene
-    WorldScene.ts          # แผนที่ ผู้เล่น มอน particle แสงเรือง
-  core/                    # pure TypeScript ห้าม import Phaser ในโฟลเดอร์นี้
+    WorldScene.ts          # game loop: input → core.step → event → hitstop/shake/ข้อความ/เสียง → วาด
+    Effects.ts             # particle, วงกระแทก, บรรยากาศ (ใช้ Math.random ได้ เพราะไม่กระทบ sim)
+    TextLayer.ts           # ตัวเลขดาเมจ ป้ายชื่อ "!" vignette บนกล้อง zoom 1 ให้ตัวหนังสือคม
+    textures.ts            # ชื่อ texture key
+  core/                    # pure TypeScript ห้าม import Phaser/DOM (ESLint บังคับ)
+    sim.ts                 # createGame() + step(state, intent, dt, now) จุดเข้าหลัก
+    state.ts               # GameState, Intent, PlayerState, MonsterState
+    events.ts              # EventBus + รายการ event ทั้งหมด
     rng.ts                 # seeded RNG + hash + value noise
-    mapgen.ts              # สร้าง tile grid (หมู่บ้าน ป่า แม่น้ำ หุบผาแดง)
+    mapgen.ts              # สร้าง tile grid (หมู่บ้าน ป่า แม่น้ำ หุบผาแดง) + ตำแหน่งสถานที่
     pathfinding.ts         # A* 8 ทิศ ห้ามตัดมุมกำแพง (ใช้กับ AUTO)
-    combat.ts              # ดาเมจ ชิ้นส่วนตามตำแหน่ง stun rage
+    collision.ts           # เดินชนกำแพงแบบไถลตามขอบ
+    player.ts              # เดิน กลิ้ง กดค้างตี เก็บของ เก็บเกี่ยวอัตโนมัติ
+    combat.ts              # ดาเมจ ชิ้นส่วนตามตำแหน่ง stun rage ดรอป
     skills.ts              # หมุนฟัน พุ่งแทง ทุบพื้น
-    autoPilot.ts           # ตรรกะ AUTO (เลือกเป้า เดิน ตี ใช้สกิล ดื่มยา เก็บของ)
+    autoPilot.ts           # ตรรกะ AUTO (เลือกเป้า เดิน ตี ใช้สกิล ดื่มยา เก็บของ) สร้าง Intent เท่านั้น
     monsterAI.ts           # state machine ของมอน + การหันตัวช้า
     farm.ts                # การโตของพืช (timestamp จริง)
-    inventory.ts           # วัสดุ สูตรคราฟต์ อาหาร
-    save.ts                # serialize/deserialize + migration
+    inventory.ts           # วัสดุ สูตรคราฟต์ อาหาร ยา เป้าหมาย
+    village.ts             # ปุ่มบริบท (ตีอาวุธ/ทำอาหาร/ปลูก/แปลงผัก)
+    save.ts                # serialize/parse + migration
   input/
     joystick.ts            # จอยสติ๊กลอยฝั่งซ้าย
     keyboard.ts
-    intent.ts              # รวม input ทุกแบบเป็น intent เดียว (move vector, attackHeld, skill[i], dodge, potion)
+    intent.ts              # IntentMixer: รวม input มือ + AUTO เป็น intent เดียว
   entities/
-    Player.ts
-    Monster.ts
+    Player.ts              # view ของผู้เล่น (อ่าน state อย่างเดียว)
+    Monster.ts             # view ของมอน
   art/                     # สร้าง sprite/tile แบบ procedural ด้วย pixel buffer
     pixelBuffer.ts         # sp(), rect(), ell(), line(), finish() (auto outline + shading)
-    terrain.ts             # พื้น น้ำ ขอบหน้าผา ทาง ลานหิน
-    buildings.ts           # บ้าน น้ำพุ ทั่ง หม้อ รั้ว โคมไฟ
-    sprites.ts
-  ui/                      # DOM overlay: HUD, action pad, bottom sheet, toast, zone banner
-  data/                    # เนื้อหาเกมเป็น JSON
+    terrain.ts             # พื้น น้ำ ขอบหน้าผา ทาง ลานหิน ต้นไม้ (พุ่มแยกชั้น)
+    buildings.ts           # บ้าน น้ำพุ ทั่ง หม้อ โคมไฟ
+    sprites.ts             # ผู้เล่น มอน (MONSTER_SPRITES: builder ละตัว) อาวุธ จุดเก็บของ
+  ui/                      # DOM overlay: hud.ts, actionPad.ts, sheet.ts, format.ts, *.css
+  data/                    # เนื้อหาเกมเป็น JSON + types.ts + validate.ts (ตรวจตอนโหลด)
     monsters.json
     weapons.json
     skills.json
     materials.json
     crops.json
     meals.json
-  i18n/th.ts               # ข้อความภาษาไทยทั้งหมด
+    tuning.json            # ค่าผู้เล่น ต่อสู้ AUTO การเก็บของ เซฟ seed แผนที่
+  i18n/th.ts               # ข้อความภาษาไทยทั้งหมด (typed ตาม id ใน data)
 tests/
 reference/prototype.html          # ต้นแบบปัจจุบัน ห้ามแก้
 reference/prototype-v1-dark.html  # ต้นแบบเก่า ห้ามแก้ ห้ามใช้เป็นแบบ

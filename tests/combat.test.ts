@@ -109,3 +109,27 @@ describe('i-frames', () => {
     expect(s.player.hp).toBe(100 - Math.round(32 * 1.15));
   });
 });
+
+describe('knockout', () => {
+  it('a lethal hit knocks the player out, calms monsters, then revives at the village', async () => {
+    const { run } = await import('./helpers');
+    const s = game();
+    const spot = openSpot(s);
+    Object.assign(s.player, spot, { hp: 5 });
+    const m = addMonster(s, 'mossfang', spot.x + 10, spot.y);
+    Object.assign(m, { aggro: true, huntT: 90, mode: 'chase' });
+    const attack = MONSTERS.mossfang.attacks[0];
+    if (!attack) throw new Error();
+    let ko = 0;
+    s.events.on('player:knockedOut', () => ko++);
+    resolveMonsterHit(s, m, attack);
+    expect(s.player.dead).toBe(true);
+    expect(ko).toBe(1);
+    expect(m.aggro).toBe(false);
+    expect(m.mode).toBe('wander');
+    run(s, 3);
+    expect(s.player.dead).toBe(false);
+    expect(s.player.hp).toBe(s.player.maxHp);
+    expect(s.player.zone).toBe('village');
+  });
+});
