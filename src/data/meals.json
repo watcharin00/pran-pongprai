@@ -1,0 +1,8 @@
+{
+  "durationSeconds": 300,
+  "meals": {
+    "stew":  { "recipe": { "yam": 2, "hide": 1 },   "color": "#c98a4a", "effect": { "maxHpBonus": 30 } },
+    "spicy": { "recipe": { "pepper": 1, "yam": 1 }, "color": "#e2412b", "effect": { "attackMul": 1.2 } },
+    "tea":   { "recipe": { "herb": 3 },             "color": "#7fc26a", "effect": { "staminaRegenMul": 1.6, "dodgeCost": 20 } }
+  }
+}

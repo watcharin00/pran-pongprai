@@ -1,0 +1,72 @@
+{
+  "player": {
+    "maxHp": 100, "maxStamina": 100, "staminaRegen": 24, "staminaDelay": 0.5,
+    "walkSpeed": 80, "radius": 4,
+    "roll": { "duration": 0.26, "speed": 170, "iframe": 0.32, "cooldown": 0.5, "staminaCost": 28 },
+    "hurt": { "iframe": 0.5, "flash": 0.2, "knockback": 10 },
+    "potion": { "heal": 45, "herbCost": 2, "startCount": 2, "cooldown": 1 },
+    "villageRegen": 25,
+    "knockoutTime": 2.6,
+    "startInventory": { "seed_herb": 3, "seed_yam": 2, "fert": 1 }
+  },
+  "combat": {
+    "attackHoldRange": 110,
+    "lockKeepRange": 160,
+    "approachDirectRange": 46,
+    "damageJitter": { "min": 0.9, "max": 1.1 },
+    "stunThreshold": 100,
+    "stunDuration": 2.6,
+    "partTipCooldown": 1.4,
+    "goldPartMul": 1.4,
+    "partBreakHitstop": 0.15,
+    "killHitstop": 0.16,
+    "monsterLeashVillage": 2,
+    "monsterLeashFar": 5,
+    "monsterLeashFarDistance": 280,
+    "monsterVillageChaseDistance": 90,
+    "monsterWanderSpeedMul": 0.35,
+    "monsterWanderRadius": 60,
+    "monsterDashSpeed": 300,
+    "monsterAggroAtkDelay": 0.9,
+    "monsterSpawnMinPlayerDist": 150,
+    "monsterSpawnMinSpacing": 60
+  },
+  "auto": {
+    "searchRange": 340,
+    "potionBelow": 0.35,
+    "dashMin": 36,
+    "dashMax": 85,
+    "gatherRange": 200,
+    "huntRange": 1400,
+    "manualOverride": 1.2,
+    "repathInterval": 0.5
+  },
+  "gather": {
+    "holdTime": 0.6, "pickupRadius": 14, "regen": 35, "amountMin": 1, "amountMax": 2,
+    "herbSeedChance": 0.4, "nodeSeed": 777,
+    "nodes": { "forestHerb": 10, "forestOre": 3, "canyonOre": 6 }
+  },
+  "village": {
+    "contextMonsterClear": 80,
+    "stationRadius": 26,
+    "plotRadius": 11,
+    "farmRadius": 48,
+    "harvestRadius": 10
+  },
+  "input": {
+    "joystickRadius": 50,
+    "joystickDeadzone": 0.18,
+    "joystickArea": 0.55
+  },
+  "save": {
+    "key": "pranpongprai-v2",
+    "legacyKey": "pranpongprai-v1",
+    "intervalSeconds": 5
+  },
+  "world": {
+    "seed": 20261004,
+    "tile": 16,
+    "width": 64,
+    "height": 48
+  }
+}

@@ -1,0 +1,47 @@
+/* Base page + design tokens shared by every DOM overlay (HUD, action pad, sheet). */
+:root {
+  --ink: #151c2b;
+  --panel: rgba(20, 26, 42, 0.74);
+  --solid: #1b2232;
+  --card: #252e43;
+  --line: rgba(247, 236, 208, 0.28);
+  --line2: #3a4560;
+  --cream: #f7ecd0;
+  --muted: #bfb8a4;
+  --gold: #ffd166;
+  --hp: #ef5b4c;
+  --st: #7fd36a;
+  --atk: #e2703a;
+  --sk: #3f9fd8;
+  --ok: #8fe07a;
+  --warn: #ffb27a;
+  --rare: #c9a0ff;
+  --display: 'Mitr', 'IBM Plex Sans Thai', system-ui, sans-serif;
+  --body: 'IBM Plex Sans Thai', system-ui, sans-serif;
+  --pixel: 'Pixelify Sans', 'IBM Plex Sans Thai', ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #15202b;
+  color: var(--cream);
+}
+body {
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  -webkit-touch-callout: none;
+}
+#app { position: fixed; inset: 0; overflow: hidden; background: #15202b; }
+#game { position: absolute; inset: 0; touch-action: none; }
+#game canvas { display: block; outline: none; touch-action: none; }
+/* The overlay itself never eats input; individual widgets opt back in. */
+#ui { position: absolute; inset: 0; pointer-events: none; }

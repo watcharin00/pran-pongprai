@@ -1,0 +1,16 @@
+{
+  "hide":        { "color": "#3f8f6a", "category": "material" },
+  "fang":        { "color": "#e9e2c8", "category": "material" },
+  "ore":         { "color": "#8fa6b8", "category": "material" },
+  "herb":        { "color": "#5fc26a", "category": "material" },
+  "scale":       { "color": "#6a5856", "category": "material" },
+  "horn":        { "color": "#d9c9a0", "category": "material", "rarity": 1 },
+  "etail":       { "color": "#f08a3c", "category": "material", "rarity": 1 },
+  "core":        { "color": "#ffd35c", "category": "material", "rarity": 2 },
+  "yam":         { "color": "#c98a4a", "category": "material" },
+  "pepper":      { "color": "#e2412b", "category": "material" },
+  "seed_herb":   { "color": "#5fc26a", "category": "seed" },
+  "seed_yam":    { "color": "#c98a4a", "category": "seed" },
+  "seed_pepper": { "color": "#e2412b", "category": "seed" },
+  "fert":        { "color": "#8a6b45", "category": "seed" }
+}

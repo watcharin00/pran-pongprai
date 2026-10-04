@@ -1,0 +1,43 @@
+{
+  "mossfang": {
+    "hp": 120, "speed": 48, "size": 8, "aggroRadius": 60, "zone": "forest",
+    "huntTime": 90, "turnTime": 0.35, "recover": 0.8, "respawn": 14, "count": 6,
+    "rage": null,
+    "parts": {
+      "head": { "hp": 45, "drop": { "fang": 2 }, "offset": [5, -2] }
+    },
+    "carve": [
+      { "item": "hide", "min": 2, "max": 3 },
+      { "item": "fang", "min": 0, "max": 1 },
+      { "item": "fert", "min": 1, "max": 1 }
+    ],
+    "bonus": { "seed_yam": 0.5 },
+    "rare": {},
+    "attacks": [
+      { "id": "bite",   "shape": "circle", "radius": 15, "offset": 11, "telegraph": 0.65, "damage": 10, "range": 22, "weight": 3 },
+      { "id": "pounce", "shape": "line", "length": 70, "width": 14, "telegraph": 0.85, "damage": 16, "range": 70, "minRange": 28, "dash": true, "weight": 2 }
+    ]
+  },
+  "cinderhorn": {
+    "hp": 560, "speed": 40, "size": 14, "aggroRadius": 56, "zone": "canyon",
+    "huntTime": 150, "turnTime": 0.75, "recover": 1.0, "respawn": 25, "count": 1,
+    "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.35, "damageMul": 1.15 },
+    "parts": {
+      "head": { "hp": 150, "drop": { "horn": 1 },  "offset": [11, -2] },
+      "tail": { "hp": 110, "drop": { "etail": 1 }, "offset": [-13, -1] }
+    },
+    "carve": [
+      { "item": "scale",       "min": 2, "max": 3 },
+      { "item": "ore",         "min": 0, "max": 1 },
+      { "item": "seed_pepper", "min": 1, "max": 1 },
+      { "item": "fert",        "min": 1, "max": 2 }
+    ],
+    "bonus": {},
+    "rare": { "core": 0.25 },
+    "attacks": [
+      { "id": "stomp",     "shape": "circle", "radius": 22, "offset": 16, "telegraph": 0.75, "damage": 20, "range": 32, "weight": 3 },
+      { "id": "flameRing", "shape": "circle", "radius": 46, "offset": 0,  "telegraph": 1.2,  "damage": 26, "range": 44, "weight": 2 },
+      { "id": "charge",    "shape": "line", "length": 130, "width": 24, "telegraph": 1.0, "damage": 32, "range": 140, "minRange": 40, "dash": true, "weight": 3 }
+    ]
+  }
+}
