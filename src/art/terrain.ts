@@ -1,0 +1,336 @@
+// Paints the whole world once: ground (incl. buildings) and a separate canopy
+// layer that is drawn above entities so characters can walk "under" trees.
+import { hash, vnoise } from '../core/rng';
+import { inCanyon, INN, MH, MW, SMITH, T, Tile, tileAt, type WorldMap } from '../core/mapgen';
+import { drawAnvil, drawFountain, drawHouse, drawLamps, drawPot, type StaticLight } from './buildings';
+import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
+
+const GRASS = ['#5c9f39', '#6aae42', '#78bb4b', '#86c754'];
+const GRASS_DARK = ['#3f7d2e', '#478933', '#509439'];
+const SAND = ['#dcb46e', '#e4c07c', '#ebcb89', '#f1d696'];
+const CANYON = ['#d6a35e', '#dfb06c', '#e7bd7a', '#eec98a'];
+const WATER = ['#1f9a92', '#25a69c', '#2db2a6'];
+const PLAZA_STONE = ['#cfc7ab', '#d8d0b6', '#e1dac2'];
+const EDGE_LINE = '#3f7a2c';
+
+const isGrassTile = (t: number): boolean => t === Tile.GRASS || t === Tile.FLOWER || t === Tile.TREE || t === Tile.BUSH || t === Tile.WALL || t === Tile.FENCE;
+const pick = (a: readonly string[], v: number): string => a[Math.max(0, Math.min(a.length - 1, Math.floor(v * a.length)))] ?? a[0] ?? '#ff00ff';
+
+export interface TerrainArt {
+  ground: HTMLCanvasElement;
+  canopy: HTMLCanvasElement;
+  lights: StaticLight[];
+}
+
+export function buildTerrain(map: WorldMap): TerrainArt {
+  const lights: StaticLight[] = [];
+  const mb = createBuffer(MW * T, MH * T);
+  const cb = createBuffer(MW * T, MH * T);
+  paintGround(map, mb);
+  paintDetails(map, mb, lights);
+  paintTrees(map, mb, cb);
+  drawHouse(mb, SMITH, 'smith');
+  drawHouse(mb, INN, 'inn');
+  drawFountain(mb);
+  drawAnvil(mb);
+  drawPot(mb);
+  drawLamps(mb, map, lights);
+  lights.push({ x: SMITH.x * T + 16, y: (SMITH.y + 3) * T + 7, r: 18, c: '255,150,60', ga: 0.2 });
+  return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
+}
+
+function paintGround(map: WorldMap, mb: PixelBuffer): void {
+  const d = mb.d;
+  const isWater = (x: number, y: number): boolean => {
+    if (x < 0 || y < 0 || x >= MW || y >= MH) return true;
+    const t = tileAt(map, x, y);
+    return t === Tile.WATER || t === Tile.BRIDGE;
+  };
+  // 1-3px wobble so grass/path borders are organic rather than grid-straight
+  const bump = (k: number, s: number, o: number): number => 1 + Math.floor(hash((k >> 1) + o * 53, s * 7919 + o) * 3);
+  const isGrassAt = (x: number, y: number): boolean => isGrassTile(tileAt(map, x, y));
+
+  for (let py = 0; py < MH * T; py++) {
+    for (let px = 0; px < MW * T; px++) {
+      const tx = px >> 4;
+      const ty = py >> 4;
+      const lx = px & 15;
+      const ly = py & 15;
+      const t = tileAt(map, tx, ty);
+      const n = vnoise(px, py, 20) * 0.8 + hash(px, py) * 0.3 - 0.08;
+      let c: string | null = null;
+      if (t === Tile.WATER) {
+        const up = !isWater(tx, ty - 1);
+        const dn = !isWater(tx, ty + 1);
+        const lf = !isWater(tx - 1, ty);
+        const rt = !isWater(tx + 1, ty);
+        if (up && ly < 6) {
+          // cliff face dropping into the water
+          const above = tileAt(map, tx, ty - 1);
+          c = ly === 0 ? (isGrassTile(above) ? EDGE_LINE : '#f3dca0') : ly === 5 ? '#5a3418' : (lx + (ly >> 1)) % 5 === 0 ? '#9a5a2a' : ly < 3 ? '#d4914a' : '#bf7a3a';
+        } else if (lf && lx < 2) c = lx === 0 ? '#7a4420' : '#bf7a3a';
+        else if (rt && lx > 13) c = lx === 15 ? '#7a4420' : '#bf7a3a';
+        else if (dn && ly > 13) c = ly === 15 ? '#e8fff8' : '#8fe6d4';
+        else {
+          let dd = 99;
+          if (up) dd = Math.min(dd, ly - 6);
+          if (lf) dd = Math.min(dd, lx - 2);
+          if (rt) dd = Math.min(dd, 13 - lx);
+          if (dn) dd = Math.min(dd, 13 - ly);
+          if (dd < 3) c = '#3fc3b2';
+          else if (Math.sin(px * 0.35 + py * 0.9 + vnoise(px, py, 10) * 6) > 0.94) c = '#6ad8c6';
+          else c = pick(WATER, n * 0.9);
+        }
+      } else if (t === Tile.BRIDGE) {
+        const top = isWater(tx, ty - 1) && tileAt(map, tx, ty - 1) !== Tile.BRIDGE;
+        const bot = isWater(tx, ty + 1) && tileAt(map, tx, ty + 1) !== Tile.BRIDGE;
+        if (top && ly < 3) c = ly === 0 ? '#3a1e0c' : lx % 8 === 0 ? '#5a2e14' : '#8a5530';
+        else if (bot && ly > 12) c = ly === 15 ? '#3a1e0c' : lx % 8 === 0 ? '#5a2e14' : '#8a5530';
+        else if (lx % 4 === 3) c = '#7a4420';
+        else c = (tx * 4 + (lx >> 2)) % 2 ? '#d0924e' : '#c08242';
+      } else if (t === Tile.SOIL) {
+        c = '#8f5e34';
+      } else {
+        let pal: readonly string[] | null = GRASS;
+        if (t === Tile.WALL) pal = GRASS_DARK;
+        else if (t === Tile.SAND || t === Tile.ROCK || t === Tile.CLIFF) pal = inCanyon(map, tx, ty) ? CANYON : SAND;
+        else if (t === Tile.STONE || t === Tile.FOUNTAIN) pal = null;
+        if (pal === SAND || pal === CANYON || pal === null) {
+          const sides: [boolean, number, number][] = [
+            [isGrassAt(tx - 1, ty), lx, bump(py, 0, tx)],
+            [isGrassAt(tx + 1, ty), 15 - lx, bump(py, 1, tx)],
+            [isGrassAt(tx, ty - 1), ly, bump(px, 2, ty)],
+            [isGrassAt(tx, ty + 1), 15 - ly, bump(px, 3, ty)],
+          ];
+          for (const [on, dist, bb] of sides) {
+            if (!on) continue;
+            if (dist < bb - 1) {
+              c = pick(GRASS, n);
+              break;
+            }
+            if (dist === bb - 1) {
+              c = EDGE_LINE;
+              break;
+            }
+            if (dist === bb && !c) c = pal ? '#c99a58' : '#a39a80';
+          }
+        }
+        if (!c) {
+          if (pal === null) {
+            // offset stone slabs
+            const X = px + ((py >> 3) % 2) * 4;
+            const gx = X % 8;
+            const gy = py % 8;
+            c = gx === 0 || gy === 0 ? '#a39a80' : gx === 1 || gy === 1 ? '#ebe5d0' : gx === 7 || gy === 7 ? '#bdb498' : pick(PLAZA_STONE, hash(X >> 3, py >> 3));
+          } else c = pick(pal, n);
+        }
+      }
+      const [r, g, b] = rgb(c);
+      const i = (py * mb.w + px) * 4;
+      d[i] = r;
+      d[i + 1] = g;
+      d[i + 2] = b;
+      d[i + 3] = 255;
+    }
+  }
+}
+
+function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): void {
+  for (let ty = 0; ty < MH; ty++) {
+    for (let tx = 0; tx < MW; tx++) {
+      const t = tileAt(map, tx, ty);
+      const X = tx * T;
+      const Y = ty * T;
+      const h = hash(tx, ty);
+      const h2 = hash(tx + 99, ty + 7);
+      if (t === Tile.GRASS || t === Tile.WALL) {
+        for (let i = 0; i < (t === Tile.WALL ? 3 : 2); i++) {
+          const x = X + 1 + Math.floor(hash(tx * 7 + i, ty * 3) * 12);
+          const y = Y + 2 + Math.floor(hash(tx * 5, ty * 11 + i) * 12);
+          const dk = t === Tile.WALL ? '#356a26' : '#4e8a2e';
+          sp(mb, x, y, dk);
+          sp(mb, x + 2, y, dk);
+          sp(mb, x + 1, y + 1, dk);
+        }
+        if (t === Tile.GRASS && h2 < 0.5) {
+          sp(mb, X + Math.floor(h * 15), Y + (Math.floor(h2 * 30) % 16), '#a8dc6a');
+          sp(mb, X + Math.floor(h2 * 15), Y + Math.floor(h * 16), '#9ad460');
+        }
+      }
+      if (t === Tile.FLOWER) {
+        const fc = ['#ff8fb0', '#ffffff', '#ffd84a', '#b98ae6', '#ff7a5a'];
+        for (let i = 0; i < 7; i++) {
+          const x = X + 2 + Math.floor(hash(tx * 3 + i, ty) * 12);
+          const y = Y + 2 + Math.floor(hash(tx, ty * 3 + i) * 12);
+          const c = fc[Math.floor(hash(tx + i, ty + 2) * fc.length)] ?? '#ffffff';
+          sp(mb, x, y + 2, EDGE_LINE);
+          sp(mb, x - 1, y, c);
+          sp(mb, x + 1, y, c);
+          sp(mb, x, y - 1, c);
+          sp(mb, x, y + 1, c);
+          sp(mb, x, y, '#ffd84a');
+        }
+      }
+      if (t === Tile.SAND) {
+        for (let i = 0; i < 2; i++) {
+          const x = X + 2 + Math.floor(hash(tx * 3 + i, ty) * 12);
+          const y = Y + 2 + Math.floor(hash(tx, ty * 3 + i) * 12);
+          sp(mb, x, y, '#c99a58');
+          sp(mb, x + 1, y, '#f6e2ae');
+        }
+        if (inCanyon(map, tx, ty)) {
+          if (h < 0.08) {
+            const x = X + 4;
+            const y = Y + 10;
+            sp(mb, x, y, '#b8903c');
+            sp(mb, x + 1, y - 1, '#c9a050');
+            sp(mb, x + 2, y, '#b8903c');
+            sp(mb, x + 3, y - 1, '#c9a050');
+          }
+          // glowing lava cracks
+          if (h2 > 0.975 && map.reach[ty * MW + tx] && !(ty >= map.bridgeEast - 1 && ty <= map.bridgeEast + 2)) {
+            const cx = X + 8;
+            const cy = Y + 8;
+            ell(mb, cx, cy, 5, 3, '#7a3418');
+            ell(mb, cx, cy, 3.6, 2, '#e05a1e');
+            ell(mb, cx, cy, 2, 1, '#ffd35c');
+            lights.push({ x: cx, y: cy, r: 14, c: '255,120,40', ga: 0.16 });
+          }
+        }
+      }
+      if (t === Tile.BUSH) {
+        ell(mb, X + 9, Y + 14, 7.5, 2.2, '#000000', 0.22);
+        const pal = ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
+        const fl = h < 0.6 ? (['#f28ab0', '#e8504a', '#b48ae6', '#ffffff'][Math.floor(h2 * 4)] ?? null) : null;
+        for (let y = Y; y < Y + 16; y++) {
+          for (let x = X; x < X + 16; x++) {
+            const dx = (x + 0.5 - X - 8) / 7.4;
+            const dy = (y + 0.5 - Y - 8.5) / 6.6;
+            const q = dx * dx + dy * dy;
+            if (q > 1) continue;
+            const l = -(dx * 0.55 + dy * 0.85) + (hash(x, y) - 0.5) * 0.45;
+            sp(mb, x, y, q > 0.8 ? '#173823' : ((l > 0.6 ? pal[3] : l > 0.1 ? pal[2] : l > -0.4 ? pal[1] : pal[0]) ?? '#347a3a'));
+            if (fl && q < 0.7 && dy < 0.3 && hash(x * 5, y * 3) < 0.16) sp(mb, x, y, fl);
+          }
+        }
+      }
+      if (t === Tile.ROCK) {
+        const can = inCanyon(map, tx, ty);
+        const P = can ? ['#7a2e18', '#a8462a', '#cc6a3c', '#ec9a62', '#4a1a0e'] : ['#4c4e58', '#6c6e78', '#8d9098', '#b8bbc2', '#24252b'];
+        ell(mb, X + 9, Y + 13.5, 7, 2.3, '#000000', 0.25);
+        const rx = 6 + h;
+        const ry = 5;
+        for (let y = Y; y < Y + 16; y++) {
+          for (let x = X; x < X + 16; x++) {
+            const dx = (x + 0.5 - X - 8) / rx;
+            const dy = (y + 0.5 - Y - 9) / ry;
+            const q = dx * dx + dy * dy;
+            if (q > 1) continue;
+            const l = -(dx * 0.6 + dy * 0.8) + (hash(x, y) - 0.5) * 0.3;
+            let c = (q > 0.78 ? P[4] : l > 0.55 ? P[3] : l > 0.05 ? P[2] : l > -0.45 ? P[1] : P[0]) ?? '#6c6e78';
+            if (!can && dy < -0.35 && q <= 0.78 && hash(x, y + 5) < 0.45) c = '#78b35c';
+            sp(mb, x, y, c);
+          }
+        }
+      }
+      if (t === Tile.CLIFF) {
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            let c: string;
+            if (y < 3) c = pick(GRASS_DARK, hash(X + x, Y + y));
+            else if (y === 3) c = '#2c5a22';
+            else if (y < 13) c = y % 3 === 0 ? '#a5622e' : (x + Math.floor(hash(tx, y) * 4)) % 6 === 0 ? '#b06a34' : y < 6 ? '#e3a060' : '#c97f42';
+            else c = y === 13 ? '#5a3418' : '#b8894e';
+            sp(mb, X + x, Y + y, c);
+          }
+        }
+      }
+      if (t === Tile.SOIL) {
+        rect(mb, X, Y, 16, 16, '#6a4226');
+        rect(mb, X + 1, Y + 1, 14, 14, '#8f5e34');
+        for (let r = 3; r <= 11; r += 4) {
+          rect(mb, X + 2, Y + r, 12, 1, '#6f4626');
+          rect(mb, X + 2, Y + r + 1, 12, 1, '#ad7a4c');
+        }
+      }
+      if (t === Tile.FENCE) {
+        const H = tileAt(map, tx - 1, ty) === Tile.FENCE || tileAt(map, tx + 1, ty) === Tile.FENCE;
+        const V = tileAt(map, tx, ty - 1) === Tile.FENCE || tileAt(map, tx, ty + 1) === Tile.FENCE;
+        if (H) {
+          rect(mb, X, Y + 6, 16, 2, '#d8a060');
+          rect(mb, X, Y + 8, 16, 1, '#7a4a24');
+          rect(mb, X, Y + 11, 16, 2, '#d8a060');
+          rect(mb, X, Y + 13, 16, 1, '#7a4a24');
+        }
+        if (V) {
+          rect(mb, X + 6, Y, 2, 16, '#d8a060');
+          rect(mb, X + 8, Y, 1, 16, '#7a4a24');
+        }
+        ell(mb, X + 8, Y + 15, 4, 1.2, '#000000', 0.2);
+        rect(mb, X + 6, Y + 3, 4, 12, '#a86a34');
+        rect(mb, X + 6, Y + 3, 4, 2, '#e8b070');
+        rect(mb, X + 9, Y + 5, 1, 10, '#7a4a24');
+      }
+    }
+  }
+}
+
+/** Trunks go on the ground layer; the big round canopy goes on the overlay layer. */
+function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
+  for (let ty = 0; ty < MH; ty++) {
+    for (let tx = 0; tx < MW; tx++) {
+      const t = tileAt(map, tx, ty);
+      const isTree = t === Tile.TREE || (t === Tile.WALL && (tx + ty) % 2 === 0 && hash(tx, ty) < 0.8);
+      if (!isTree) continue;
+      const cx = tx * 16 + 8;
+      const cy = ty * 16 - 3;
+      const v = hash(tx * 3, ty * 5);
+      // mostly green, some mint and a few autumn-orange trees
+      const pal = v < 0.06 ? ['#8a3a1c', '#c0582a', '#e08040', '#f4b060'] : v < 0.3 ? ['#2a6a4a', '#3c8a5a', '#58ac6a', '#8ad48a'] : ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
+      ell(mb, cx + 3, ty * 16 + 14, 10, 3.2, '#000000', 0.22);
+      for (let y = ty * 16 + 6; y < ty * 16 + 16; y++) {
+        sp(mb, cx - 2, y, '#7a3e1c');
+        sp(mb, cx - 1, y, '#d0803e');
+        sp(mb, cx, y, '#a85a26');
+        sp(mb, cx + 1, y, '#7a3e1c');
+      }
+      sp(mb, cx - 3, ty * 16 + 15, '#a85a26');
+      sp(mb, cx - 4, ty * 16 + 15, '#7a3e1c');
+      sp(mb, cx + 2, ty * 16 + 15, '#a85a26');
+      sp(mb, cx + 3, ty * 16 + 15, '#7a3e1c');
+      const jit = v - 0.5;
+      const blobs = ([[-7, 3, 7], [7, 3, 7], [0, -5, 8.4], [-3, 7, 6.4], [4, 7, 6.2]] as const).map(
+        (bl, i) => [bl[0] + (hash(tx + i, ty) - 0.5) * 2, bl[1], bl[2] + jit] as const,
+      );
+      const inside = (dx: number, dy: number): number => {
+        let best = -9;
+        let bi = -1;
+        blobs.forEach(([bx, by, r], i) => {
+          const q = 1 - ((dx - bx) ** 2 + (dy - by) ** 2) / (r * r);
+          if (q >= 0 && q > best) {
+            best = q;
+            bi = i;
+          }
+        });
+        return bi;
+      };
+      for (let dy = -15; dy <= 15; dy++) {
+        for (let dx = -16; dx <= 16; dx++) {
+          const bi = inside(dx + 0.5, dy + 0.5);
+          if (bi < 0) continue;
+          const x = cx + dx;
+          const y = cy + dy;
+          if (inside(dx - 0.5, dy + 0.5) < 0 || inside(dx + 1.5, dy + 0.5) < 0 || inside(dx + 0.5, dy - 0.5) < 0 || inside(dx + 0.5, dy + 1.5) < 0) {
+            sp(cb, x, y, '#173823');
+            continue;
+          }
+          const [bx, by, r] = blobs[bi] ?? [0, 0, 1];
+          const nx = (dx + 0.5 - bx) / r;
+          const ny = (dy + 0.5 - by) / r;
+          const l = -(nx * 0.55 + ny * 0.85) + (hash(x, y) - 0.5) * 0.4;
+          sp(cb, x, y, (l > 0.6 ? pal[3] : l > 0.12 ? pal[2] : l > -0.38 ? pal[1] : pal[0]) ?? '#347a3a');
+        }
+      }
+    }
+  }
+}

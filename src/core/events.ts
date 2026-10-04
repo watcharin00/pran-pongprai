@@ -1,28 +1,52 @@
 // Typed event bus. Game logic emits; rendering, audio and UI subscribe.
 // Pure TypeScript so the same logic can later run on a server.
-import type { CropId, MaterialId, MonsterId, PartId, SkillId, ZoneId } from '../data/types';
+import type { CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 
 export interface Vec2 {
   x: number;
   y: number;
 }
 
+type Drops = Partial<Record<MaterialId, number>>;
+
+export interface CorpseInfo {
+  dirX: 1 | -1;
+  frame: number;
+  headBroken: boolean;
+  tailBroken: boolean;
+}
+
 export interface GameEvents {
-  'monster:hit': { monsterId: number; kind: MonsterId; part: PartId | 'body'; damage: number; at: Vec2; gold: boolean };
-  'part:broken': { monsterId: number; kind: MonsterId; part: PartId; at: Vec2; drops: Partial<Record<MaterialId, number>> };
-  'monster:stunned': { monsterId: number; at: Vec2 };
-  'monster:enraged': { monsterId: number; at: Vec2 };
-  'monster:telegraph': { monsterId: number; attackId: string };
-  'monster:killed': { monsterId: number; kind: MonsterId; at: Vec2; drops: Partial<Record<MaterialId, number>>; rare: MaterialId | null };
-  'monster:fled': { monsterId: number; kind: MonsterId; at: Vec2 };
+  'monster:spawned': { id: number; kind: MonsterId; at: Vec2 };
+  /** `tip` = first hit on this part recently: show the part name */
+  'monster:hit': { id: number; kind: MonsterId; part: PartId | 'body'; damage: number; at: Vec2; gold: boolean; big: boolean; tip: boolean; color: string };
+  'part:broken': { id: number; kind: MonsterId; part: PartId; at: Vec2; drops: Drops };
+  'monster:stunned': { id: number; kind: MonsterId; at: Vec2 };
+  'monster:enraged': { id: number; kind: MonsterId; at: Vec2 };
+  'monster:telegraph': { id: number; kind: MonsterId; attackId: string };
+  /** a circle attack resolved (hit or miss) */
+  'monster:strike': { id: number; kind: MonsterId; at: Vec2; radius: number };
+  'monster:dashEnd': { id: number; kind: MonsterId; at: Vec2 };
+  'monster:killed': { id: number; kind: MonsterId; at: Vec2; drops: Drops; rare: MaterialId | null; corpse: CorpseInfo };
+  'monster:fled': { id: number; kind: MonsterId; at: Vec2 };
+  'player:attack': { weapon: WeaponId; at: Vec2 };
   'player:hurt': { damage: number; at: Vec2; heavy: boolean };
+  /** an attack connected during i-frames */
   'player:dodged': { at: Vec2 };
+  'player:roll': { at: Vec2 };
+  'player:tired': { at: Vec2 };
+  'player:drink': { heal: number; at: Vec2 };
+  'player:noPotion': Record<string, never>;
   'player:knockedOut': Record<string, never>;
+  'player:revived': { at: Vec2 };
   'skill:cast': { skill: SkillId; at: Vec2 };
-  'crop:planted': { plot: number; crop: CropId };
-  'crop:harvested': { plot: number; crop: CropId; drops: Partial<Record<MaterialId, number>> };
-  'item:gathered': { item: MaterialId; amount: number; at: Vec2 };
+  'skill:impact': { skill: SkillId; at: Vec2; radius: number };
+  'crop:planted': { plot: number; crop: CropId; at: Vec2 };
+  'crop:harvested': { plot: number; crop: CropId; at: Vec2; drops: Drops };
+  'farm:noSeed': { crop: CropId };
+  'item:gathered': { item: MaterialId; amount: number; at: Vec2; bonusSeed: boolean };
   'zone:entered': { zone: ZoneId };
+  'meal:expired': { meal: MealId };
 }
 
 type Handler<T> = (payload: T) => void;

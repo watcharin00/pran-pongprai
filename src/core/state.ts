@@ -1,0 +1,186 @@
+// Plain-data game state. Everything the simulation needs lives here so that a
+// server could own it and clients could render it.
+import type { AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, WeaponId, ZoneId } from '../data/types';
+import type { EventBus, Vec2 } from './events';
+import type { WorldMap } from './mapgen';
+import type { TilePath } from './pathfinding';
+import type { Rng } from './rng';
+
+/**
+ * One frame of player input. Touch, keyboard and AUTO all produce this same shape;
+ * the simulation never knows where it came from.
+ */
+export interface Intent {
+  /** unit vector, or null when not steering */
+  move: Vec2 | null;
+  /** attack button held: approach the target and keep swinging */
+  attack: boolean;
+  /** explicit target for `attack` (AUTO); otherwise the nearest monster in hold range */
+  targetId: number | null;
+  /** edge-triggered presses */
+  skills: [boolean, boolean, boolean];
+  dodge: boolean;
+  potion: boolean;
+  /** player tapped a monster */
+  lockId: number | null;
+}
+
+export const emptyIntent = (): Intent => ({
+  move: null,
+  attack: false,
+  targetId: null,
+  skills: [false, false, false],
+  dodge: false,
+  potion: false,
+  lockId: null,
+});
+
+export interface Meal {
+  id: MealId;
+  /** epoch ms */
+  until: number;
+}
+
+export interface PlayerState {
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  st: number;
+  face: 1 | -1;
+  /** last movement direction */
+  fx: number;
+  fy: number;
+  weapon: WeaponId;
+  potions: number;
+  meal: Meal | null;
+
+  path: TilePath;
+  repath: number;
+  lockId: number | null;
+  gatherT: number;
+  gatherNode: number | null;
+
+  cds: [number, number, number];
+  cast: { t: number; tx: number; ty: number } | null;
+  dash: { t: number; dx: number; dy: number; hit: Set<number> } | null;
+  spin: number;
+  atkCd: number;
+  swing: number;
+  swingAng: number;
+  roll: number;
+  rdx: number;
+  rdy: number;
+  /** invulnerable while > 0 (roll, dash) */
+  rollIF: number;
+  hurtIF: number;
+  hurt: number;
+  dodgeCd: number;
+  stDelay: number;
+  potCd: number;
+  dead: boolean;
+  deadT: number;
+  moving: boolean;
+  walkT: number;
+  inVillage: boolean;
+  zone: ZoneId | null;
+}
+
+export type Shape =
+  | { kind: 'circle'; cx: number; cy: number; r: number }
+  | { kind: 'line'; sx: number; sy: number; ux: number; uy: number; len: number; wd: number };
+
+/** Leg animation frames per monster sprite. */
+export const MONSTER_FRAME_COUNT = 4;
+
+export type MonsterMode = 'wander' | 'chase' | 'tele' | 'dash' | 'recover' | 'stun';
+
+export interface PartState {
+  hp: number;
+  broken: boolean;
+}
+
+export interface MonsterState {
+  id: number;
+  kind: MonsterId;
+  x: number;
+  y: number;
+  /** home point for wandering */
+  hx: number;
+  hy: number;
+  hp: number;
+  parts: Partial<Record<PartId, PartState>>;
+  mode: MonsterMode;
+  /** generic countdown for the current mode */
+  t: number;
+  /** total length of the current telegraph */
+  tt: number;
+  dirX: 1 | -1;
+  /** how long it has wanted to face the other way */
+  turnT: number;
+  wanderT: number;
+  waypoint: Vec2 | null;
+  atkCd: number;
+  flash: number;
+  stunMeter: number;
+  stunT: number;
+  /** hunt timer; null until the fight starts */
+  huntT: number | null;
+  aggro: boolean;
+  leash: number;
+  rage: boolean;
+  shape: Shape | null;
+  attack: AttackDef | null;
+  dashLeft: number;
+  dashHit: boolean;
+  /** distance walked, drives the leg animation */
+  anim: number;
+  tipT: number;
+}
+
+export interface GatherNode {
+  id: number;
+  kind: 'herb' | 'ore';
+  tx: number;
+  ty: number;
+  x: number;
+  y: number;
+  ready: boolean;
+  regen: number;
+}
+
+export interface Plot {
+  tx: number;
+  ty: number;
+  x: number;
+  y: number;
+  crop: CropId | null;
+  /** epoch ms when planted */
+  at: number;
+  /** grow duration in ms */
+  dur: number;
+  fert: boolean;
+}
+
+export type Inventory = Record<MaterialId, number>;
+
+export interface GameState {
+  readonly map: WorldMap;
+  readonly rng: Rng;
+  readonly events: EventBus;
+  /** simulation seconds */
+  time: number;
+  /** wall clock (epoch ms); crops and meals use real time */
+  now: number;
+  nextId: number;
+  player: PlayerState;
+  monsters: MonsterState[];
+  respawnQueue: { kind: MonsterId; t: number }[];
+  nodes: GatherNode[];
+  plots: Plot[];
+  inv: Inventory;
+  owned: Set<WeaponId>;
+  selCrop: CropId;
+  useFert: boolean;
+  autoOn: boolean;
+}

@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { WorldScene } from './scenes/WorldScene';
+import './ui/hud.css';
+
+// The canvas is sized in device pixels and shown at CSS size (zoom = 1/dpr),
+// so pixel art stays crisp on high-DPI phones. WorldScene owns resizing.
+const dpr = Math.min(window.devicePixelRatio || 1, 3);
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -9,11 +14,15 @@ const game = new Phaser.Game({
   pixelArt: true,
   roundPixels: true,
   scale: {
-    mode: Phaser.Scale.RESIZE,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    mode: Phaser.Scale.NONE,
+    width: Math.round(window.innerWidth * dpr),
+    height: Math.round(window.innerHeight * dpr),
+    zoom: 1 / dpr,
   },
-  input: { activePointers: 4 },
+  // Input is handled with DOM pointer/keyboard events (src/input).
+  input: { keyboard: false, mouse: false, touch: false, gamepad: false },
+  disableContextMenu: true,
+  banner: false,
   scene: [BootScene, WorldScene],
 });
 

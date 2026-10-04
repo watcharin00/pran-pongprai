@@ -1,0 +1,259 @@
+// The single menu: bottom sheet on phones, side drawer on wide screens.
+// The game pauses while it is open.
+import { CROPS, MATERIALS, MATERIAL_IDS, MEALS, SKILLS, TUNING, WEAPONS } from '../data';
+import type { CropId, ItemBag, MaterialId, MealId, WeaponId } from '../data/types';
+import { plantAll, plotProgress, tapPlot } from '../core/farm';
+import { activeMeal, brewPotion, canAfford, cookMeal, craftWeapon, equipWeapon, goalIndex } from '../core/inventory';
+import type { GameState } from '../core/state';
+import * as th from '../i18n/th';
+import { $, ICONS, fmtTime } from './format';
+import type { Hud } from './hud';
+
+export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm';
+const TABS: Tab[] = ['bag', 'forge', 'kitchen', 'farm'];
+
+export interface SheetHooks {
+  /** something changed that should be saved */
+  changed: () => void;
+  /** wipe the save and reload */
+  reset: () => void;
+  opened: () => void;
+  closed: () => void;
+  /** world feedback for crafting (sparks at the anvil etc.) */
+  crafted: () => void;
+}
+
+export class Sheet {
+  tab: Tab = 'bag';
+  private readonly scrim: HTMLElement;
+  private readonly sheet: HTMLElement;
+  private readonly body: HTMLElement;
+  private resetArm = 0;
+  private dirty = false;
+  private refreshT = 0;
+
+  constructor(
+    overlay: HTMLElement,
+    private readonly s: () => GameState,
+    private readonly hud: Hud,
+    private readonly hooks: SheetHooks,
+  ) {
+    overlay.insertAdjacentHTML(
+      'beforeend',
+      `<div id="scrim" hidden></div>
+      <section id="sheet" hidden aria-label="${th.hud.menu}">
+        <div class="grab"></div>
+        <div class="shead">
+          <div class="tabs">${TABS.map((t) => `<button class="tab" type="button" data-tab="${t}">${th.menu.tabs[t]}</button>`).join('')}</div>
+          <button id="sheetClose" type="button" aria-label="${th.hud.close}">${ICONS.close}</button>
+        </div>
+        <div id="sheetBody"></div>
+      </section>`,
+    );
+    this.scrim = $(overlay, '#scrim');
+    this.sheet = $(overlay, '#sheet');
+    this.body = $(overlay, '#sheetBody');
+    this.sheet.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) =>
+      b.addEventListener('click', () => {
+        this.tab = b.dataset.tab as Tab;
+        this.render();
+        this.body.scrollTop = 0;
+      }),
+    );
+    $(overlay, '#sheetClose').addEventListener('click', () => this.close());
+    this.scrim.addEventListener('click', () => this.close());
+    this.body.addEventListener('change', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.id === 'useFert') this.s().useFert = t.checked;
+    });
+    this.body.addEventListener('click', (e) => this.onClick(e));
+    hud.onLog = () => {
+      if (this.isOpen && this.tab === 'bag') this.dirty = true;
+    };
+  }
+
+  get isOpen(): boolean {
+    return !this.sheet.hidden;
+  }
+
+  open(tab: Tab = this.tab): void {
+    this.tab = tab;
+    this.sheet.hidden = false;
+    this.scrim.hidden = false;
+    this.hooks.opened();
+    this.render();
+  }
+
+  close(): void {
+    if (!this.isOpen) return;
+    this.sheet.hidden = true;
+    this.scrim.hidden = true;
+    this.hooks.closed();
+  }
+
+  toggle(): void {
+    if (this.isOpen) this.close();
+    else this.open();
+  }
+
+  markDirty(): void {
+    this.dirty = true;
+  }
+
+  /** Called every frame; re-renders when dirty, and the farm tab once a second for timers. */
+  tick(dt: number): void {
+    if (!this.isOpen) return;
+    this.refreshT -= dt;
+    if (this.dirty || (this.tab === 'farm' && this.refreshT <= 0)) {
+      this.refreshT = 1;
+      this.render();
+    }
+  }
+
+  render(): void {
+    this.dirty = false;
+    this.sheet.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === this.tab));
+    const s = this.s();
+    const html = this.tab === 'bag' ? this.bag(s) : this.tab === 'forge' ? this.forge(s) : this.tab === 'kitchen' ? this.kitchen(s) : this.farm(s);
+    this.body.innerHTML = html;
+  }
+
+  private req(s: GameState, rec: ItemBag): string {
+    return Object.entries(rec)
+      .map(([k, n]) => {
+        const have = s.inv[k as MaterialId];
+        return `<span class="${have >= (n ?? 0) ? 'have' : 'miss'}">${th.materials[k as MaterialId]} ${have}/${n}</span>`;
+      })
+      .join('');
+  }
+
+  private villageNote(s: GameState): string {
+    return s.player.inVillage ? `<p class="note ok">${th.menu.inVillage}</p>` : `<p class="note warn">${th.menu.notInVillage}</p>`;
+  }
+
+  private bag(s: GameState): string {
+    const goal = th.goals[goalIndex(s)];
+    let h = goal ? `<div class="goalbox"><b>${goal.title}</b><p>${goal.desc}</p></div>` : '';
+    h += `<h3 class="sec">${th.menu.skills}</h3><div class="skl">${SKILLS.order
+      .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${th.menu.cooldown(SKILLS[id].cooldown)}</span></div>`)
+      .join('')}<div><b>${th.menu.partsTitle}</b><span class="meta">${th.menu.partsHelp}</span></div></div>`;
+    h += `<h3 class="sec">${th.menu.materials}</h3><div class="inv">${MATERIAL_IDS.filter((k) => MATERIALS[k].category !== 'seed')
+      .map((k) => {
+        const m = MATERIALS[k];
+        const tag = m.rarity ? `<span class="tag">${th.rarity[m.rarity]}</span>` : '';
+        return `<div class="${s.inv[k] ? '' : 'zero'}"><span class="sw" style="background:${m.color}"></span><span>${th.materials[k]}</span>${tag}<span class="n">${s.inv[k]}</span></div>`;
+      })
+      .join('')}</div>`;
+    const armed = Date.now() - this.resetArm < 3000;
+    h += `<div class="row"><h3 class="sec">${th.menu.log}</h3><button type="button" class="btn" id="btnReset">${armed ? th.menu.confirmNewGame : th.menu.newGame}</button></div>`;
+    h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
+    return h;
+  }
+
+  private forge(s: GameState): string {
+    const p = s.player;
+    const iv = p.inVillage;
+    let h = `${this.villageNote(s)}<div class="recipes">`;
+    for (const [k, w] of Object.entries(WEAPONS) as [WeaponId, (typeof WEAPONS)[WeaponId]][]) {
+      const own = s.owned.has(k);
+      const eq = p.weapon === k;
+      let btn: string;
+      if (eq) btn = `<button type="button" disabled>${th.menu.equipped}</button>`;
+      else if (own) btn = `<button type="button" data-equip="${k}" ${iv ? '' : 'disabled'}>${th.menu.equip}</button>`;
+      else btn = `<button type="button" class="primary" data-craft="${k}" ${iv && w.recipe && canAfford(s.inv, w.recipe) ? '' : 'disabled'}>${th.menu.craft}</button>`;
+      const speed = w.rate < 0.5 ? th.menu.speed.fast : w.rate < 0.8 ? th.menu.speed.mid : th.menu.speed.slow;
+      h += `<div class="rc${eq ? ' eq' : ''}"><h3><span class="sw" style="background:${w.color}"></span>${th.weapons[k].name}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], w.damage, speed, th.weapons[k].desc)}</div>${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}${btn}</div>`;
+    }
+    const P = TUNING.player.potion;
+    h += `<div class="rc"><h3><span class="sw" style="background:#d84a62"></span>${th.menu.potionName}</h3><div class="meta">${th.menu.potionMeta(P.heal, p.potions)}</div><div class="req">${this.req(s, { herb: P.herbCost })}</div><button type="button" class="primary" data-potion="1" ${iv && s.inv.herb >= P.herbCost ? '' : 'disabled'}>${th.menu.brew}</button></div></div>`;
+    return h;
+  }
+
+  private kitchen(s: GameState): string {
+    const iv = s.player.inVillage;
+    const cur = activeMeal(s);
+    let h = this.villageNote(s);
+    h += cur && s.player.meal
+      ? `<p class="note">${th.menu.currentMeal} <b style="color:var(--gold)">${th.meals[cur].name}</b> ${th.menu.mealLeft(fmtTime((s.player.meal.until - s.now) / 1000))}</p>`
+      : `<p class="note">${th.menu.mealRule}</p>`;
+    h += '<div class="recipes">';
+    for (const [id, ml] of Object.entries(MEALS) as [MealId, (typeof MEALS)[MealId]][]) {
+      const on = cur === id;
+      h += `<div class="rc${on ? ' eq' : ''}"><h3><span class="sw" style="background:${ml.color}"></span>${th.meals[id].name}</h3><div class="meta">${th.meals[id].desc}</div><div class="req">${this.req(s, ml.recipe)}</div><button type="button" class="primary" data-meal="${id}" ${iv && canAfford(s.inv, ml.recipe) && !on ? '' : 'disabled'}>${on ? th.menu.eating : th.menu.cookAndEat}</button></div>`;
+    }
+    return `${h}</div>`;
+  }
+
+  private farm(s: GameState): string {
+    const iv = s.player.inVillage;
+    const sel = CROPS[s.selCrop];
+    let h = iv ? `<p class="note ok">${th.menu.farmInVillage}</p>` : `<p class="note warn">${th.menu.farmNotInVillage}</p>`;
+    h += `<h3 class="sec">${th.menu.seedToPlant}</h3><div class="seeds">${(Object.keys(CROPS) as CropId[])
+      .map((id) => `<button type="button" data-seed="${id}" class="${s.selCrop === id ? 'on' : ''}"><span class="sw" style="background:${CROPS[id].color}"></span>${th.crops[id].name} <b>${s.inv[CROPS[id].seed]}</b></button>`)
+      .join('')}</div>`;
+    h += `<p class="note">${th.menu.growInfo(th.crops[s.selCrop].name, fmtTime(sel.growSeconds), th.crops[s.selCrop].source)}</p>`;
+    h += `<label class="chk"><input type="checkbox" id="useFert" ${s.useFert ? 'checked' : ''}> ${th.menu.useFert(s.inv.fert)}</label>`;
+    h += `<div class="row"><span class="note">${th.menu.plantAllHelp}</span><button type="button" class="btn" data-plantall="1" ${iv ? '' : 'disabled'}>${th.menu.plantAll}</button></div>`;
+    h += `<div class="plotgrid">${s.plots
+      .map((pl, i) => {
+        if (!pl.crop) return `<button type="button" class="plot" data-plot="${i}" ${iv ? '' : 'disabled'}>${th.menu.plotEmpty}<span class="meta">${th.menu.plotTapToPlant}</span></button>`;
+        const pr = plotProgress(pl, s.now);
+        const ripe = pr >= 1;
+        const left = th.menu.plotLeft(fmtTime((pl.dur - (s.now - pl.at)) / 1000));
+        return `<button type="button" class="plot${ripe ? ' ripe' : ''}" data-plot="${i}" ${iv ? '' : 'disabled'}>${th.crops[pl.crop].name}<span class="meta">${ripe ? th.menu.plotRipe : left}</span><span class="pbar"><i style="width:${pr * 100}%;background:${CROPS[pl.crop].color}"></i></span></button>`;
+      })
+      .join('')}</div>`;
+    return h;
+  }
+
+  private onClick(e: Event): void {
+    const b = (e.target as HTMLElement).closest('button');
+    if (!b || b.disabled) return;
+    const s = this.s();
+    const d = b.dataset;
+    if (b.id === 'btnReset') {
+      if (Date.now() - this.resetArm > 3000) {
+        this.resetArm = Date.now();
+        b.textContent = th.menu.confirmNewGame;
+        setTimeout(() => {
+          if (b.isConnected) b.textContent = th.menu.newGame;
+        }, 3000);
+        return;
+      }
+      this.hooks.reset();
+      return;
+    }
+    if (d.seed) {
+      s.selCrop = d.seed as CropId;
+      this.hooks.changed();
+      this.render();
+      return;
+    }
+    if (!s.player.inVillage) return;
+    if (d.plot !== undefined) tapPlot(s, Number(d.plot));
+    else if (d.plantall) {
+      const n = plantAll(s);
+      if (n) this.hud.toast(th.log.plantedMany(th.crops[s.selCrop].name, n));
+    } else if (d.craft) {
+      const id = d.craft as WeaponId;
+      if (craftWeapon(s, id).ok) {
+        this.hud.toast(th.log.crafted(th.weapons[id].name), 'gold');
+        this.hooks.crafted();
+      }
+    } else if (d.equip) {
+      const id = d.equip as WeaponId;
+      if (equipWeapon(s, id).ok) this.hud.toast(th.log.equipped(th.weapons[id].name));
+    } else if (d.potion) {
+      if (brewPotion(s).ok) this.hud.toast(th.log.brewed);
+    } else if (d.meal) {
+      const id = d.meal as MealId;
+      if (cookMeal(s, id).ok) this.hud.toast(th.log.ate(th.meals[id].name, th.meals[id].desc), 'gold');
+    }
+    this.hooks.changed();
+    this.render();
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
+}
