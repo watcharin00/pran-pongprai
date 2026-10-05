@@ -2,7 +2,7 @@
 // steps the core simulation, then turns simulation events into feel
 // (hitstop, shake, flashes, numbers, toasts) and draws.
 import Phaser from 'phaser';
-import { CROPS, MATERIALS, MONSTERS, TUNING, WEAPON_TYPES, WEAPONS } from '../data';
+import { CROPS, MATERIALS, MONSTERS, SKILLS, TUNING, WEAPON_TYPES, WEAPONS } from '../data';
 import type { MaterialId, PartId } from '../data/types';
 import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPilot';
 import { findMonster } from '../core/combat';
@@ -421,15 +421,17 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.camFY = e.at.y - this.VH / 2;
     });
     ev.on('skill:cast', (e) => {
-      if (e.skill === 'whirl') {
+      const def = SKILLS[e.skill];
+      if (def.kind === 'radial') {
         fx.whirl();
-        bump(0.06, 0.1);
+        bump(def.hitstop, def.shake);
       }
     });
     ev.on('skill:impact', (e) => {
+      const def = SKILLS[e.skill];
       fx.shock(e.at.x, e.at.y, e.radius);
       fx.burst(e.at.x, e.at.y, '#e8d0a0', 18, 110, 'dust');
-      bump(0.16, 0.3);
+      bump(def.hitstop, def.shake);
       vibrate(30);
     });
     ev.on('crop:planted', (e) => {

@@ -3,6 +3,7 @@
 import { CROPS, MATERIALS, MATERIAL_IDS, MEALS, SKILLS, TUNING, WEAPONS } from '../data';
 import type { CropId, ItemBag, MaterialId, MealId, WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
+import { weaponSkills } from '../core/skills';
 import { activeMeal, attackMul, brewPotion, canAfford, cookMeal, craftWeapon, equipWeapon, goalIndex } from '../core/inventory';
 import type { GameState } from '../core/state';
 import { materialIconUrl, mealIconUrl, monsterIconUrl, playerIconUrl, potionIconUrl, weaponIconUrl } from '../art/icons';
@@ -182,7 +183,7 @@ export class Sheet {
     h += `<div class="grid">${cells.join('')}</div>`;
 
     if (goal) h += `<div class="goalbox"><b>${goal.title}</b><p>${goal.desc}</p></div>`;
-    h += `<h3 class="sec">${M.skills}</h3><div class="skl">${SKILLS.order
+    h += `<h3 class="sec">${M.skills}</h3><div class="skl">${weaponSkills(p.weapon)
       .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${M.cooldown(SKILLS[id].cooldown)}</span></div>`)
       .join('')}<div><b>${M.partsTitle}</b><span class="meta">${M.partsHelp}</span></div></div>`;
     const armed = Date.now() - this.resetArm < 3000;

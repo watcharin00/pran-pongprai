@@ -1,6 +1,7 @@
 import type materialsJson from './materials.json';
 import type monstersJson from './monsters.json';
 import type weaponsJson from './weapons.json';
+import type skillsJson from './skills.json';
 import type cropsJson from './crops.json';
 import type mealsJson from './meals.json';
 
@@ -11,7 +12,7 @@ export type WeaponId = keyof (typeof weaponsJson)['weapons'];
 export type WeaponType = keyof (typeof weaponsJson)['types'];
 export type CropId = keyof (typeof cropsJson)['crops'];
 export type MealId = keyof (typeof mealsJson)['meals'];
-export type SkillId = 'whirl' | 'dash' | 'slam';
+export type SkillId = keyof (typeof skillsJson)['skills'];
 export type PartId = 'head' | 'tail';
 export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon';
 
@@ -104,6 +105,8 @@ export interface MonsterDef {
 export interface WeaponTypeDef {
   hitstop: number;
   shake: number;
+  /** skill slots 1 and 2, shared by every weapon of this type */
+  skills: [SkillId, SkillId];
 }
 
 export interface WeaponDef {
@@ -115,6 +118,8 @@ export interface WeaponDef {
   partMul: Record<PartId, number>;
   stun: number;
   color: string;
+  /** skill slot 3, unique to this weapon */
+  signature: SkillId;
   recipe: ItemBag | null;
 }
 
@@ -123,45 +128,58 @@ export interface WeaponsData {
   weapons: Record<WeaponId, WeaponDef>;
 }
 
-export interface WhirlDef {
-  cooldown: number;
-  multiplier: number;
-  /** hits monsters within radius + monster size */
-  radius: number;
-  duration: number;
-  hitstop: number;
-  shake: number;
-}
+/**
+ * How AUTO may use a skill. AUTO never uses a skill to dodge:
+ * - burst: in reach, only while the target is not winding up
+ * - filler: in reach, whenever ready
+ * - gapClose: when the target is just out of reach (auto.dashMin..dashMax)
+ * - never: AUTO leaves it to the player
+ */
+export type SkillAutoRole = 'burst' | 'filler' | 'gapClose' | 'never';
 
-export interface DashDef {
+interface SkillBase {
+  auto: SkillAutoRole;
   cooldown: number;
+  /** × weapon damage */
   multiplier: number;
-  speed: number;
-  duration: number;
-  iframe: number;
-  /** hits monsters within hitRadius + size * hitRadiusSizeMul, once each */
-  hitRadius: number;
-  hitRadiusSizeMul: number;
-  hitstop: number;
-}
-
-export interface SlamDef {
-  cooldown: number;
-  multiplier: number;
-  radius: number;
-  windup: number;
+  /** extra stun added on every hit */
   stun: number;
+  /** × weapon part multiplier */
   partMul: number;
   hitstop: number;
   shake: number;
 }
 
-export interface SkillsData {
-  order: [SkillId, SkillId, SkillId];
-  whirl: WhirlDef;
-  dash: DashDef;
-  slam: SlamDef;
+/** Instant hit on every monster within radius + monster size. */
+export interface RadialSkillDef extends SkillBase {
+  kind: 'radial';
+  radius: number;
+  /** spin animation length */
+  duration: number;
 }
+
+/** Lunge along the stick / target / facing with i-frames; hits each monster once. */
+export interface DashSkillDef extends SkillBase {
+  kind: 'dash';
+  speed: number;
+  duration: number;
+  iframe: number;
+  /** hits monsters within hitRadius + size * hitRadiusSizeMul */
+  hitRadius: number;
+  hitRadiusSizeMul: number;
+}
+
+/** Wind-up, then an area hit between the player and the target. A roll or a hit cancels it. */
+export interface WindupAreaSkillDef extends SkillBase {
+  kind: 'windupArea';
+  radius: number;
+  windup: number;
+  fxRadius: number;
+}
+
+export type SkillDef = RadialSkillDef | DashSkillDef | WindupAreaSkillDef;
+export type SkillKind = SkillDef['kind'];
+export type SkillsData = Record<SkillId, SkillDef>;
 
 export interface CropDef {
   seed: MaterialId;

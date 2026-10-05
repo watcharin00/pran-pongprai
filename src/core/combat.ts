@@ -194,7 +194,7 @@ export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void 
   p.hp -= dmg;
   p.hurt = H.flash;
   p.hurtIF = H.iframe;
-  p.cast = null; // getting hit cancels the slam wind-up
+  p.cast = null; // getting hit cancels a skill wind-up
   const dx = p.x - m.x;
   const dy = p.y - m.y;
   const d = Math.hypot(dx, dy) || 1;

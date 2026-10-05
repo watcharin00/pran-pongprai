@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { SKILLS } from '../src/data';
+import { SKILLS, WEAPONS, WEAPON_TYPES } from '../src/data';
+import type { WeaponId } from '../src/data/types';
+import { equipWeapon } from '../src/core/inventory';
+import { weaponSkills } from '../src/core/skills';
 import { addMonster, game, intent, openSpot, run } from './helpers';
 import { step } from '../src/core/sim';
 
@@ -84,6 +87,24 @@ describe('skills', () => {
     step(s, intent(), 1 / 60, s.now);
     expect(s.player.hp).toBeLessThan(100);
     expect(s.player.cast).toBeNull();
+  });
+});
+
+describe('weapon skill slots', () => {
+  it('slots 1-2 come from the weapon type and slot 3 from the weapon', () => {
+    for (const id of Object.keys(WEAPONS) as WeaponId[]) {
+      const w = WEAPONS[id];
+      expect(weaponSkills(id)).toEqual([...WEAPON_TYPES[w.type].skills, w.signature]);
+    }
+  });
+
+  it('switching weapons resets skill cooldowns', () => {
+    const s = game();
+    s.owned.add('mossmaul');
+    s.player.inVillage = true;
+    s.player.cds = [3, 4, 5];
+    expect(equipWeapon(s, 'mossmaul').ok).toBe(true);
+    expect(s.player.cds).toEqual([0, 0, 0]);
   });
 });
 

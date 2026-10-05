@@ -1,6 +1,6 @@
 // Plain-data game state. Everything the simulation needs lives here so that a
 // server could own it and clients could render it.
-import type { AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, WeaponId, ZoneId } from '../data/types';
+import type { AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 import type { EventBus, Vec2 } from './events';
 import type { WorldMap } from './mapgen';
 import type { TilePath } from './pathfinding';
@@ -62,8 +62,10 @@ export interface PlayerState {
   gatherNode: number | null;
 
   cds: [number, number, number];
-  cast: { t: number; tx: number; ty: number } | null;
-  dash: { t: number; dx: number; dy: number; hit: Set<number> } | null;
+  /** skill wind-up in progress (cancelled by rolling or getting hit) */
+  cast: { skill: SkillId; t: number; total: number; tx: number; ty: number } | null;
+  /** skill lunge in progress */
+  dash: { skill: SkillId; t: number; dx: number; dy: number; hit: Set<number> } | null;
   spin: number;
   atkCd: number;
   swing: number;

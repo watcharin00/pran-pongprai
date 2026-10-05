@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS, WEAPON_TYPES } from '../src/data';
-import { DataError, loadMonsters, loadWeapons } from '../src/data/validate';
+import { CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, SKILL_IDS, TUNING, WEAPONS, WEAPON_TYPES } from '../src/data';
+import { weaponSkills } from '../src/core/skills';
+import { DataError, loadMonsters, loadSkills, loadWeapons } from '../src/data/validate';
+import skillsJson from '../src/data/skills.json';
 import monstersJson from '../src/data/monsters.json';
 import weaponsJson from '../src/data/weapons.json';
 import * as th from '../src/i18n/th';
@@ -40,7 +42,7 @@ describe('content data', () => {
   });
 
   it('matches skills, crops, meals and player tuning', () => {
-    expect(SKILLS.order).toEqual(['whirl', 'dash', 'slam']);
+    expect(weaponSkills('bone')).toEqual(['whirl', 'dash', 'slam']);
     expect([SKILLS.whirl.cooldown, SKILLS.dash.cooldown, SKILLS.slam.cooldown]).toEqual([6, 7, 11]);
     expect([CROPS.herb.growSeconds, CROPS.yam.growSeconds, CROPS.pepper.growSeconds]).toEqual([40, 75, 120]);
     expect(MEALS.tea.effect).toEqual({ staminaRegenMul: 1.6, dodgeCost: 20 });
@@ -84,12 +86,24 @@ describe('data validation', () => {
   it('requires exactly one starter weapon', () => {
     const bad = clone(weaponsJson) as unknown as { weapons: { fangblade: { recipe: unknown } } };
     bad.weapons.fangblade.recipe = null;
-    expect(() => loadWeapons(bad, MATERIAL_IDS)).toThrow(/starter/);
+    expect(() => loadWeapons(bad, MATERIAL_IDS, SKILL_IDS)).toThrow(/starter/);
   });
 
   it('rejects a weapon with an unknown type', () => {
     const bad = clone(weaponsJson) as unknown as { weapons: { bone: { type: string } } };
-    bad.weapons.bone.type = 'spear';
-    expect(() => loadWeapons(bad, MATERIAL_IDS)).toThrow(/bone\.type/);
+    bad.weapons.bone.type = 'trident';
+    expect(() => loadWeapons(bad, MATERIAL_IDS, SKILL_IDS)).toThrow(/bone\.type/);
+  });
+
+  it('rejects a weapon whose signature skill does not exist', () => {
+    const bad = clone(weaponsJson) as unknown as { weapons: { bone: { signature: string } } };
+    bad.weapons.bone.signature = 'meteor';
+    expect(() => loadWeapons(bad, MATERIAL_IDS, SKILL_IDS)).toThrow(/bone\.signature/);
+  });
+
+  it('refuses to let AUTO use an i-frame skill for anything but closing distance', () => {
+    const bad = clone(skillsJson) as unknown as { skills: { dash: { auto: string } } };
+    bad.skills.dash.auto = 'filler';
+    expect(() => loadSkills(bad)).toThrow(/dash\.auto/);
   });
 });

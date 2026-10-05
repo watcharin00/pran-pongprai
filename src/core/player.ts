@@ -7,7 +7,7 @@ import { harvest, isRipe } from './farm';
 import { give, dodgeCost, maxHpFor, staminaRegenMul } from './inventory';
 import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
-import { castSkill, updateDash, updateSlam } from './skills';
+import { castSkill, updateDash, updateWindup } from './skills';
 import type { GameState, Intent, MonsterState } from './state';
 
 const P = TUNING.player;
@@ -76,7 +76,7 @@ export function dodgeDirection(s: GameState, move: Vec2 | null): Vec2 {
 export function dodge(s: GameState, move: Vec2 | null): boolean {
   const p = s.player;
   if (p.dead || p.roll > 0 || p.dash || p.dodgeCd > 0) return false;
-  p.cast = null; // rolling cancels the slam wind-up
+  p.cast = null; // rolling cancels a skill wind-up
   const cost = dodgeCost(s);
   if (p.st < cost) {
     s.events.emit('player:tired', { at: { x: p.x, y: p.y } });
@@ -183,7 +183,7 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   }
   p.moving = false;
 
-  if (updateSlam(s, dt)) return;
+  if (updateWindup(s, dt)) return;
   if (updateDash(s, dt)) return;
   if (p.roll > 0) {
     p.roll -= dt;

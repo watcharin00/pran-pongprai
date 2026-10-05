@@ -1,6 +1,7 @@
 {
-  "order": ["whirl", "dash", "slam"],
-  "whirl": { "cooldown": 6,  "multiplier": 1.5, "radius": 32, "duration": 0.32, "hitstop": 0.06, "shake": 0.1 },
-  "dash":  { "cooldown": 7,  "multiplier": 2,   "speed": 330, "duration": 0.22, "iframe": 0.3, "hitRadius": 8, "hitRadiusSizeMul": 0.7, "hitstop": 0.05 },
-  "slam":  { "cooldown": 11, "multiplier": 3.2, "radius": 26, "windup": 0.3, "stun": 45, "partMul": 1.25, "hitstop": 0.16, "shake": 0.3 }
+  "skills": {
+    "whirl": { "kind": "radial", "auto": "filler", "cooldown": 6, "multiplier": 1.5, "radius": 32, "duration": 0.32, "hitstop": 0.06, "shake": 0.1 },
+    "dash":  { "kind": "dash", "auto": "gapClose", "cooldown": 7, "multiplier": 2, "speed": 330, "duration": 0.22, "iframe": 0.3, "hitRadius": 8, "hitRadiusSizeMul": 0.7, "hitstop": 0.05, "shake": 0 },
+    "slam":  { "kind": "windupArea", "auto": "burst", "cooldown": 11, "multiplier": 3.2, "radius": 26, "windup": 0.3, "stun": 45, "partMul": 1.25, "fxRadius": 40, "hitstop": 0.16, "shake": 0.3 }
+  }
 }

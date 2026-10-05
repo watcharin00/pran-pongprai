@@ -2,6 +2,7 @@
 // button; radius/angle/size per button match the prototype's data-r/data-a/data-s.
 import { SKILLS } from '../data';
 import { dodgeCost } from '../core/inventory';
+import { weaponSkills } from '../core/skills';
 import type { GameState } from '../core/state';
 import type { ContextAction } from '../core/village';
 import * as th from '../i18n/th';
@@ -33,17 +34,18 @@ export interface PadHandlers {
 
 export class ActionPad {
   private readonly root: HTMLElement;
+  /** skill ids currently shown on the three skill buttons */
+  private shown = '';
 
   constructor(overlay: HTMLElement, h: PadHandlers) {
-    const [s0, s1, s2] = SKILLS.order;
     overlay.insertAdjacentHTML(
       'beforeend',
       `<div class="pad" id="pad">
         <button id="bAtk" class="pb atk" type="button">${ICONS.attack}<span id="atkLbl">${th.hud.attack}</span></button>
         <button id="bDodge" class="pb dodge" type="button">${ICONS.dodge}${th.hud.dodge}</button>
-        <button id="bS0" class="pb sk" type="button">${ICONS[s0]}${th.skills[s0].name}<i class="cdo"></i><span class="cdn"></span></button>
-        <button id="bS1" class="pb sk" type="button">${ICONS[s1]}${th.skills[s1].name}<i class="cdo"></i><span class="cdn"></span></button>
-        <button id="bS2" class="pb sk" type="button">${ICONS[s2]}${th.skills[s2].name}<i class="cdo"></i><span class="cdn"></span></button>
+        <button id="bS0" class="pb sk" type="button"></button>
+        <button id="bS1" class="pb sk" type="button"></button>
+        <button id="bS2" class="pb sk" type="button"></button>
         <button id="bPot" class="pb pot" type="button" aria-label="${th.hud.drinkPotion}">${ICONS.potion}<span class="n" id="potN">2</span></button>
       </div>`,
     );
@@ -80,7 +82,16 @@ export class ActionPad {
     this.q('#potN').textContent = String(p.potions);
     this.q('#bPot').classList.toggle('off', p.potions <= 0);
     this.q('#bDodge').classList.toggle('off', p.dodgeCd > 0 || p.st < dodgeCost(s));
-    SKILLS.order.forEach((id, i) => {
+    const ids = weaponSkills(p.weapon);
+    const key = ids.join();
+    if (key !== this.shown) {
+      // the weapon changed: relabel the same three buttons (no new HUD elements)
+      this.shown = key;
+      ids.forEach((id, i) => {
+        this.q(`#bS${i}`).innerHTML = `${ICONS[id]}${th.skills[id].name}<i class="cdo"></i><span class="cdn"></span>`;
+      });
+    }
+    ids.forEach((id, i) => {
       const b = this.q(`#bS${i}`);
       const cd = p.cds[i as 0 | 1 | 2];
       b.style.setProperty('--p', String(cd / SKILLS[id].cooldown));

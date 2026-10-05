@@ -65,7 +65,7 @@ export class PlayerView {
       const k = 1 - p.roll / TUNING.player.roll.duration;
       rot = k * Math.PI * 2 * (p.rdx >= 0 ? 1 : -1);
     }
-    if (p.cast) y -= Math.round((1 - p.cast.t / 0.3) * 4);
+    if (p.cast) y -= Math.round((1 - p.cast.t / p.cast.total) * 4);
     body.setPosition(Math.round(p.x), Math.round(y)).setRotation(rot).setScale(p.face, 1).setDepth(depth);
     body.setAlpha(p.hurtIF > 0 && Math.floor(time * 20) % 2 === 0 ? 0.45 : 1);
     if (p.hurt > 0) body.setTintFill(0xffffff);

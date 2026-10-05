@@ -60,15 +60,25 @@ export function craftWeapon(s: GameState, id: WeaponId): ActionResult {
   if (!recipe || !canAfford(s.inv, recipe)) return { ok: false, reason: 'cannotAfford' };
   spend(s.inv, recipe);
   s.owned.add(id);
-  s.player.weapon = id;
+  setWeapon(s, id);
   return { ok: true };
 }
 
 export function equipWeapon(s: GameState, id: WeaponId): ActionResult {
   if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };
   if (!s.owned.has(id)) return { ok: false, reason: 'notOwned' };
-  s.player.weapon = id;
+  setWeapon(s, id);
   return { ok: true };
+}
+
+/** Switching weapons swaps the skill set, so cooldowns and any skill in progress reset. */
+function setWeapon(s: GameState, id: WeaponId): void {
+  const p = s.player;
+  if (p.weapon === id) return;
+  p.weapon = id;
+  p.cds = [0, 0, 0];
+  p.cast = null;
+  p.dash = null;
 }
 
 export function brewPotion(s: GameState): ActionResult {

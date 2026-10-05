@@ -47,6 +47,17 @@ describe('AUTO decisions', () => {
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills[1]).toBe(true);
   });
 
+  it('never uses an i-frame skill to close distance while a monster is winding up (no dodging for the player)', () => {
+    const s = game();
+    const spot = openSpot(s);
+    Object.assign(s.player, spot);
+    const m = addMonster(s, 'mossfang', spot.x + 60, spot.y);
+    m.mode = 'tele';
+    expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual([false, false, false]);
+    m.mode = 'dash';
+    expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual([false, false, false]);
+  });
+
   it('walks to a nearby herb/ore node when no monster is around', () => {
     const s = game();
     const node = s.nodes[0];

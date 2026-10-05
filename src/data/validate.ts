@@ -14,6 +14,7 @@ import type {
   PartDef,
   PartId,
   RageDef,
+  SkillDef,
   SkillId,
   SkillsData,
   WeaponDef,
@@ -75,7 +76,6 @@ function optional<T>(o: Obj, key: string, read: (v: unknown) => T): T | undefine
 }
 
 const PART_IDS: readonly PartId[] = ['head', 'tail'];
-const SKILL_IDS: readonly SkillId[] = ['whirl', 'dash', 'slam'];
 
 /** Validates map keys/values against a known id list (material ids). */
 function itemBag(v: unknown, path: string, materials: readonly string[], valueMax = Infinity): ItemBag {
@@ -198,7 +198,7 @@ export function loadMonsters(v: unknown, materials: readonly string[]): Record<s
   return out;
 }
 
-export function loadWeapons(v: unknown, materials: readonly string[]): WeaponsData {
+export function loadWeapons(v: unknown, materials: readonly string[], skills: readonly string[]): WeaponsData {
   const o = obj(v, 'weapons');
   const typesRaw = obj(o.types, 'weapons.types');
   const typeIds = Object.keys(typesRaw);
@@ -208,6 +208,7 @@ export function loadWeapons(v: unknown, materials: readonly string[]): WeaponsDa
     types[k] = {
       hitstop: num(tp.hitstop, `weapons.types.${k}.hitstop`, 0, 0.5),
       shake: num(tp.shake, `weapons.types.${k}.shake`, 0, 1),
+      skills: skillPair(tp.skills, `weapons.types.${k}.skills`, skills),
     };
   }
   const weapons: Record<string, WeaponDef> = {};
@@ -226,6 +227,7 @@ export function loadWeapons(v: unknown, materials: readonly string[]): WeaponsDa
       partMul: { head: num(pm.head, `${p}.partMul.head`, 0), tail: num(pm.tail, `${p}.partMul.tail`, 0) },
       stun: num(w.stun, `${p}.stun`, 0),
       color: color(w.color, `${p}.color`),
+      signature: oneOf(w.signature, `${p}.signature`, skills) as SkillId,
       recipe,
     };
   }
@@ -233,28 +235,41 @@ export function loadWeapons(v: unknown, materials: readonly string[]): WeaponsDa
   return { types, weapons } as WeaponsData;
 }
 
+function skillPair(v: unknown, path: string, skills: readonly string[]): [SkillId, SkillId] {
+  const a = arr(v, path);
+  if (a.length !== 2) throw new DataError(path, 'expected exactly 2 skill ids');
+  return [oneOf(a[0], `${path}[0]`, skills) as SkillId, oneOf(a[1], `${path}[1]`, skills) as SkillId];
+}
+
+const SKILL_KINDS = ['radial', 'dash', 'windupArea'] as const;
+const AUTO_ROLES = ['burst', 'filler', 'gapClose', 'never'] as const;
+
 export function loadSkills(v: unknown): SkillsData {
-  const o = obj(v, 'skills');
-  const order = arr(o.order, 'skills.order').map((s, i) => oneOf(s, `skills.order[${i}]`, SKILL_IDS));
-  if (order.length !== 3 || new Set(order).size !== 3) throw new DataError('skills.order', 'expected the 3 skill ids once each');
-  const n = (id: SkillId, key: string, min = 0): number => num(obj(o[id], `skills.${id}`)[key], `skills.${id}.${key}`, min);
-  return {
-    order: order as SkillsData['order'],
-    whirl: {
-      cooldown: n('whirl', 'cooldown'), multiplier: n('whirl', 'multiplier'), radius: n('whirl', 'radius'),
-      duration: n('whirl', 'duration'), hitstop: n('whirl', 'hitstop'), shake: n('whirl', 'shake'),
-    },
-    dash: {
-      cooldown: n('dash', 'cooldown'), multiplier: n('dash', 'multiplier'), speed: n('dash', 'speed'),
-      duration: n('dash', 'duration'), iframe: n('dash', 'iframe'), hitRadius: n('dash', 'hitRadius'),
-      hitRadiusSizeMul: n('dash', 'hitRadiusSizeMul'), hitstop: n('dash', 'hitstop'),
-    },
-    slam: {
-      cooldown: n('slam', 'cooldown'), multiplier: n('slam', 'multiplier'), radius: n('slam', 'radius'),
-      windup: n('slam', 'windup'), stun: n('slam', 'stun'), partMul: n('slam', 'partMul'),
-      hitstop: n('slam', 'hitstop'), shake: n('slam', 'shake'),
-    },
-  };
+  const o = obj(obj(v, 'skills').skills, 'skills.skills');
+  const out: Record<string, SkillDef> = {};
+  for (const [k, raw] of Object.entries(o)) {
+    const p = `skills.skills.${k}`;
+    const d = obj(raw, p);
+    const n = (key: string, min = 0): number => num(d[key], `${p}.${key}`, min);
+    const base = {
+      auto: oneOf(d.auto, `${p}.auto`, AUTO_ROLES),
+      cooldown: n('cooldown', 0.1),
+      multiplier: n('multiplier'),
+      stun: optional(d, 'stun', (x) => num(x, `${p}.stun`, 0)) ?? 0,
+      partMul: optional(d, 'partMul', (x) => num(x, `${p}.partMul`, 0)) ?? 1,
+      hitstop: n('hitstop'),
+      shake: n('shake'),
+    };
+    const kind = oneOf(d.kind, `${p}.kind`, SKILL_KINDS);
+    if (kind === 'radial') out[k] = { ...base, kind, radius: n('radius'), duration: n('duration') };
+    else if (kind === 'dash') {
+      out[k] = { ...base, kind, speed: n('speed'), duration: n('duration'), iframe: n('iframe'), hitRadius: n('hitRadius'), hitRadiusSizeMul: n('hitRadiusSizeMul') };
+      // pillar 2: AUTO must never get i-frames out of a skill except to close distance
+      if (base.auto !== 'gapClose' && base.auto !== 'never') throw new DataError(`${p}.auto`, 'skills with i-frames must be gapClose or never');
+    } else out[k] = { ...base, kind, radius: n('radius'), windup: n('windup', 0.01), fxRadius: n('fxRadius') };
+  }
+  if (Object.keys(out).length === 0) throw new DataError('skills.skills', 'needs at least one skill');
+  return out as SkillsData;
 }
 
 export function loadCrops(v: unknown, materials: readonly string[]): CropsData {

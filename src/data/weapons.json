@@ -1,14 +1,14 @@
 {
   "types": {
-    "sword":      { "hitstop": 0.04,  "shake": 0.05 },
-    "hammer":     { "hitstop": 0.085, "shake": 0.1 },
-    "greatsword": { "hitstop": 0.07,  "shake": 0.1 }
+    "sword":      { "hitstop": 0.04,  "shake": 0.05, "skills": ["whirl", "dash"] },
+    "hammer":     { "hitstop": 0.085, "shake": 0.1,  "skills": ["whirl", "dash"] },
+    "greatsword": { "hitstop": 0.07,  "shake": 0.1,  "skills": ["whirl", "dash"] }
   },
   "weapons": {
-    "bone":      { "type": "sword",      "damage": 10, "rate": 0.45, "range": 18, "partMul": { "head": 1,   "tail": 1.4 }, "stun": 0,  "color": "#efe4c8", "recipe": null },
-    "fangblade": { "type": "sword",      "damage": 17, "rate": 0.42, "range": 18, "partMul": { "head": 1,   "tail": 1.5 }, "stun": 0,  "color": "#9fe07a", "recipe": { "fang": 3, "hide": 2, "ore": 2 } },
-    "mossmaul":  { "type": "hammer",     "damage": 28, "rate": 0.9,  "range": 18, "partMul": { "head": 1.8, "tail": 0.7 }, "stun": 34, "color": "#a8b898", "recipe": { "hide": 4, "ore": 4, "fang": 1 } },
-    "cleaver":   { "type": "greatsword", "damage": 44, "rate": 0.72, "range": 22, "partMul": { "head": 1.3, "tail": 1.5 }, "stun": 10, "color": "#ff8a3d", "recipe": { "horn": 1, "etail": 1, "scale": 3, "ore": 2 } },
-    "coreblade": { "type": "greatsword", "damage": 62, "rate": 0.66, "range": 22, "partMul": { "head": 1.5, "tail": 1.6 }, "stun": 16, "color": "#ffd35c", "recipe": { "core": 1, "horn": 2, "scale": 5 } }
+    "bone":      { "type": "sword",      "damage": 10, "rate": 0.45, "range": 18, "partMul": { "head": 1,   "tail": 1.4 }, "stun": 0,  "color": "#efe4c8", "signature": "slam", "recipe": null },
+    "fangblade": { "type": "sword",      "damage": 17, "rate": 0.42, "range": 18, "partMul": { "head": 1,   "tail": 1.5 }, "stun": 0,  "color": "#9fe07a", "signature": "slam", "recipe": { "fang": 3, "hide": 2, "ore": 2 } },
+    "mossmaul":  { "type": "hammer",     "damage": 28, "rate": 0.9,  "range": 18, "partMul": { "head": 1.8, "tail": 0.7 }, "stun": 34, "color": "#a8b898", "signature": "slam", "recipe": { "hide": 4, "ore": 4, "fang": 1 } },
+    "cleaver":   { "type": "greatsword", "damage": 44, "rate": 0.72, "range": 22, "partMul": { "head": 1.3, "tail": 1.5 }, "stun": 10, "color": "#ff8a3d", "signature": "slam", "recipe": { "horn": 1, "etail": 1, "scale": 3, "ore": 2 } },
+    "coreblade": { "type": "greatsword", "damage": 62, "rate": 0.66, "range": 22, "partMul": { "head": 1.5, "tail": 1.6 }, "stun": 16, "color": "#ffd35c", "signature": "slam", "recipe": { "core": 1, "horn": 2, "scale": 5 } }
   }
 }
