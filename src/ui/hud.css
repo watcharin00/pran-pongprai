@@ -257,6 +257,6 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 @media (max-width:430px){.tab{padding:10px 5px 8px;font-size:12px}}
 
 /* round minimap under the HP bar (north up); fades while a monster hunts the player */
-#minimap{width:76px;height:76px;border-radius:50%;border:3px solid var(--ink);box-shadow:0 0 0 2px rgba(247,236,208,.35),0 2px 0 rgba(0,0,0,.35);background:#2c5a2a;margin-top:4px;cursor:pointer;transition:opacity .25s;touch-action:manipulation}
+#minimap{width:100px;height:100px;border-radius:50%;border:3px solid var(--ink);box-shadow:0 0 0 2px rgba(247,236,208,.35),0 2px 0 rgba(0,0,0,.35);background:#2c5a2a;margin-top:4px;cursor:pointer;transition:opacity .25s;touch-action:manipulation}
 #minimap.dim{opacity:.18;pointer-events:none}
-@media (max-height:500px){#minimap{width:64px;height:64px}}
+@media (max-height:500px){#minimap{width:84px;height:84px}}
