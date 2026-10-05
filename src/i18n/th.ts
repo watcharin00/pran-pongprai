@@ -44,6 +44,12 @@ export const materials = {
   croctail: 'หางจระเข้',
   crocgem: 'หินท้องจระเข้',
   lotus: 'ฝักบัว',
+  serowhide: 'หนังเลียงผา',
+  serowhorn: 'เขาเลียงผา',
+  bearpelt: 'หนังหมีควาย',
+  bearfang: 'เขี้ยวหมีควาย',
+  bearclaw: 'เล็บหมีควาย',
+  ginger: 'ขิง',
   yam: 'มันหวาน',
   pepper: 'พริกเพลิง',
   lemongrass: 'ตะไคร้',
@@ -55,6 +61,7 @@ export const materials = {
   seed_rice: 'เมล็ดข้าวเหนียว',
   seed_banana: 'หน่อกล้วย',
   seed_lotus: 'ไหลบัว',
+  seed_ginger: 'เหง้าขิง',
   fert: 'ปุ๋ยซาก',
 } satisfies Record<MaterialId, string>;
 
@@ -109,6 +116,18 @@ export const monsters = {
     attacks: { chomp: 'งับ', tailsweep: 'กวาดหาง', deathroll: 'ม้วนตัวพุ่ง' },
     tip: 'หันตัวช้าที่สุดในบึง แต่กวาดหางไปด้านหลังเป็นวงใหญ่ ตีหางแล้วถอยเมื่อเห็นวงเตือน ม้วนตัวพุ่งไกลมาก',
   },
+  serow: {
+    name: 'เลียงผา',
+    parts: { head: 'เขา' },
+    attacks: { headbutt: 'ขวิด', charge: 'พุ่งชน' },
+    tip: 'พุ่งชนไกลและเร็วที่สุดบนดอย กลิ้งออกด้านข้างแล้วตีตอนมันหยุด หักเขาจากด้านหน้าเพื่อทำหอก',
+  },
+  bear: {
+    name: 'หมีควาย',
+    parts: { head: 'เขี้ยว' },
+    attacks: { swipe: 'ตะปบ', rear: 'ยืนทุบ', rush: 'วิ่งชน' },
+    tip: 'ยืนสองขาแล้วทุบเป็นวงใหญ่ เตือนนานแต่แรงมาก ออกจากวงให้พ้น ไม่มีหาง ตีจากด้านข้างหรือหลังปลอดภัยกว่า',
+  },
   tiger: {
     name: 'เสือโคร่ง',
     parts: { head: 'เขี้ยว', tail: 'หาง' },
@@ -139,6 +158,8 @@ export const weapons = {
   stripeblade: { name: 'ดาบลายพาดกลอน', desc: 'ดาบใหญ่ที่แรงที่สุด ต้องมีตาเสือ' },
   crocmaul: { name: 'กระบองหางจระเข้', desc: 'หนักมาก มึนเร็ว ท่าประจำหมุนกลิ้งรอบตัว' },
   lizardbow: { name: 'ธนูหางตะกวด', desc: 'ธนูแรงและยิงไว ระยะไกลกว่าธนูไม้ไผ่' },
+  serowspear: { name: 'หอกเขาเลียงผา', desc: 'หอกยาว แทงไกล ทำลายชิ้นส่วนดี' },
+  bearblade: { name: 'ดาบใหญ่กรงเล็บหมี', desc: 'ดาบใหญ่หนักที่สุด ทุบสะเทือนแบบหมี' },
   cobrafang: { name: 'ดาบเขี้ยวงูเห่า', desc: 'ดาบเร็ว ท่าประจำฉกไกลเหมือนงู' },
 } satisfies Record<WeaponId, { name: string; desc: string }>;
 
@@ -158,6 +179,9 @@ export const armor = {
   snakevest: { name: 'เสื้อหนังงูเห่า', desc: 'ลื่นและเหนียว กันเขี้ยวได้ดี' },
   crochelm: { name: 'หมวกหนังจระเข้', desc: 'แข็งเหมือนเกราะ ป้องกันสูง' },
   crocmail: { name: 'เกราะหนังจระเข้', desc: 'เกราะหนักที่สุดจากบึง' },
+  serowcharm: { name: 'เครื่องรางเขาเลียงผา', desc: 'ปีนดอยได้ไม่เหนื่อย ความอึดสูง' },
+  bearhood: { name: 'หมวกหนังหมี', desc: 'หนาและอุ่น ป้องกันสูง' },
+  bearcoat: { name: 'เสื้อหนังหมี', desc: 'เกราะที่แข็งแรงที่สุดจากดอย' },
   tigereyecharm: { name: 'เครื่องรางตาเสือ', desc: 'ตาเสือเรืองแสงสีเขียว เพิ่มทุกอย่าง' },
 } satisfies Record<ArmorId, { name: string; desc: string }>;
 
@@ -180,6 +204,8 @@ export const skills = {
   tigerlunge: { name: 'แทงพยัคฆ์', desc: 'ง้างแล้วแทงยาวสองครั้ง ทำลายชิ้นส่วนแรง (×2.6 ×2)' },
   cobrastrike: { name: 'ฉกงูเห่า', desc: 'ง้างสั้นแล้วแทงไกลเป็นเส้น ทำลายชิ้นส่วนดี (×3.2)' },
   deathroll: { name: 'หมุนกลิ้ง', desc: 'หมุนตัวรอบทิศแบบจระเข้ มึนเร็ว (×2.6)' },
+  cliffhorn: { name: 'พุ่งเขาผา', desc: 'ง้างแล้วแทงพุ่งยาวมาก สะสมความมึน (×4)' },
+  bearmaul: { name: 'ทุบหมีควาย', desc: 'ง้างนานแล้วทุบวงใหญ่ มึนเร็วมาก (×4.5)' },
   stripestorm: { name: 'พายุพาดกลอน', desc: 'หมุนฟันวงใหญ่ ทำลายชิ้นส่วนดี (×3)' },
 } satisfies Record<SkillId, { name: string; desc: string }>;
 
@@ -191,6 +217,7 @@ export const crops = {
   pepper: { name: 'พริกเพลิง', source: 'ล่ากระทิงผาแดง' },
   banana: { name: 'กล้วยน้ำว้า', source: 'ล่าลิงกังในป่าไผ่' },
   lotus: { name: 'บัวหลวง', source: 'ล่าตะกวดในบึงจระเข้' },
+  ginger: { name: 'ขิง', source: 'ล่าเลียงผาบนดอยหินปูน' },
 } satisfies Record<CropId, { name: string; source: string }>;
 
 export const meals = {
@@ -199,6 +226,7 @@ export const meals = {
   tea: { name: 'ชาหญ้ายา', desc: 'ความอึดฟื้นเร็ว กลิ้งเปลืองน้อยลง' },
   tomyum: { name: 'ต้มยำไก่ป่า', desc: 'ป้องกัน +15' },
   grill: { name: 'ข้าวเหนียวหมูป่าย่าง', desc: 'พลังชีวิตสูงสุด +20 โจมตี +10%' },
+  gingerfowl: { name: 'ไก่ผัดขิง', desc: 'พลังชีวิตสูงสุด +10 ความอึดฟื้นเร็ว กลิ้งเปลืองน้อยลง' },
   kaengsom: { name: 'แกงส้มสายบัว', desc: 'ป้องกัน +10 โจมตี +10%' },
   khaotommat: { name: 'ข้าวต้มมัด', desc: 'พลังชีวิตสูงสุด +15 ความอึดฟื้นเร็วขึ้น' },
 } satisfies Record<MealId, { name: string; desc: string }>;

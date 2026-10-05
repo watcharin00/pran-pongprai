@@ -7,6 +7,7 @@
     "rice":       { "seed": "seed_rice",       "growSeconds": 90,  "yield": { "item": "rice",       "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f0e6b0" },
     "pepper":     { "seed": "seed_pepper",     "growSeconds": 120, "yield": { "item": "pepper",     "min": 1, "max": 2 }, "seedBack": 0.4, "color": "#ff4a2e" },
     "banana":     { "seed": "seed_banana",     "growSeconds": 100, "yield": { "item": "banana",     "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f0d860" },
-    "lotus":      { "seed": "seed_lotus",      "growSeconds": 110, "yield": { "item": "lotus",      "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f2a0c0" }
+    "lotus":      { "seed": "seed_lotus",      "growSeconds": 110, "yield": { "item": "lotus",      "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f2a0c0" },
+    "ginger":     { "seed": "seed_ginger",     "growSeconds": 80,  "yield": { "item": "ginger",     "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#e8c070" }
   }
 }

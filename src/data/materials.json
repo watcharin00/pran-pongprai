@@ -28,6 +28,12 @@
   "crocfang":        { "color": "#f4eed4", "category": "material", "icon": "fang" },
   "croctail":        { "color": "#3e5a3a", "category": "material", "icon": "tail", "rarity": 1 },
   "crocgem":         { "color": "#7ad0ff", "category": "material", "icon": "orb", "rarity": 2 },
+  "serowhide":       { "color": "#4a4a50", "category": "material", "icon": "pelt" },
+  "serowhorn":       { "color": "#3a3a40", "category": "material", "icon": "horn", "rarity": 1 },
+  "bearpelt":        { "color": "#2a2a30", "category": "material", "icon": "pelt" },
+  "bearfang":        { "color": "#f4eed4", "category": "material", "icon": "fang" },
+  "bearclaw":        { "color": "#d8d0b8", "category": "material", "icon": "horn", "rarity": 2 },
+  "ginger":          { "color": "#e8c070", "category": "material", "icon": "root" },
   "lotus":           { "color": "#f2a0c0", "category": "material", "icon": "bulb" },
   "banana":          { "color": "#f0d860", "category": "material", "icon": "root" },
   "lemongrass":      { "color": "#9fd86a", "category": "material", "icon": "stalk" },
@@ -39,5 +45,6 @@
   "seed_rice":       { "color": "#e8d890", "category": "seed", "icon": "seed" },
   "seed_banana":     { "color": "#c8d860", "category": "seed", "icon": "bulb" },
   "seed_lotus":      { "color": "#d890b0", "category": "seed", "icon": "seed" },
+  "seed_ginger":     { "color": "#c8a060", "category": "seed", "icon": "bulb" },
   "fert":            { "color": "#8a6b45", "category": "seed", "icon": "sack" }
 }

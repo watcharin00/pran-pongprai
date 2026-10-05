@@ -24,6 +24,8 @@
     "cobrafang":   { "type": "sword",      "damage": 30, "rate": 0.42, "range": 18, "partMul": { "head": 1.1, "tail": 1.5 }, "stun": 0,  "color": "#a8e05a", "signature": "cobrastrike", "upgrade": { "per": { "snakeskin": 1, "monkeyfur": 1 }, "final": { "venom": 2 } }, "recipe": { "venom": 1, "snakeskin": 3, "monkeyfur": 2 } },
     "crocmaul":    { "type": "hammer",     "damage": 52, "rate": 0.85, "range": 18, "partMul": { "head": 1.8, "tail": 0.8 }, "stun": 40, "color": "#3e5a3a", "signature": "deathroll", "upgrade": { "per": { "crochide": 1, "lizardhide": 1 }, "final": { "crocgem": 1 } }, "recipe": { "croctail": 1, "crochide": 3, "crocfang": 2 } },
     "lizardbow":   { "type": "bow",        "damage": 26, "rate": 0.4,  "range": 78, "partMul": { "head": 0.9, "tail": 0.9 }, "stun": 0,  "color": "#8a8a4a", "signature": "piercer",   "upgrade": { "per": { "lizardhide": 2 }, "final": { "lizardtail": 1 } }, "recipe": { "lizardtail": 1, "lizardhide": 3, "feather": 3 },
-                     "projectile": { "speed": 320, "range": 105, "pierce": 0 } }
+                     "projectile": { "speed": 320, "range": 105, "pierce": 0 } },
+    "serowspear":  { "type": "spear",      "damage": 52, "rate": 0.46, "range": 30, "partMul": { "head": 1.5, "tail": 1.3 }, "stun": 8,  "color": "#c8c8d0", "signature": "cliffhorn", "upgrade": { "per": { "serowhide": 1, "ore": 1 }, "final": { "serowhorn": 2 } }, "recipe": { "serowhorn": 2, "serowhide": 3, "tigerfang": 1 } },
+    "bearblade":   { "type": "greatsword", "damage": 80, "rate": 0.7,  "range": 22, "partMul": { "head": 1.6, "tail": 1.4 }, "stun": 20, "color": "#3a3a44", "signature": "bearmaul",  "upgrade": { "per": { "bearpelt": 1, "serowhide": 1 }, "final": { "bearclaw": 1 } }, "recipe": { "bearclaw": 1, "bearfang": 2, "bearpelt": 3 } }
   }
 }

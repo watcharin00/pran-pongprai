@@ -83,6 +83,12 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
 }
 
+function sandNeighbours(map: WorldMap, tx: number, ty: number): number {
+  let n = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) if (tileAt(map, tx + dx, ty + dy) === Tile.SAND) n++;
+  return n;
+}
+
 function paintGround(map: WorldMap, mb: PixelBuffer): void {
   const d = mb.d;
   const isWater = (x: number, y: number): boolean => {
@@ -140,6 +146,7 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
       } else {
         let pal: readonly string[] | null = GRASS;
         if (t === Tile.WALL) pal = GRASS_DARK;
+        else if (t === Tile.ROCK && map.area !== 'home' && sandNeighbours(map, tx, ty) < 2) pal = GRASS; // boulder sitting on grass
         else if (t === Tile.SAND || t === Tile.ROCK || t === Tile.CLIFF) pal = inCanyon(map, tx, ty) ? CANYON : SAND;
         else if (t === Tile.STONE || t === Tile.FOUNTAIN) pal = null;
         if (pal === SAND || pal === CANYON || pal === null) {

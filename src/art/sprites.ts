@@ -354,7 +354,59 @@ function buildCrocodile(f: number, hb: boolean, tb: boolean): HTMLCanvasElement 
   return finish(b);
 }
 
+/** เลียงผา (serow): dark grey goat-antelope, pale mane, short back-swept horns. Head = horns. */
+function buildSerow(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(25, 20);
+  const o = 1;
+  const B = '#4a4a50';
+  const D = '#34343a';
+  sp(b, 3 + o, 8 + o, D);
+  sp(b, 2 + o, 9 + o, D);
+  legs(b, f, [[6 + o, 0], [8 + o, 1], [14 + o, 0], [16 + o, 1]], 12 + o, 2, 4, B, D, '#16100f');
+  ell(b, 11 + o, 10 + o, 7, 3.6, B);
+  ell(b, 11 + o, 12 + o, 5, 1.2, '#5e5e66');
+  // pale mane over the shoulders
+  for (let x = 12; x <= 17; x++) rect(b, x + o, 6 + o + (x % 2), 1, 2, '#c8c0b0');
+  ell(b, 19 + o, 7 + o, 3.2, 2.8, B);
+  rect(b, 20 + o, 8 + o, 3, 2, D);
+  sp(b, 22 + o, 8 + o, '#16100f');
+  sp(b, 19 + o, 6 + o, '#ffd84a');
+  sp(b, 17 + o, 4 + o, D);
+  if (!hb) {
+    ([[18, 4], [17, 3], [16, 2], [15, 2]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#22222a'));
+    ([[20, 4], [19, 3], [18, 2]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#3a3a44'));
+  }
+  return finish(b);
+}
+
+/** หมีควาย (Asiatic black bear): black, white V on the chest, short snout. Head = fangs (no tail part). */
+function buildBear(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(37, 26);
+  const o = 1;
+  const B = '#24242a';
+  const D = '#16161c';
+  legs(b, f, [[8 + o, 0], [12 + o, 1], [21 + o, 0], [25 + o, 1]], 16 + o, 4, 4, B, D, '#0e0e12');
+  ell(b, 17 + o, 12 + o, 12, 6.4, B);
+  ell(b, 14 + o, 9 + o, 6, 2, '#34343c');
+  // white crescent on the chest
+  ([[25, 13], [26, 14], [27, 15], [28, 14], [29, 13]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#f4eed4'));
+  // head, round ears, tan snout
+  ell(b, 30 + o, 9 + o, 4.6, 4.2, B);
+  ell(b, 27 + o, 5 + o, 1.6, 1.6, B);
+  ell(b, 32 + o, 5 + o, 1.6, 1.6, B);
+  rect(b, 33 + o, 9 + o, 3, 3, '#a88a6a');
+  sp(b, 35 + o, 9 + o, D);
+  sp(b, 31 + o, 8 + o, '#e8d070');
+  if (!hb) {
+    sp(b, 34 + o, 12 + o, '#ffffff');
+    sp(b, 35 + o, 12 + o, '#ffffff');
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  serow: (f, hb) => buildSerow(f, hb),
+  bear: (f, hb) => buildBear(f, hb),
   monitor: (f, _hb, tb) => buildMonitor(f, tb),
   crocodile: (f, hb, tb) => buildCrocodile(f, hb, tb),
   macaque: (f, _hb, tb) => buildMacaque(f, tb),
