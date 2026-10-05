@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AREA_IDS, areaMap, exitAt } from '../src/core/areas';
+import { AREA_IDS, areaMap, buildAreaMap, exitAt } from '../src/core/areas';
 import { generateMap, MW, SPAWN, T, walkable, zoneAtPx } from '../src/core/mapgen';
 import { findPath } from '../src/core/pathfinding';
 import { createGame, step } from '../src/core/sim';
@@ -8,12 +8,27 @@ import { changeArea } from '../src/core/travel';
 import { intent, NOW, run } from './helpers';
 
 describe('area maps', () => {
-  it('are deterministic', () => {
+  it('are deterministic: building an area twice gives identical tiles', () => {
     for (const id of AREA_IDS) {
-      const a = areaMap(id);
+      const a = buildAreaMap(id);
+      const b = buildAreaMap(id);
+      expect(a).not.toBe(b);
       expect(a.area).toBe(id);
-      expect(a.tiles.length).toBe(64 * 48);
+      expect(Array.from(a.tiles)).toEqual(Array.from(b.tiles));
+      expect(a.forestCells).toEqual(b.forestCells);
     }
+  });
+
+  it('the bestiary names the right area for every monster', async () => {
+    const { monsterWhere } = await import('../src/ui/itemInfo');
+    const { MONSTERS, MONSTER_IDS } = await import('../src/data');
+    const th = await import('../src/i18n/th');
+    for (const k of MONSTER_IDS) {
+      const area = MONSTERS[k].area;
+      if (area !== 'home') expect(monsterWhere(k), k).toBe(th.areas[area]);
+    }
+    expect(monsterWhere('tiger')).toBe(th.menu.book.eastBank);
+    expect(monsterWhere('dhole')).toBe(th.zones.forest);
   });
 
   it('home keeps the prototype world and only opens its border for exits', () => {

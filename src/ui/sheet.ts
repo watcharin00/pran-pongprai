@@ -14,7 +14,7 @@ import { armorIconUrl, armorSlotIconUrl, materialIconUrl, mealIconUrl, monsterIc
 import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
 import type { Hud } from './hud';
-import { itemSources, itemUses, type ItemSource, type ItemUse } from './itemInfo';
+import { itemSources, itemUses, monsterWhere, type ItemSource, type ItemUse } from './itemInfo';
 
 type BagFilter = 'all' | 'gear' | 'material' | 'seed';
 const FILTERS: BagFilter[] = ['all', 'gear', 'material', 'seed'];
@@ -411,7 +411,7 @@ export class Sheet {
     const B = th.menu.book;
     const def = MONSTERS[k];
     const t = th.monsters[k];
-    const where = def.spawnEastOfRiver ? B.deepForest : th.zones[def.zone];
+    const where = monsterWhere(k);
     const p = monsterPortrait(k);
     const sc = portraitScale(p.w, 140);
     const kills = s.kills[k] ?? 0;

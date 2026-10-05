@@ -190,13 +190,18 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
   return { ...partial, reach, forestCells, area: id, zone: spec.zone, biome: spec.biome, exits };
 }
 
+/** Builds an area map from scratch (no cache); the same id always yields the same tiles. */
+export function buildAreaMap(id: AreaId): WorldMap {
+  return id === 'home' ? homeArea() : wildArea(id);
+}
+
 const cache = new Map<AreaId, WorldMap>();
 
 /** The map for an area (built once, then cached; deterministic). */
 export function areaMap(id: AreaId): WorldMap {
   let m = cache.get(id);
   if (!m) {
-    m = id === 'home' ? homeArea() : wildArea(id);
+    m = buildAreaMap(id);
     cache.set(id, m);
   }
   return m;

@@ -1,6 +1,7 @@
 // Where an item comes from and what it is used for, derived from the content
 // JSON so new monsters/recipes show up in the bag without extra wiring.
 import { CROPS, MEALS, MONSTERS, MONSTER_IDS, TUNING, WEAPONS } from '../data';
+import * as th from '../i18n/th';
 import type { CropId, MaterialId, MealId, MonsterId, PartId, WeaponId } from '../data/types';
 
 export type ItemSource =
@@ -53,4 +54,12 @@ export function itemUses(id: MaterialId): ItemUse[] {
   for (const crop of Object.keys(CROPS) as CropId[]) if (CROPS[crop].seed === id) out.push({ kind: 'plant', crop });
   if (id === 'fert') out.push({ kind: 'fertilizer' });
   return out;
+}
+
+/** Where a monster lives, for the bestiary ("พบที่ ..."). */
+export function monsterWhere(k: MonsterId): string {
+  const def = MONSTERS[k];
+  if (def.area !== 'home') return th.areas[def.area];
+  if (def.spawnEastOfRiver) return th.menu.book.eastBank;
+  return th.zones[def.zone];
 }
