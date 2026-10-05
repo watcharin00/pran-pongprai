@@ -9,6 +9,7 @@ import { findMonster } from '../core/combat';
 import { isRipe, plant, plotProgress } from '../core/farm';
 import { ANVIL, BOARD, FARM, FARM_CENTER, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { npcLine, npcNear } from '../core/npc';
+import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
 import { claimRequest, requestReady } from '../core/requests';
 import { loadFromStorage, serialize } from '../core/save';
 import { createGame, step } from '../core/sim';
@@ -33,6 +34,8 @@ import { TextLayer, type ScreenMapper } from './TextLayer';
 import { TEX } from './textures';
 import { buildTerrain } from '../art/terrain';
 import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
+
+const SIGN_ARROWS = { n: '↑', s: '↓', e: '→', w: '←' } as const;
 
 // Draw order (CLAUDE.md): ground → plants/nodes → telegraphs → skill fx → entities (y-sorted)
 // → canopy → monster bars → particles → cloud shadows → glow → text → vignette.
@@ -99,6 +102,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private monsterViews = new Map<number, MonsterView>();
   /** paddy / pond crop images by plot index */
   private cropImgs = new Map<number, Phaser.GameObjects.Image>();
+  /** signposts of the current area (labels show when the player walks up to one) */
+  private signs: Signpost[] = [];
   private npcViews = new Map<NpcId, NpcView>();
   /** which line each villager is on (advances when the kid is tapped) */
   private talkN: Partial<Record<NpcId, number>> = {};
@@ -161,6 +166,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const w = this.inWorld;
     this.groundImg = w(this.add.image(0, 0, TEX.ground).setOrigin(0).setDepth(D.ground));
     this.areaLights.set('home', data.lights);
+    this.signs = signposts(this.s.map);
     this.gGround = w(this.add.graphics().setDepth(D.groundFx));
     this.makeNodeImages();
     this.gNodeFx = w(this.add.graphics().setDepth(D.nodeFx));
@@ -232,6 +238,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     }
     this.groundImg.setTexture(gKey);
     this.canopyImg.setTexture(cKey);
+    this.signs = signposts(s.map);
     this.makeNodeImages();
     this.makeGlows(this.areaLights.get(area) ?? []);
     for (const v of this.monsterViews.values()) v.destroy();
@@ -1020,6 +1027,16 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     }
     if (s.area === 'home' && p.inVillage && !p.dead && !roleTalking('requests') && Math.hypot(BOARD.x * T + 8 - p.x, BOARD.y * T + 8 - p.y) < 90) {
       t.label(this, requestReady(s) ? th.places.boardReady : th.places.board, BOARD.x * T + 8, BOARD.y * T - 6, requestReady(s) ? '#ffe08a' : '#ffe7a6');
+    }
+    if (!p.dead) {
+      // signposts: one label per arm, stacked above the post in the order the arms are painted
+      for (const sg of this.signs) {
+        if (Math.hypot(sg.x - p.x, sg.y - p.y) > SIGN_READ_RADIUS) continue;
+        const n = sg.arms.length;
+        // labels are 19 screen px tall: step by screen px so they stack snugly at any zoom
+        const gap = (21 * this.dpr) / this.S;
+        sg.arms.forEach((a, i) => t.label(this, `${SIGN_ARROWS[a.edge]} ${th.areas[a.to]}`, sg.x, sg.y - 18 - n * 5 - (n - 1 - i) * gap, '#fff3c4'));
+      }
     }
     t.endLabels();
     {

@@ -1,6 +1,6 @@
 // Village structures painted straight into the ground buffer.
 import { hash } from '../core/rng';
-import { ANVIL, LAMPS, MW, PLAZA, POT, QUARTER_LAMPS, T, Tile, type Rect, type WorldMap } from '../core/mapgen';
+import { ANVIL, LAMPS, MW, PLAZA, POT, QUARTER_LAMPS, T, Tile, type Edge, type Rect, type WorldMap } from '../core/mapgen';
 import { ell, line, rect, sp, type PixelBuffer } from './pixelBuffer';
 
 export interface StaticLight {
@@ -572,4 +572,46 @@ export function drawSala(b: PixelBuffer, H: Rect): void {
   sp(b, Math.round(cx + W / 2 + 3), Y + 10, '#d8a050');
   sp(b, Math.round(cx + W / 2 + 4), Y + 9, '#d8a050');
   rect(b, Math.round(cx) - 1, Y - 3, 2, 2, '#d8a050');
+}
+
+/**
+ * Wooden signpost: a post with one plank arm per destination. East/west arms point sideways
+ * with a cut tip; north/south arms carry a painted arrow.
+ */
+export function drawSignpost(b: PixelBuffer, x: number, y: number, arms: readonly Edge[]): void {
+  const n = arms.length;
+  const top = y - 10 - n * 5;
+  ell(b, x + 2, y, 5, 1.6, '#000000', 0.25);
+  rect(b, x - 1, top, 3, y - top, '#6a4020');
+  rect(b, x - 1, top, 1, y - top, '#9a6a3a');
+  rect(b, x - 1, top - 1, 3, 1, '#4a2810');
+  arms.forEach((edge, i) => {
+    const ay = top + 1 + i * 5;
+    const left = edge === 'w' || (edge !== 'e' && i % 2 === 1);
+    const x0 = left ? x - 11 : x - 2;
+    const w = 13;
+    rect(b, x0, ay, w, 4, '#c88a50');
+    rect(b, x0, ay, w, 1, '#e8b478');
+    rect(b, x0, ay + 3, w, 1, '#8a5530');
+    // cut tip on the side the arm points to
+    const tipX = left ? x0 - 1 : x0 + w;
+    rect(b, tipX, ay + 1, 1, 2, '#c88a50');
+    sp(b, tipX + (left ? -1 : 1), ay + 1, '#a86a38');
+    sp(b, tipX + (left ? -1 : 1), ay + 2, '#a86a38');
+    // painted arrow
+    const cx = x0 + Math.floor(w / 2);
+    const ink = '#4a2810';
+    if (edge === 'n') {
+      sp(b, cx, ay + 1, ink);
+      rect(b, cx - 1, ay + 2, 3, 1, ink);
+    } else if (edge === 's') {
+      rect(b, cx - 1, ay + 1, 3, 1, ink);
+      sp(b, cx, ay + 2, ink);
+    } else {
+      rect(b, cx - 2, ay + 2, 4, 1, ink);
+      sp(b, edge === 'e' ? cx + 2 : cx - 3, ay + 2, ink);
+      sp(b, edge === 'e' ? cx + 1 : cx - 2, ay + 1, ink);
+    }
+    rect(b, x - 1, ay + 1, 3, 1, '#5a3418');
+  });
 }

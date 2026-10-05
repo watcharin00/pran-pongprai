@@ -2,7 +2,8 @@
 // layer that is drawn above entities so characters can walk "under" trees.
 import { hash, vnoise } from '../core/rng';
 import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
-import { drawAnvil, drawBoard, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
+import { signposts } from '../core/signs';
+import { drawAnvil, drawBoard, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
 import { drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
@@ -73,6 +74,7 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   paintGround(map, mb);
   paintDetails(map, mb, lights);
   paintTrees(map, mb, cb);
+  for (const sg of signposts(map)) drawSignpost(mb, sg.x, sg.y, sg.arms.map((a) => a.edge));
   if (map.area !== 'home') return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
   drawHouse(mb, SMITH, 'smith');
   drawHouse(mb, INN, 'inn');
