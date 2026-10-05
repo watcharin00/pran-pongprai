@@ -97,6 +97,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   // views
   private playerView!: PlayerView;
   private monsterViews = new Map<number, MonsterView>();
+  /** paddy / pond crop images by plot index */
+  private cropImgs = new Map<number, Phaser.GameObjects.Image>();
   private npcViews = new Map<NpcId, NpcView>();
   /** which line each villager is on (advances when the kid is tapped) */
   private talkN: Partial<Record<NpcId, number>> = {};
@@ -757,15 +759,25 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       for (let k = 0; k < hg; k++) px(POT.x + ox, POT.y + 5 - k, k / hg < 0.5 ? 0xffd35c : 0xff6a2a);
     }
     // crops
-    for (const pl of this.s.plots) {
-      if (!pl.crop) continue;
+    this.s.plots.forEach((pl, i) => {
+      const img = this.cropImgs.get(i);
+      if (!pl.crop || this.s.area !== 'home') {
+        img?.setVisible(false);
+        return;
+      }
       const pr = plotProgress(pl, this.s.now);
+      const stage = pr < 0.25 ? 0 : pr < 0.6 ? 1 : pr < 1 ? 2 : 3;
+      if (pl.bed !== 'soil') {
+        this.drawFieldCrop(i, pl.crop, pl.x, pl.y, stage, time);
+        if (pr >= 1 && Math.floor(time * 3 + i) % 4 === 0) {
+          px(pl.x + 9, pl.y - 12, 0xfffbe0, 1, 3);
+          px(pl.x + 8, pl.y - 11, 0xfffbe0, 3, 1);
+        }
+        return;
+      }
       const X = pl.tx * T;
       const Y = pl.ty * T;
-      const stage = pr < 0.25 ? 0 : pr < 0.6 ? 1 : pr < 1 ? 2 : 3;
-      if (pl.bed === 'pond') drawPondSlot(px, X, Y, pl.crop, stage, time + pl.tx * 1.7);
-      else if (pl.crop === 'rice') for (let i = 0; i < 6; i++) drawRice(px, X + 3 + (i % 3) * 5, Y + 7 + Math.floor(i / 3) * 6, stage, time + i);
-      else for (let i = 0; i < 3; i++) drawPlant(px, X + 4 + i * 4, Y + 12 - (i % 2), pl.crop, stage);
+      for (let k = 0; k < 3; k++) drawPlant(px, X + 4 + k * 4, Y + 12 - (k % 2), pl.crop, stage);
       if (pr >= 1) {
         if (Math.floor(time * 4 + pl.tx) % 3 === 0) {
           px(X + 13, Y + 1, 0xfffbe0, 1, 3);
@@ -775,7 +787,42 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         px(X + 2, Y + 14, 0x1e1008, 12, 2, 0.85);
         px(X + 2, Y + 14, parseInt(CROPS[pl.crop].color.slice(1), 16), Math.max(1, Math.round(12 * pr)), 2);
       }
+    });
+  }
+
+  /**
+   * Paddy and pond crops: rice and lotus are textures swapped by stage (no progress bars on the
+   * field; the menu and the ripe label carry that), fish are a few shadows circling under ripples.
+   */
+  private drawFieldCrop(i: number, crop: string, x: number, y: number, stage: number, time: number): void {
+    let img = this.cropImgs.get(i);
+    if (crop === 'fish') {
+      img?.setVisible(false);
+      const g = this.gGround;
+      const n = stage + 1;
+      for (let k = 0; k < n; k++) {
+        const a = time * (0.8 + k * 0.17) + k * 2.1 + i;
+        const fx = x + Math.cos(a) * (5 + k * 1.5);
+        const fy = y + Math.sin(a) * 3;
+        g.fillStyle(0x0c4846, 0.55).fillRect(Math.round(fx) - 2, Math.round(fy), 5, 2);
+        g.fillStyle(0x0c4846, 0.55).fillRect(Math.round(fx - Math.cos(a + 1.57) * 3), Math.round(fy), 1, 1);
+      }
+      const k = (time * 0.6 + i * 0.37) % 1;
+      g.lineStyle(1, 0xc8fff0, 0.6 * (1 - k)).strokeEllipse(x + 3, y - 2, 4 + k * 12, 2 + k * 6);
+      if (stage === 3 && Math.sin(time * 2.1 + i) > 0.75) {
+        const hop = Math.round((Math.sin(time * 2.1 + i) - 0.75) * 24);
+        g.fillStyle(0x9aaab8, 1).fillRect(Math.round(x) - 2, Math.round(y) - 3 - hop, 5, 2);
+        g.fillStyle(0x7a8a9a, 1).fillRect(Math.round(x) + 3, Math.round(y) - 4 - hop, 1, 3);
+      }
+      return;
     }
+    const key = crop === 'rice' ? TEX.rice(stage, stage === 3 && Math.sin(time * 1.4 + i) > 0) : TEX.lotus(stage);
+    if (!img) {
+      img = this.inWorld(this.add.image(x, y, key).setDepth(D.groundFx + 0.5));
+      this.cropImgs.set(i, img);
+    }
+    // rice sections are centred on their 2x2 tiles; lotus sits on the water at its slot
+    img.setTexture(key).setPosition(Math.round(x), Math.round(crop === 'rice' ? y : y - 4)).setVisible(true);
   }
 
   private drawNodes(time: number): void {
@@ -1030,56 +1077,4 @@ function drawPlant(px: Px, x: number, y: number, kind: string, st: number): void
 }
 
 
-/** Rice tuft: seedlings, green tillers, tall green, then golden heads that nod in the wind. */
-function drawRice(px: Px, x: number, y: number, st: number, t: number): void {
-  if (st === 0) {
-    px(x, y, 0x7ad866);
-    px(x + 1, y - 1, 0x7ad866);
-    return;
-  }
-  const green = st < 3;
-  const h = st === 1 ? 3 : 5;
-  px(x, y - h + 1, green ? 0x4fa84a : 0xb8a040, 1, h);
-  px(x - 1, y - h + 2, green ? 0x6cc25a : 0xc8b050, 1, h - 1);
-  px(x + 1, y - h + 2, green ? 0x3f8a3a : 0xa89038, 1, h - 1);
-  if (st === 3) {
-    const sway = Math.sin(t * 1.6) > 0 ? 1 : 0;
-    px(x - 1 + sway, y - h - 1, 0xffd35c, 2, 1);
-    px(x + sway, y - h, 0xf0c040, 2, 1);
-  }
-}
 
-/** A pond slot: lotus (pads, bud, pink flower) or fish (ripples, then a fish jumping when ready). */
-function drawPondSlot(px: Px, X: number, Y: number, crop: string, st: number, t: number): void {
-  if (crop === 'lotus') {
-    px(X + 3, Y + 9, 0x2f7a3a, 5, 3);
-    px(X + 9, Y + 5, 0x2f7a3a, 4, 3);
-    px(X + 4, Y + 9, 0x4f9a44, 3, 1);
-    px(X + 10, Y + 5, 0x4f9a44, 2, 1);
-    if (st >= 1) px(X + 7, Y + 7, 0x3f8a3a, 1, 4);
-    if (st === 2) px(X + 6, Y + 5, 0xf2a0c0, 3, 2);
-    if (st === 3) {
-      px(X + 5, Y + 4, 0xf2a0c0, 5, 2);
-      px(X + 6, Y + 3, 0xffd0e0, 3, 1);
-      px(X + 7, Y + 5, 0xffd35c);
-    }
-    return;
-  }
-  // fish: expanding ripple rings, more of them as the fish grow
-  const rings = st + 1;
-  for (let i = 0; i < rings; i++) {
-    const k = (t * 0.7 + i / rings) % 1;
-    const r = 1 + k * 5;
-    const cx = X + 5 + ((i * 5) % 7);
-    const cy = Y + 6 + ((i * 3) % 5);
-    px(Math.round(cx - r), cy, 0xc8fff0, 1, 1, 1 - k);
-    px(Math.round(cx + r), cy, 0xc8fff0, 1, 1, 1 - k);
-    px(cx, Math.round(cy - r * 0.6), 0xc8fff0, 1, 1, 1 - k);
-  }
-  if (st >= 1) px(X + 6 + Math.round(Math.sin(t) * 3), Y + 9, 0x1a5a58, 4, 1);
-  if (st === 3 && Math.sin(t * 2.2) > 0.6) {
-    const hop = Math.round((Math.sin(t * 2.2) - 0.6) * 10);
-    px(X + 6, Y + 5 - hop, 0x9aaab8, 4, 2);
-    px(X + 10, Y + 4 - hop, 0x7a8a9a, 1, 3);
-  }
-}

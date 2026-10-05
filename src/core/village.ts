@@ -2,6 +2,7 @@
 import { TUNING } from '../data';
 import { ANVIL, FARM_CENTER, PADDY_CENTER, POND_CENTER, POT } from './mapgen';
 import type { NpcId } from '../data/types';
+import { plotReach } from './farm';
 import { npcNear } from './npc';
 import type { GameState } from './state';
 
@@ -25,7 +26,7 @@ export function contextAction(s: GameState): ContextAction | null {
   if (near(ANVIL, V.stationRadius)) return { kind: 'forge' };
   if (near(POT, V.stationRadius)) return { kind: 'kitchen' };
   // pond slots are water, so they are planted from the bank
-  const plot = s.plots.findIndex((q) => near(q, q.bed === 'pond' ? V.pondReach : V.plotRadius));
+  const plot = s.plots.findIndex((q) => near(q, q.bed === 'soil' ? V.plotRadius : plotReach(q)));
   if (plot >= 0 && !s.plots[plot]?.crop) return { kind: 'plant', plot };
   if (near(FARM_CENTER, V.farmRadius) || near(PADDY_CENTER, V.farmRadius) || near(POND_CENTER, V.farmRadius)) return { kind: 'farm' };
   return null;

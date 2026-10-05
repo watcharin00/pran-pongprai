@@ -54,7 +54,7 @@ export interface Rect {
 const GEN_VILLAGE = { x0: 4, y0: 15, x1: 25, y1: 35 } as const;
 const inGenVillage = (x: number, y: number): boolean => x >= GEN_VILLAGE.x0 && x <= GEN_VILLAGE.x1 && y >= GEN_VILLAGE.y0 && y <= GEN_VILLAGE.y1;
 /** Village bounds for gameplay (HP regen, menus, monster leash): the prototype village plus the south quarter. */
-export const VILLAGE = { x0: 4, y0: 15, x1: 30, y1: 41 } as const;
+export const VILLAGE = { x0: 4, y0: 15, x1: 31, y1: 41 } as const;
 /** Plaza / fountain centre (a tile corner). */
 export const PLAZA = { x: 15, y: 27 } as const;
 export const SMITH: Rect = { x: 6, y: 18, w: 5, h: 4 };
@@ -96,29 +96,52 @@ export const QUARTER_LAMPS: readonly (readonly [number, number])[] = [
 const QUARTER_FLOWERS: readonly (readonly [number, number])[] = [[5, 41], [9, 41], [11, 41], [17, 41], [23, 40], [24, 41]];
 
 // --- East fields: rice paddy and fish pond between the village and the river ---
-/** Cleared ground around the paddy (bunds) and the paddy itself (3x2 plots). */
-export const PADDY_AREA = { x0: 26, y0: 15, x1: 31, y1: 19 } as const;
-export const PADDY = { x0: 27, y0: 16, x1: 29, y1: 17 } as const;
-/** Scarecrow on the paddy's east bund (painted, not solid). */
-export const SCARECROW = { x: 30, y: 16 } as const;
-/** Cleared bank around the pond and the pond water itself. */
-export const POND_AREA = { x0: 25, y0: 28, x1: 30, y1: 34 } as const;
+/** Ground cleared around the paddy, its bunds and the field hut. */
+export const PADDY_AREA = { x0: 25, y0: 14, x1: 33, y1: 19 } as const;
+/** The flooded field: 6x4 tiles, split by bunds into six 2x2 sections (กระทง), one plot each. */
+export const PADDY = { x0: 26, y0: 15, x1: 31, y1: 18 } as const;
+export const PADDY_SECTIONS: readonly Rect[] = [0, 1].flatMap((r) => [0, 1, 2].map((c) => ({ x: PADDY.x0 + c * 2, y: PADDY.y0 + r * 2, w: 2, h: 2 })));
+/** Scarecrow on the west bund (painted, not solid). */
+export const SCARECROW = { x: 25, y: 16 } as const;
+/** Field hut on stilts (ห้างนา) at the paddy's east edge. */
+export const FIELD_HUT: Rect = { x: 32, y: 15, w: 2, h: 2 };
+
+/** Cleared bank around the pond. */
+export const POND_AREA = { x0: 24, y0: 28, x1: 30, y1: 34 } as const;
 /** Open ground south of the sala so tree canopies do not hide it. */
 export const SALA_AREA = { x0: 26, y0: 35, x1: 31, y1: 37 } as const;
-export const POND = { x0: 26, y0: 30, x1: 29, y1: 32 } as const;
-/** Pond tiles that hold something (lotus or fish): along the top and bottom edges, reachable from the bank. */
-export const POND_SLOTS: readonly (readonly [number, number])[] = [
-  [26, 30],
-  [28, 30],
-  [27, 32],
+/** The pond is a soft-edged ellipse (px); tiles whose centre is in the water are solid. */
+export const POND_SHAPE = { cx: 27.4 * T, cy: 31 * T, rx: 2.75 * T, ry: 2.25 * T } as const;
+/** Small open pavilion (ศาลา) on the pond's south-east bank. */
+export const SALA: Rect = { x: 29, y: 33, w: 2, h: 2 };
+/** Wooden jetty (ท่าน้ำ) from the sala's side out over the water: walkable. */
+export const JETTY: readonly (readonly [number, number])[] = [
   [29, 32],
+  [28, 32],
 ];
 
-/** Small open pavilion (ศาลา) on the pond bank. */
-export const SALA: Rect = { x: 29, y: 33, w: 2, h: 2 };
+/**
+ * 0 at the pond centre, 1 at the waterline, >1 on the bank. The outline wobbles a little
+ * (deterministic noise) so the pond never reads as a perfect oval.
+ */
+export function pondDepth(px: number, py: number): number {
+  const dx = (px - POND_SHAPE.cx) / POND_SHAPE.rx;
+  const dy = (py - POND_SHAPE.cy) / POND_SHAPE.ry;
+  const a = Math.atan2(dy, dx);
+  const wobble = 1 + Math.sin(a * 3 + 0.7) * 0.06 + Math.sin(a * 5 + 2.1) * 0.035;
+  return Math.hypot(dx, dy) / wobble;
+}
+
+/** Where lotus / fish go: inside the water near the rim or the jetty, so they can be reached from dry ground. */
+export const POND_SLOTS: readonly { x: number; y: number }[] = [
+  { x: POND_SHAPE.cx - 6, y: POND_SHAPE.cy - POND_SHAPE.ry * 0.62 },
+  { x: POND_SHAPE.cx - POND_SHAPE.rx * 0.66, y: POND_SHAPE.cy - 2 },
+  { x: POND_SHAPE.cx - 12, y: POND_SHAPE.cy + POND_SHAPE.ry * 0.62 },
+  { x: POND_SHAPE.cx + POND_SHAPE.rx * 0.5, y: POND_SHAPE.cy - 6 },
+];
 
 export const PADDY_CENTER = { x: ((PADDY.x0 + PADDY.x1 + 1) * T) / 2, y: ((PADDY.y0 + PADDY.y1 + 1) * T) / 2 } as const;
-export const POND_CENTER = { x: ((POND.x0 + POND.x1 + 1) * T) / 2, y: ((POND.y0 + POND.y1 + 1) * T) / 2 } as const;
+export const POND_CENTER = { x: POND_SHAPE.cx, y: POND_SHAPE.cy } as const;
 
 /** Stamps the paddy and the pond onto a home-map tile array (after generation). */
 export function stampEastFields(tiles: Uint8Array): void {
@@ -130,8 +153,11 @@ export function stampEastFields(tiles: Uint8Array): void {
     for (let y: number = A.y0; y <= A.y1; y++) for (let x: number = A.x0; x <= A.x1; x++) if (!isWater(x, y) && tiles[y * MW + x] !== Tile.SAND) set(x, y, Tile.GRASS);
   }
   for (let y: number = PADDY.y0; y <= PADDY.y1; y++) for (let x: number = PADDY.x0; x <= PADDY.x1; x++) set(x, y, Tile.PADDY);
-  for (let y: number = POND.y0; y <= POND.y1; y++) for (let x: number = POND.x0; x <= POND.x1; x++) set(x, y, Tile.POND);
-  for (let y = SALA.y; y < SALA.y + SALA.h; y++) for (let x = SALA.x; x < SALA.x + SALA.w; x++) set(x, y, Tile.HOUSE);
+  for (let y: number = POND_AREA.y0; y <= POND_AREA.y1; y++) {
+    for (let x: number = POND_AREA.x0; x <= POND_AREA.x1; x++) if (pondDepth(x * T + 8, y * T + 8) < 1) set(x, y, Tile.POND);
+  }
+  for (const [x, y] of JETTY) set(x, y, Tile.BRIDGE);
+  for (const H of [SALA, FIELD_HUT]) for (let y = H.y; y < H.y + H.h; y++) for (let x = H.x; x < H.x + H.w; x++) set(x, y, Tile.HOUSE);
 }
 
 /** Stamps the south quarter onto a home-map tile array (after generation, so the prototype parity holds). */
@@ -360,7 +386,8 @@ export function farmPlots(): PlotSpot[] {
   };
   // soil first, so plot indices of older saves (8 soil plots) stay the same
   for (let y = FARM.y0; y <= FARM.y1; y++) for (let x = FARM.x0; x <= FARM.x1; x++) add(x, y, 'soil');
-  for (let y: number = PADDY.y0; y <= PADDY.y1; y++) for (let x: number = PADDY.x0; x <= PADDY.x1; x++) add(x, y, 'paddy');
-  for (const [x, y] of POND_SLOTS) add(x, y, 'pond');
+  // one plot per paddy section, centred in its 2x2 tiles
+  for (const r of PADDY_SECTIONS) out.push({ tx: r.x, ty: r.y, x: (r.x + 1) * T, y: (r.y + 1) * T, bed: 'paddy' });
+  for (const p of POND_SLOTS) out.push({ tx: Math.floor(p.x / T), ty: Math.floor(p.y / T), x: p.x, y: p.y, bed: 'pond' });
   return out;
 }

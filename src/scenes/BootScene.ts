@@ -5,6 +5,7 @@ import { areaMap } from '../core/areas';
 import { MONSTER_FRAME_COUNT } from '../core/state';
 import { buildGlow, buildHerb, buildOre, buildNpcFrames, buildPlayerFrames, buildWeapon, MONSTER_SPRITES } from '../art/sprites';
 import { buildTerrain } from '../art/terrain';
+import { buildLotus, buildRiceSection } from '../art/fields';
 import { TEX } from './textures';
 
 const FONTS = ["600 16px 'Mitr'", "400 16px 'IBM Plex Sans Thai'", "700 16px 'Pixelify Sans'"];
@@ -33,6 +34,11 @@ export class BootScene extends Phaser.Scene {
     t.addCanvas(TEX.ore, buildOre());
     t.addCanvas(TEX.herb, buildHerb());
     t.addCanvas(TEX.glow, buildGlow());
+    for (let st = 0; st < 4; st++) {
+      t.addCanvas(TEX.rice(st, false), buildRiceSection(st, false));
+      t.addCanvas(TEX.lotus(st), buildLotus(st));
+    }
+    t.addCanvas(TEX.rice(3, true), buildRiceSection(3, true));
 
     const fontsReady = Promise.all(FONTS.map((f) => document.fonts.load(f))).catch(() => undefined);
     const timeout = new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT_MS));

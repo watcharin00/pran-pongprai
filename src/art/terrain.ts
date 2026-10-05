@@ -1,8 +1,9 @@
 // Paints the whole world once: ground (incl. buildings) and a separate canopy
 // layer that is drawn above entities so characters can walk "under" trees.
 import { hash, vnoise } from '../core/rng';
-import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, POND, POND_SLOTS, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
-import { drawAnvil, drawBoard, drawFountain, drawGranary, drawHouse, drawLamps, drawLilyPads, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
+import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
+import { drawAnvil, drawBoard, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
+import { drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
 interface GroundPalette {
@@ -79,12 +80,13 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   for (const h of HUTS) drawHouse(mb, h, 'hut');
   drawGranary(mb, GRANARY);
   drawBoard(mb, BOARD.x, BOARD.y);
+  // east fields: soft-edged pond and paddy painted over the tile ground, then what stands on them
+  drawPaddy(mb);
+  drawPond(mb);
+  drawJetty(mb);
+  drawFieldHut(mb);
   drawScarecrow(mb, SCARECROW.x, SCARECROW.y);
   drawSala(mb, SALA);
-  const slot = new Set(POND_SLOTS.map(([x, y]) => `${x},${y}`));
-  const freePond: [number, number][] = [];
-  for (let y: number = POND.y0; y <= POND.y1; y++) for (let x: number = POND.x0; x <= POND.x1; x++) if (!slot.has(`${x},${y}`) && (x + y) % 2 === 0) freePond.push([x, y]);
-  drawLilyPads(mb, freePond);
   drawFountain(mb);
   drawAnvil(mb);
   drawPot(mb);

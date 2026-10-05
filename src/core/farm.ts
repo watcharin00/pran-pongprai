@@ -37,7 +37,7 @@ export function cropFor(s: GameState, bed: CropBed): CropId | null {
 
 /** How close the player must be to a plot to plant or auto-harvest (pond slots are water, reached from the bank). */
 export function plotReach(plot: Plot): number {
-  return plot.bed === 'pond' ? TUNING.village.pondReach : TUNING.village.harvestRadius;
+  return plot.bed === 'pond' ? TUNING.village.pondReach : plot.bed === 'paddy' ? TUNING.village.paddyReach : TUNING.village.harvestRadius;
 }
 
 /**

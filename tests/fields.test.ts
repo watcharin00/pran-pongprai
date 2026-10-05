@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { areaMap } from '../src/core/areas';
 import { cropFor, harvest, plant, plantAll, plotReach } from '../src/core/farm';
 import { cookMeal } from '../src/core/inventory';
-import { inVillageTile, MW, PADDY, POND, POND_SLOTS, T, Tile, tileAt, walkable } from '../src/core/mapgen';
+import { inVillageTile, JETTY, MW, PADDY, POND_AREA, POND_SLOTS, pondDepth, T, Tile, tileAt, walkable } from '../src/core/mapgen';
 import { parseSave, serialize } from '../src/core/save';
 import { createGame, step } from '../src/core/sim';
 import { contextAction } from '../src/core/village';
@@ -22,17 +22,38 @@ describe('east fields on the map', () => {
         expect(inVillageTile(x, y)).toBe(true);
       }
     }
-    for (let y: number = POND.y0; y <= POND.y1; y++) for (let x: number = POND.x0; x <= POND.x1; x++) expect(walkable(HOME, x, y)).toBe(false);
+    let water = 0;
+    for (let y: number = POND_AREA.y0; y <= POND_AREA.y1; y++) {
+      for (let x: number = POND_AREA.x0; x <= POND_AREA.x1; x++) {
+        const inWater = pondDepth(x * T + 8, y * T + 8) < 1;
+        const jetty = JETTY.some(([jx, jy]) => jx === x && jy === y);
+        if (inWater && !jetty) {
+          water++;
+          expect(walkable(HOME, x, y), `${x},${y}`).toBe(false);
+        }
+      }
+    }
+    expect(water).toBeGreaterThanOrEqual(12);
   });
 
-  it('every pond slot can be reached from walkable, reachable bank', () => {
-    for (const [sx, sy] of POND_SLOTS) {
-      const bank = [[0, -1], [0, 1], [-1, 0], [1, 0]].some(([dx, dy]) => {
-        const x = sx + (dx ?? 0);
-        const y = sy + (dy ?? 0);
-        return walkable(HOME, x, y) && HOME.reach[y * MW + x] === 1 && T <= TUNING.village.pondReach;
-      });
-      expect(bank, `${sx},${sy}`).toBe(true);
+  it('the jetty is walkable and reachable from the village', () => {
+    for (const [x, y] of JETTY) {
+      expect(walkable(HOME, x, y)).toBe(true);
+      expect(HOME.reach[y * MW + x]).toBe(1);
+    }
+  });
+
+  it('every pond slot is in the water and within reach of walkable, reachable ground', () => {
+    for (const slot of POND_SLOTS) {
+      expect(pondDepth(slot.x, slot.y)).toBeLessThan(1);
+      let reachable = false;
+      for (let y = 0; y < 48; y++) {
+        for (let x = 0; x < MW; x++) {
+          if (!walkable(HOME, x, y) || HOME.reach[y * MW + x] !== 1) continue;
+          if (Math.hypot(x * T + 8 - slot.x, y * T + 8 - slot.y) < TUNING.village.pondReach - 4) reachable = true;
+        }
+      }
+      expect(reachable, `${slot.x},${slot.y}`).toBe(true);
     }
   });
 });
@@ -93,8 +114,7 @@ describe('beds', () => {
     if (!slot) throw new Error();
     s.inv.fry = 1;
     expect(plant(s, i, 'fish')).toBe(true);
-    // stand on the bank tile above the slot
-    Object.assign(s.player, { x: slot.x, y: slot.y - T, inVillage: true });
+    Object.assign(s.player, { ...nearestBank(slot), inVillage: true });
     expect(Math.hypot(slot.x - s.player.x, slot.y - s.player.y)).toBeLessThan(plotReach(slot));
     step(s, intent(), 1 / 60, NOW + CROPS.fish.growSeconds * 1000 + 1);
     expect(slot.crop).toBeNull();
@@ -106,7 +126,7 @@ describe('beds', () => {
     const i = s.plots.findIndex((p) => p.bed === 'pond');
     const slot = s.plots[i];
     if (!slot) throw new Error();
-    Object.assign(s.player, { x: slot.x, y: slot.y - T });
+    Object.assign(s.player, nearestBank(slot));
     expect(contextAction(s)).toEqual({ kind: 'plant', plot: i });
   });
 
@@ -131,3 +151,20 @@ describe('beds', () => {
     expect(newGame().inv.fry).toBe(1);
   });
 });
+
+/** Centre of the closest walkable tile to a pond slot (where a player would stand). */
+function nearestBank(p: { x: number; y: number }): { x: number; y: number } {
+  let best = { x: 0, y: 0 };
+  let bd = Infinity;
+  for (let y = 0; y < 48; y++) {
+    for (let x = 0; x < MW; x++) {
+      if (!walkable(HOME, x, y)) continue;
+      const d = Math.hypot(x * T + 8 - p.x, y * T + 8 - p.y);
+      if (d < bd) {
+        bd = d;
+        best = { x: x * T + 8, y: y * T + 8 };
+      }
+    }
+  }
+  return best;
+}

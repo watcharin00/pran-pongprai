@@ -299,20 +299,3 @@ export function drawSala(b: PixelBuffer, H: Rect): void {
   sp(b, Math.round(cx + W / 2 + 4), Y + 9, '#d8a050');
   rect(b, Math.round(cx) - 1, Y - 3, 2, 2, '#d8a050');
 }
-
-/** Lily pads on pond tiles that are not planted slots. */
-export function drawLilyPads(b: PixelBuffer, tiles: readonly (readonly [number, number])[]): void {
-  for (const [tx, ty] of tiles) {
-    const X = tx * T;
-    const Y = ty * T;
-    const pads: readonly [number, number, number][] = [
-      [4 + hash(tx, ty) * 4, 5 + hash(ty, tx) * 3, 2.6],
-      [10 + hash(tx + 3, ty) * 3, 10 + hash(tx, ty + 5) * 2, 2.2],
-    ];
-    for (const [px, py, r] of pads) {
-      ell(b, X + px, Y + py, r, r * 0.75, '#2f7a3a');
-      ell(b, X + px - 0.5, Y + py - 0.5, r - 0.8, r * 0.75 - 0.8, '#4f9a44');
-      sp(b, X + px, Y + py, '#1f5a2a');
-    }
-  }
-}
