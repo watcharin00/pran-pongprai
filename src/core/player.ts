@@ -4,7 +4,7 @@ import { chooseTarget, findMonster, hitMonster, reachOf } from './combat';
 import type { Vec2 } from './events';
 import { moveBody } from './collision';
 import { harvest, isRipe } from './farm';
-import { give, dodgeCost, maxHpFor, staminaRegenMul } from './inventory';
+import { give, dodgeCost, maxHpFor, maxStaminaFor, staminaRegenMul } from './inventory';
 import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
 import { fireShot } from './shots';
@@ -167,7 +167,7 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   if (p.dead) {
     p.deadT -= dt;
     if (p.deadT <= 0) {
-      Object.assign(p, { dead: false, x: SPAWN.x, y: SPAWN.y, hp: p.maxHp, st: P.maxStamina, roll: 0, hurtIF: 1 });
+      Object.assign(p, { dead: false, x: SPAWN.x, y: SPAWN.y, hp: p.maxHp, st: p.maxSt, roll: 0, hurtIF: 1 });
       s.events.emit('player:revived', { at: { x: p.x, y: p.y } });
     }
     return;
@@ -175,7 +175,9 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   tickTimers(s, dt);
   p.maxHp = maxHpFor(s);
   if (p.hp > p.maxHp) p.hp = p.maxHp;
-  if (p.stDelay <= 0) p.st = Math.min(P.maxStamina, p.st + P.staminaRegen * staminaRegenMul(s) * dt);
+  p.maxSt = maxStaminaFor(s);
+  if (p.st > p.maxSt) p.st = p.maxSt;
+  if (p.stDelay <= 0) p.st = Math.min(p.maxSt, p.st + P.staminaRegen * staminaRegenMul(s) * dt);
   p.inVillage = inVillagePx(p.x, p.y);
   if (p.inVillage && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + P.villageRegen * dt);
   const zone = zoneAtPx(s.map, p.x, p.y);

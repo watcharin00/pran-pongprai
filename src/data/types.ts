@@ -2,6 +2,7 @@ import type materialsJson from './materials.json';
 import type monstersJson from './monsters.json';
 import type weaponsJson from './weapons.json';
 import type skillsJson from './skills.json';
+import type armorJson from './armor.json';
 import type cropsJson from './crops.json';
 import type mealsJson from './meals.json';
 
@@ -11,6 +12,9 @@ export type MonsterId = keyof typeof monstersJson;
 export type WeaponId = keyof (typeof weaponsJson)['weapons'];
 export type WeaponType = keyof (typeof weaponsJson)['types'];
 export type CropId = keyof (typeof cropsJson)['crops'];
+export type ArmorId = keyof (typeof armorJson)['armor'];
+export const ARMOR_SLOTS = ['head', 'body', 'charm'] as const;
+export type ArmorSlot = (typeof ARMOR_SLOTS)[number];
 export type MealId = keyof (typeof mealsJson)['meals'];
 export type SkillId = keyof (typeof skillsJson)['skills'];
 export type PartId = 'head' | 'tail';
@@ -214,6 +218,17 @@ export type SkillDef = RadialSkillDef | DashSkillDef | WindupAreaSkillDef | Wind
 export type SkillKind = SkillDef['kind'];
 export type SkillsData = Record<SkillId, SkillDef>;
 
+export interface ArmorDef {
+  slot: ArmorSlot;
+  /** damage reduction = defense / (defense + combat.defenseK) */
+  defense: number;
+  maxHp: number;
+  /** added to max stamina */
+  stamina: number;
+  color: string;
+  recipe: ItemBag;
+}
+
 export interface CropDef {
   seed: MaterialId;
   growSeconds: number;
@@ -264,6 +279,8 @@ export interface Tuning {
   };
   combat: {
     attackHoldRange: number;
+    /** armor: reduction = defense / (defense + defenseK) */
+    defenseK: number;
     lockKeepRange: number;
     approachDirectRange: number;
     damageJitter: { min: number; max: number };

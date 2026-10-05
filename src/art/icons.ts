@@ -1,8 +1,8 @@
 // 18×18 item icons for the DOM menus (bag, forge, kitchen, farm).
 // Drawn with the same pixel buffer + finish() as the world sprites so the
 // outline and shading match, then cached as data URLs.
-import { MATERIALS, MEALS, WEAPONS } from '../data';
-import type { IconShape, MaterialId, MealId, MonsterId, WeaponDef, WeaponId } from '../data/types';
+import { ARMOR, MATERIALS, MEALS, WEAPONS } from '../data';
+import type { ArmorId, ArmorSlot, IconShape, MaterialId, MealId, MonsterId, WeaponDef, WeaponId } from '../data/types';
 import { createBuffer, ell, finish, line, rect, rgb, sp, type PixelBuffer } from './pixelBuffer';
 import { buildPlayerFrames, MONSTER_SPRITES } from './sprites';
 
@@ -166,6 +166,48 @@ function drawWeapon(w: WeaponDef): PixelBuffer {
     sp(b, 15, 2, c);
   }
   return b;
+}
+
+const ARMOR_SHAPES: Record<ArmorSlot, ShapeDrawer> = {
+  head: (b, c) => {
+    ell(b, 9, 9, 6, 5, c);
+    rect(b, 3, 9, 13, 3, c);
+    rect(b, 2, 12, 15, 2, tint(c, -0.3));
+    ell(b, 7, 6, 2, 1.2, tint(c, 0.4));
+    rect(b, 8, 3, 2, 2, tint(c, 0.15));
+  },
+  body: (b, c) => {
+    rect(b, 4, 4, 10, 11, c);
+    rect(b, 2, 4, 3, 5, c);
+    rect(b, 13, 4, 3, 5, c);
+    rect(b, 7, 3, 4, 2, tint(c, -0.45));
+    rect(b, 4, 10, 10, 1, tint(c, -0.35));
+    rect(b, 5, 5, 2, 4, tint(c, 0.3));
+  },
+  charm: (b, c) => {
+    line(b, 4, 2, 9, 8, '#8a6a3a');
+    line(b, 14, 2, 9, 8, '#8a6a3a');
+    ell(b, 9, 11, 3.6, 4, c);
+    ell(b, 8, 10, 1.4, 1.6, tint(c, 0.55));
+    sp(b, 9, 14, tint(c, -0.35));
+  },
+};
+
+/** Empty-slot silhouette, drawn in a muted grey. */
+export function armorSlotIconUrl(slot: ArmorSlot): string {
+  return cached(`slot:${slot}`, () => {
+    const b = createBuffer(ICON_SIZE, ICON_SIZE);
+    ARMOR_SHAPES[slot](b, '#4a5470');
+    return finish(b, false, '#2c3550');
+  });
+}
+
+export function armorIconUrl(id: ArmorId): string {
+  return cached(`a:${id}`, () => {
+    const b = createBuffer(ICON_SIZE, ICON_SIZE);
+    ARMOR_SHAPES[ARMOR[id].slot](b, ARMOR[id].color);
+    return finish(b);
+  });
 }
 
 function drawMeal(color: string): PixelBuffer {

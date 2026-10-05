@@ -1,6 +1,6 @@
 // Materials, crafting, potions and meals.
-import { MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS } from '../data';
-import type { ItemBag, MealEffect, MealId, WeaponId } from '../data/types';
+import { ARMOR, MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS } from '../data';
+import { ARMOR_SLOTS, type ArmorId, type ItemBag, type MealEffect, type MealId, type WeaponId } from '../data/types';
 import type { GameState, Inventory } from './state';
 
 export function startingInventory(): Inventory {
@@ -45,8 +45,43 @@ export function staminaRegenMul(s: GameState): number {
   return mealEffect(s).staminaRegenMul ?? 1;
 }
 
+// ----- armor -----
+
+/** Sum of a stat over the equipped armor pieces. */
+function armorSum(s: GameState, stat: 'defense' | 'maxHp' | 'stamina'): number {
+  let n = 0;
+  for (const slot of ARMOR_SLOTS) {
+    const id = s.armor[slot];
+    if (id) n += ARMOR[id][stat];
+  }
+  return n;
+}
+
+export function defenseOf(s: GameState): number {
+  return armorSum(s, 'defense');
+}
+
+/** Fraction of incoming damage removed by armor (0..1). */
+export function damageReduction(s: GameState): number {
+  const d = defenseOf(s);
+  return d / (d + TUNING.combat.defenseK);
+}
+
 export function maxHpFor(s: GameState): number {
-  return TUNING.player.maxHp + (mealEffect(s).maxHpBonus ?? 0);
+  return TUNING.player.maxHp + (mealEffect(s).maxHpBonus ?? 0) + armorSum(s, 'maxHp');
+}
+
+export function maxStaminaFor(s: GameState): number {
+  return TUNING.player.maxStamina + armorSum(s, 'stamina');
+}
+
+/** Re-applies max HP / stamina after gear or meals change, keeping current values in range. */
+export function refreshStats(s: GameState): void {
+  const p = s.player;
+  p.maxHp = maxHpFor(s);
+  p.maxSt = maxStaminaFor(s);
+  p.hp = Math.min(p.hp, p.maxHp);
+  p.st = Math.min(p.st, p.maxSt);
 }
 
 // ----- village actions (all require being in the village) -----
@@ -79,6 +114,36 @@ function setWeapon(s: GameState, id: WeaponId): void {
   p.cds = [0, 0, 0];
   p.cast = null;
   p.dash = null;
+}
+
+export function craftArmor(s: GameState, id: ArmorId): ActionResult {
+  if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };
+  if (s.ownedArmor.has(id)) return { ok: false, reason: 'alreadyOwned' };
+  const recipe = ARMOR[id].recipe;
+  if (!canAfford(s.inv, recipe)) return { ok: false, reason: 'cannotAfford' };
+  spend(s.inv, recipe);
+  s.ownedArmor.add(id);
+  s.armor[ARMOR[id].slot] = id;
+  refreshStats(s);
+  return { ok: true };
+}
+
+/** Puts an owned piece on (replacing whatever is in its slot). */
+export function equipArmor(s: GameState, id: ArmorId): ActionResult {
+  if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };
+  if (!s.ownedArmor.has(id)) return { ok: false, reason: 'notOwned' };
+  s.armor[ARMOR[id].slot] = id;
+  refreshStats(s);
+  return { ok: true };
+}
+
+export function unequipArmor(s: GameState, id: ArmorId): ActionResult {
+  if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };
+  const slot = ARMOR[id].slot;
+  if (s.armor[slot] !== id) return { ok: false, reason: 'notOwned' };
+  s.armor[slot] = null;
+  refreshStats(s);
+  return { ok: true };
 }
 
 export function brewPotion(s: GameState): ActionResult {

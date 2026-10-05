@@ -2,7 +2,7 @@
 import { MONSTERS, TUNING, WEAPONS } from '../data';
 import type { AttackDef, ItemBag, MaterialId, PartId } from '../data/types';
 import type { Vec2 } from './events';
-import { attackMul, give } from './inventory';
+import { attackMul, damageReduction, give } from './inventory';
 import { moveBody } from './collision';
 import { MONSTER_FRAME_COUNT, type GameState, type MonsterState } from './state';
 
@@ -190,7 +190,7 @@ export function resolveMonsterHit(s: GameState, m: MonsterState, a: AttackDef): 
 export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void {
   const p = s.player;
   const H = TUNING.player.hurt;
-  const dmg = Math.round(rawDmg);
+  const dmg = Math.max(1, Math.round(rawDmg * (1 - damageReduction(s))));
   p.hp -= dmg;
   p.hurt = H.flash;
   p.hurtIF = H.iframe;

@@ -87,7 +87,7 @@ export class Hud {
     const p = s.player;
     this.q('#hpFill').style.width = `${(p.hp / p.maxHp) * 100}%`;
     this.q('#hpTxt').textContent = `${Math.ceil(p.hp)}/${p.maxHp}`;
-    this.q('#stFill').style.width = `${p.st}%`;
+    this.q('#stFill').style.width = `${(p.st / p.maxSt) * 100}%`;
 
     const chip = this.q('#mealChip');
     if (p.meal && p.meal.until > s.now) {

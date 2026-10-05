@@ -1,6 +1,7 @@
 // All player-facing Thai text. Keyed records are typed against the data ids,
 // so adding content to src/data without a Thai name is a compile error.
 import type {
+  ArmorId,
   CropId,
   MaterialId,
   MealId,
@@ -62,6 +63,15 @@ export const weapons = {
   bamboobow: { name: 'ธนูไม้ไผ่', desc: 'ยิงจากระยะไกล แต่ทำลายชิ้นส่วนช้า' },
   redcrossbow: { name: 'หน้าไม้ผาแดง', desc: 'ยิงช้าแต่แรง ลูกดอกทะลุได้ 1 ตัว' },
 } satisfies Record<WeaponId, { name: string; desc: string }>;
+
+export const armor = {
+  mosshood: { name: 'หมวกหนังมอส', desc: 'หมวกเบาจากหนังมอสส์ฟาง' },
+  mossvest: { name: 'เสื้อหนังมอส', desc: 'เสื้อหนังเย็บแน่น กันเขี้ยวได้ดี' },
+  fangcharm: { name: 'เครื่องรางเขี้ยว', desc: 'ร้อยเขี้ยวกับสมุนไพร ทำให้ไม่เหนื่อยง่าย' },
+  cinderhelm: { name: 'หมวกเกล็ดเพลิง', desc: 'เกล็ดถ่านหินซ้อนกันหลายชั้น' },
+  cindermail: { name: 'เกราะเกล็ดเพลิง', desc: 'เกราะหนักจากเกล็ดและหางเพลิง' },
+  emberamulet: { name: 'เครื่องรางแก่นเพลิง', desc: 'อุ่นอยู่ตลอดเวลา เพิ่มทุกอย่างเล็กน้อย' },
+} satisfies Record<ArmorId, { name: string; desc: string }>;
 
 export const skills = {
   whirl: { name: 'หมุนฟัน', desc: 'ฟันรอบตัว โดนทุกตัวที่อยู่ใกล้ (×1.5)' },
@@ -161,8 +171,15 @@ export const menu = {
   filters: { all: 'ทั้งหมด', gear: 'อุปกรณ์', material: 'วัสดุ', seed: 'เมล็ด' },
   slots: { weapon: 'อาวุธ', head: 'หมวก', body: 'เสื้อ', charm: 'เครื่องราง' },
   slotEmpty: 'ว่าง',
-  slotSoon: 'ยังไม่มีชุดเกราะ',
-  stats: { attack: 'พลังโจมตี', hp: 'HP สูงสุด', stamina: 'ความอึด', potions: 'ยา' },
+  stats: { attack: 'พลังโจมตี', defense: 'ป้องกัน', hp: 'HP สูงสุด', stamina: 'ความอึด' },
+  armorTitle: 'ชุดเกราะ',
+  weaponsTitle: 'อาวุธ',
+  armorMeta: (slot: string, def: number, hp: number, st: number) =>
+    [slot, def ? `ป้องกัน ${def}` : '', hp ? `HP +${hp}` : '', st ? `ความอึด +${st}` : ''].filter(Boolean).join(' · '),
+  reduction: (pct: number) => `ลดดาเมจ ${pct}%`,
+  unequip: 'ถอด',
+  wear: 'สวมใส่',
+  craftArmor: 'ตีชุดเกราะ',
   bagEmpty: 'ยังไม่มีของในหมวดนี้',
   bagHelp: 'แตะไอเท็มเพื่อดูว่าได้มาจากไหนและใช้ทำอะไร',
   have: (n: number) => `มี ${n}`,
@@ -256,6 +273,9 @@ export const log = {
   plantedMany: (crop: string, n: number) => `ปลูก${crop} ${n} แปลง`,
   crafted: (weapon: string) => `ตี${weapon}สำเร็จ`,
   equipped: (weapon: string) => `เปลี่ยนมาใช้${weapon}`,
+  armorOn: (piece: string) => `สวม${piece}`,
+  armorOff: (piece: string) => `ถอด${piece}`,
+  armorCrafted: (piece: string) => `ตี${piece}สำเร็จ`,
   brewed: 'ปรุงยา 1 ขวด',
   ate: (meal: string, desc: string) => `กิน${meal} ${desc}`,
   mealExpired: (meal: string) => `ฤทธิ์${meal}หมดแล้ว`,

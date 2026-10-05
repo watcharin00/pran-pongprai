@@ -11,6 +11,7 @@
   },
   "combat": {
     "attackHoldRange": 110,
+    "defenseK": 60,
     "lockKeepRange": 160,
     "approachDirectRange": 46,
     "damageJitter": { "min": 0.9, "max": 1.1 },

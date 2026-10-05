@@ -1,6 +1,6 @@
 // Plain-data game state. Everything the simulation needs lives here so that a
 // server could own it and clients could render it.
-import type { AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
+import type { ArmorId, ArmorSlot, AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 import type { EventBus, Vec2 } from './events';
 import type { WorldMap } from './mapgen';
 import type { TilePath } from './pathfinding';
@@ -47,6 +47,7 @@ export interface PlayerState {
   hp: number;
   maxHp: number;
   st: number;
+  maxSt: number;
   face: 1 | -1;
   /** last movement direction */
   fx: number;
@@ -216,6 +217,9 @@ export interface GameState {
   plots: Plot[];
   inv: Inventory;
   owned: Set<WeaponId>;
+  ownedArmor: Set<ArmorId>;
+  /** equipped armor per slot */
+  armor: Record<ArmorSlot, ArmorId | null>;
   selCrop: CropId;
   useFert: boolean;
   autoOn: boolean;

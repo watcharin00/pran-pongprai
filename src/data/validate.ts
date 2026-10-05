@@ -3,6 +3,8 @@
 // discriminated unions in types.ts cannot be checked by `satisfies` alone.
 // Every loader here takes `unknown`, checks it, and returns the typed value.
 import type {
+  ArmorDef,
+  ArmorId,
   AttackDef,
   CarveDef,
   CropDef,
@@ -21,7 +23,7 @@ import type {
   WeaponType,
   WeaponsData,
 } from './types';
-import { ICON_SHAPES } from './types';
+import { ARMOR_SLOTS, ICON_SHAPES } from './types';
 
 export class DataError extends Error {
   constructor(path: string, message: string) {
@@ -286,6 +288,24 @@ export function loadSkills(v: unknown): SkillsData {
   }
   if (Object.keys(out).length === 0) throw new DataError('skills.skills', 'needs at least one skill');
   return out as SkillsData;
+}
+
+export function loadArmor(v: unknown, materials: readonly string[]): Record<ArmorId, ArmorDef> {
+  const o = obj(obj(v, 'armor').armor, 'armor.armor');
+  const out: Record<string, ArmorDef> = {};
+  for (const [k, raw] of Object.entries(o)) {
+    const p = `armor.armor.${k}`;
+    const a = obj(raw, p);
+    out[k] = {
+      slot: oneOf(a.slot, `${p}.slot`, ARMOR_SLOTS),
+      defense: num(a.defense, `${p}.defense`, 0),
+      maxHp: num(a.maxHp, `${p}.maxHp`, 0),
+      stamina: num(a.stamina, `${p}.stamina`, 0),
+      color: color(a.color, `${p}.color`),
+      recipe: itemBag(a.recipe, `${p}.recipe`, materials),
+    };
+  }
+  return out as Record<ArmorId, ArmorDef>;
 }
 
 export function loadCrops(v: unknown, materials: readonly string[]): CropsData {

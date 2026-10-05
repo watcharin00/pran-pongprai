@@ -1,0 +1,10 @@
+{
+  "armor": {
+    "mosshood":    { "slot": "head",  "defense": 4,  "maxHp": 10, "stamina": 0,  "color": "#3f8f6a", "recipe": { "hide": 3, "fang": 1 } },
+    "mossvest":    { "slot": "body",  "defense": 6,  "maxHp": 15, "stamina": 0,  "color": "#2f7d5c", "recipe": { "hide": 4, "ore": 1 } },
+    "fangcharm":   { "slot": "charm", "defense": 0,  "maxHp": 0,  "stamina": 15, "color": "#e9e2c8", "recipe": { "fang": 2, "herb": 2 } },
+    "cinderhelm":  { "slot": "head",  "defense": 9,  "maxHp": 15, "stamina": 0,  "color": "#6a5856", "recipe": { "scale": 3, "horn": 1 } },
+    "cindermail":  { "slot": "body",  "defense": 12, "maxHp": 25, "stamina": 0,  "color": "#564749", "recipe": { "scale": 4, "ore": 2, "etail": 1 } },
+    "emberamulet": { "slot": "charm", "defense": 4,  "maxHp": 20, "stamina": 20, "color": "#ffd35c", "recipe": { "core": 1, "scale": 2 } }
+  }
+}
