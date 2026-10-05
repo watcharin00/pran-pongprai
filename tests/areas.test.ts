@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { AREA_IDS, areaMap, buildAreaMap, exitAt } from '../src/core/areas';
-import { generateMap, MW, SPAWN, T, walkable, zoneAtPx } from '../src/core/mapgen';
+import { AREA_IDS, areaMap, areaSeed, buildAreaMap, exitAt } from '../src/core/areas';
+import { trailWaypoints } from '../src/core/trails';
+import { TUNING } from '../src/data';
+import { generateMap, inVillageTile, MH, MW, SPAWN, T, Tile, walkable, zoneAtPx } from '../src/core/mapgen';
 import { findPath } from '../src/core/pathfinding';
 import { createGame, step } from '../src/core/sim';
 import { hurtPlayer } from '../src/core/combat';
@@ -31,13 +33,54 @@ describe('area maps', () => {
     expect(monsterWhere('dhole')).toBe(th.zones.forest);
   });
 
-  it('home keeps the prototype world and only opens its border for exits', () => {
+  it('home keeps the prototype world: only exits open and trees/bushes clear for trails', () => {
     const base = generateMap();
     const home = areaMap('home');
-    let changed = 0;
-    for (let i = 0; i < base.tiles.length; i++) if (base.tiles[i] !== home.tiles[i]) changed++;
-    expect(changed).toBeGreaterThan(0);
-    expect(changed).toBeLessThan(120);
+    let exits = 0;
+    let trails = 0;
+    for (let i = 0; i < base.tiles.length; i++) {
+      const was = base.tiles[i];
+      const now = home.tiles[i];
+      if (was === now) continue;
+      if (now === Tile.SAND) exits++;
+      else {
+        expect(now, `tile ${i}`).toBe(Tile.GRASS);
+        expect([Tile.TREE, Tile.BUSH], `tile ${i}`).toContain(was);
+        expect(inVillageTile(i % MW, Math.floor(i / MW)), `tile ${i}`).toBe(false);
+        trails++;
+      }
+    }
+    expect(exits).toBeGreaterThan(0);
+    expect(exits).toBeLessThan(120);
+    expect(trails).toBeGreaterThan(0);
+  });
+
+  it('every area has 2-tile-wide trails linking its open trail waypoints', () => {
+    for (const id of AREA_IDS) {
+      const a = areaMap(id);
+      const open2 = (x: number, y: number): boolean => walkable(a, x, y) && walkable(a, x + 1, y) && walkable(a, x, y + 1) && walkable(a, x + 1, y + 1);
+      // flood over cells where a 2x2 block is clear, from the first waypoint that has one
+      const points = trailWaypoints(id === 'home' ? TUNING.world.seed : areaSeed(id)).flat().filter(([x, y]) => open2(x, y));
+      const start = points[0];
+      expect(start, id).toBeDefined();
+      if (!start) continue;
+      const seen = new Uint8Array(MW * MH);
+      const stack = [start];
+      seen[start[1] * MW + start[0]] = 1;
+      while (stack.length) {
+        const [x, y] = stack.pop() as [number, number];
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= MW || ny >= MH || seen[ny * MW + nx] || !open2(nx, ny)) continue;
+          seen[ny * MW + nx] = 1;
+          stack.push([nx, ny]);
+        }
+      }
+      // water and cliffs may cut a trail, but most waypoints must still join up through wide lanes
+      const joined = points.filter(([x, y]) => seen[y * MW + x]).length;
+      expect(joined / points.length, id).toBeGreaterThanOrEqual(id === 'home' || id === 'swamp' ? 0.5 : 0.9);
+    }
   });
 
   it('every exit leads to an area with an exit back, and arrival points are walkable', () => {

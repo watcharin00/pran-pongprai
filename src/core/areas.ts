@@ -2,8 +2,10 @@
 // The home area is the prototype map plus carved exits; every other area is
 // generated from its own seed. Pure and deterministic: no Math.random.
 import type { AreaId, ZoneId } from '../data/types';
-import { floodReach, generateMap, MH, MW, PLAZA, T, Tile, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
+import { TUNING } from '../data';
+import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, T, Tile, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
 import { parkMiller, vnoise } from './rng';
+import { openTrails } from './trails';
 
 export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild'];
 
@@ -98,6 +100,8 @@ function homeArea(): WorldMap {
     // open the border wall and run a sand road to the nearest open ground
     for (const [x, y] of exitTiles(e, 4)) tiles[y * MW + x] = Tile.SAND;
   }
+  // deer trails through the forest; the village and everything that isn't a tree or bush stay as generated
+  openTrails(tiles, TUNING.world.seed, { clearable: new Set([Tile.TREE, Tile.BUSH]), keep: (x, y) => inVillageTile(x, y) });
   // north road continues from the north bridge row up to the edge
   for (let y = 0; y < base.bridgeNorth; y++) for (let x = 14; x <= 15; x++) tiles[y * MW + x] = Tile.SAND;
   // east exit: clear a lane across the canyon floor to the edge
@@ -159,6 +163,9 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
     }
   }
 
+  // deer trails so dense tree cover never walls the player in
+  openTrails(tiles, spec.seed, { clearable: new Set([Tile.TREE, Tile.BUSH, Tile.ROCK]) });
+
   // roads: every exit to the centre, wide enough to walk without snagging
   const centre: [number, number] = [31, 23];
   spec.exits.forEach((e, i) => {
@@ -188,6 +195,11 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
     }
   }
   return { ...partial, reach, forestCells, area: id, zone: spec.zone, biome: spec.biome, exits };
+}
+
+/** The generation seed of a wild area (its trails and obstacles derive from it). */
+export function areaSeed(id: Exclude<AreaId, 'home'>): number {
+  return SPECS[id].seed;
 }
 
 /** Builds an area map from scratch (no cache); the same id always yields the same tiles. */
