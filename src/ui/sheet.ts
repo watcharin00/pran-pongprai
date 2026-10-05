@@ -181,13 +181,14 @@ export class Sheet {
       const key: ItemKey = `a:${id}`;
       return `<button type="button" class="slot${this.sel === key ? ' sel' : ''}" data-item="${key}" aria-label="${th.armor[id].name}">${img(armorIconUrl(id))}<span>${M.slots[k]}</span></button>`;
     });
-    let h = `<div class="eqp"><div class="slots">${wslot}${head}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${body}${charm}</div></div>`;
+    // two columns on wide screens: character + stats | filters + items
+    let h = `<div class="bagcols"><div class="bagL"><div class="eqp"><div class="slots">${wslot}${head}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${body}${charm}</div></div>`;
     const atk = Math.round(weaponPower(s, p.weapon) * attackMul(s));
     const def = defenseOf(s);
     h += `<div class="stats"><div><span>${M.stats.attack}</span><b>${atk}</b></div><div title="${M.reduction(Math.round(damageReduction(s) * 100))}"><span>${M.stats.defense}</span><b>${def}</b></div><div><span>${M.stats.hp}</span><b>${p.maxHp}</b></div><div><span>${M.stats.stamina}</span><b>${p.maxSt}</b></div></div>`;
 
     // filters, detail card, item grid
-    h += `<div class="filters">${FILTERS.map((f) => `<button type="button" class="chipbtn${this.filter === f ? ' on' : ''}" data-filter="${f}">${M.filters[f]}</button>`).join('')}</div>`;
+    h += `</div><div class="bagR"><div class="filters">${FILTERS.map((f) => `<button type="button" class="chipbtn${this.filter === f ? ' on' : ''}" data-filter="${f}">${M.filters[f]}</button>`).join('')}</div>`;
     const items = this.bagItems(s).filter((it) => this.matches(it.key));
     if (this.sel && this.sel !== wkey && !this.sel.startsWith('a:') && !items.some((it) => it.key === this.sel)) this.sel = null;
     h += this.sel ? this.detail(s, this.sel) : `<p class="note">${items.length ? M.bagHelp : M.bagEmpty}</p>`;
@@ -196,7 +197,7 @@ export class Sheet {
         `<button type="button" class="cell r${it.rarity}${this.sel === it.key ? ' sel' : ''}${it.equipped ? ' eq' : ''}" data-item="${it.key}" aria-label="${it.name}">${img(it.icon)}${it.count !== null ? `<b>${it.count}</b>` : ''}</button>`,
     );
     for (let i = cells.length; i < MIN_CELLS; i++) cells.push('<div class="cell blank"></div>');
-    h += `<div class="grid">${cells.join('')}</div>`;
+    h += `<div class="grid">${cells.join('')}</div></div></div>`;
 
     if (goal) h += `<div class="goalbox"><b>${goal.title}</b><p>${goal.desc}</p></div>`;
     h += `<h3 class="sec">${M.skills}</h3><div class="skl">${weaponSkills(p.weapon)
