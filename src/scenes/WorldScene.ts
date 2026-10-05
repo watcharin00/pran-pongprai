@@ -134,6 +134,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   create(data: SceneData): void {
     const save = loadFromStorage(readKey, TUNING.save.key, TUNING.save.legacyKey);
     this.s = createGame({ rngSeed: (Date.now() ^ 0x5f3759df) >>> 0 || 1, now: Date.now(), save, map: data.map });
+    // dev only: lets browser smoke tests drive the live game (stripped from production builds)
+    if (import.meta.env.DEV) (window as unknown as { __pranGame?: GameState }).__pranGame = this.s;
     this.input.enabled = false;
 
     this.worldLayer = this.add.layer();

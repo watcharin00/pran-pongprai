@@ -207,3 +207,14 @@ describe('swamp content: rear attacks', () => {
     expect(picked).not.toContain('tailwhip');
   });
 });
+
+describe('every area', () => {
+  it('has its own monsters, and each one can reach the player from its spawn cells', () => {
+    for (const id of AREA_IDS) {
+      const s = createGame({ rngSeed: 11, now: NOW });
+      if (id !== 'home') changeArea(s, id);
+      expect(s.monsters.length, id).toBeGreaterThan(0);
+      for (const m of s.monsters) expect(walkable(s.map, Math.floor(m.x / T), Math.floor(m.y / T)), `${id} ${m.kind}`).toBe(true);
+    }
+  });
+});

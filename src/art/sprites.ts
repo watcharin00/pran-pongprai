@@ -404,7 +404,68 @@ function buildBear(f: number, hb: boolean): HTMLCanvasElement {
   return finish(b);
 }
 
+/** เก้ง (barking deer): small reddish deer, short antlers. Head = antlers. */
+function buildMuntjac(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(21, 19);
+  const o = 1;
+  const B = '#b8693a';
+  const D = '#8a4a26';
+  sp(b, 3 + o, 7 + o, '#f4eed4');
+  sp(b, 4 + o, 7 + o, B);
+  legs(b, f, [[5 + o, 0], [7 + o, 1], [12 + o, 0], [14 + o, 1]], 11 + o, 1, 5, D, '#6a3a1c', '#16100f');
+  ell(b, 10 + o, 9 + o, 5.6, 2.8, B);
+  ell(b, 10 + o, 10.6 + o, 3.6, 0.9, '#e8c8a0');
+  rect(b, 14 + o, 5 + o, 2, 4, B);
+  ell(b, 16.5 + o, 4.5 + o, 2.4, 1.8, B);
+  rect(b, 18 + o, 4 + o, 2, 2, D);
+  sp(b, 16 + o, 4 + o, '#221a2a');
+  sp(b, 15 + o, 2 + o, D);
+  if (!hb) {
+    ([[16, 2], [16, 1], [17, 0], [15, 1]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#e8d0a0'));
+  }
+  return finish(b);
+}
+
+/** ช้างป่า (wild elephant): grey giant, big ear, curled trunk, tail tuft. Head = trunk, tail = tail. */
+function buildElephant(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(47, 33);
+  const o = 1;
+  const B = '#8a8a90';
+  const D = '#6a6a72';
+  const L = '#a8a8ae';
+  if (!tb) {
+    line(b, 4 + o, 13 + o, 1 + o, 20 + o, D);
+    rect(b, 0 + o, 20 + o, 2, 3, '#2a2a2a');
+  } else {
+    sp(b, 4 + o, 13 + o, D);
+  }
+  // four pillar legs
+  ([[8, 0], [13, 1], [26, 0], [31, 1]] as const).forEach(([x, ph], i) => {
+    const off = Math.round(Math.sin(((f + ph * 2) * Math.PI) / 2) * 1);
+    rect(b, x + off + o, 21 + o, 5, 8, i % 2 ? D : B);
+    rect(b, x + off + o, 29 + o, 5, 1, '#e8e2d0');
+  });
+  ell(b, 20 + o, 14 + o, 16, 9, B);
+  ell(b, 17 + o, 9 + o, 10, 3, L);
+  ell(b, 20 + o, 20 + o, 12, 2, D);
+  // head and large ear
+  ell(b, 37 + o, 11 + o, 6, 6.5, B);
+  ell(b, 33 + o, 12 + o, 4, 6, D);
+  ell(b, 33 + o, 11 + o, 3, 4.6, '#c89a9a');
+  sp(b, 39 + o, 9 + o, '#221a2a');
+  if (!hb) {
+    // trunk curling down and forward
+    ([[41, 13], [41, 15], [42, 17], [42, 19], [42, 21], [43, 23], [44, 24]] as const).forEach(([x, y], i) => rect(b, x + o, y + o, i < 5 ? 3 : 2, 2, i % 2 ? L : B));
+    sp(b, 41 + o, 15 + o, '#f4eed4');
+  } else {
+    rect(b, 41 + o, 13 + o, 2, 4, D);
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  muntjac: (f, hb) => buildMuntjac(f, hb),
+  elephant: (f, hb, tb) => buildElephant(f, hb, tb),
   serow: (f, hb) => buildSerow(f, hb),
   bear: (f, hb) => buildBear(f, hb),
   monitor: (f, _hb, tb) => buildMonitor(f, tb),
