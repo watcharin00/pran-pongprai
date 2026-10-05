@@ -748,7 +748,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         if (Math.sin(time * 2 + o) > 0.3) px(xx * T + 3 + ((o + Math.floor(time * 4)) % 9), yy * T + 7 + ((o * 5) % 6), 0xc8fff0, 2, 1);
       }
     }
-    if (this.s.area !== 'home') return;
+    if (this.s.area !== 'home') {
+      // field crop images live in world space: hide them or they show up on every other map
+      for (const img of this.cropImgs.values()) img.setVisible(false);
+      return;
+    }
     // fountain spray + pot fire
     const fx = PLAZA.x * T;
     const fy = PLAZA.y * T;
@@ -761,7 +765,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     // crops
     this.s.plots.forEach((pl, i) => {
       const img = this.cropImgs.get(i);
-      if (!pl.crop || this.s.area !== 'home') {
+      if (!pl.crop) {
         img?.setVisible(false);
         return;
       }
