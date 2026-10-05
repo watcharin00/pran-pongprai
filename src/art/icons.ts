@@ -112,6 +112,35 @@ const SHAPES: Record<IconShape, ShapeDrawer> = {
     line(b, 9, 7, 9, 4, '#3fa34a');
     ell(b, 11, 4, 1.8, 1, '#5fc26a');
   },
+  feather: (b, c) => {
+    for (let i = 0; i < 10; i++) {
+      const x = 4 + i;
+      const y = 14 - i;
+      const w = i < 2 ? 1 : i > 7 ? 2 : 3;
+      ell(b, x, y, w * 0.7, w * 0.7, i % 3 === 0 ? tint(c, -0.2) : c);
+    }
+    line(b, 3, 15, 13, 5, tint(c, 0.5));
+  },
+  meat: (b, c) => {
+    ell(b, 8, 9, 5.5, 4.5, c);
+    ell(b, 7, 8, 2.5, 1.8, tint(c, 0.35));
+    rect(b, 12, 11, 3, 2, '#f4eed4');
+    ell(b, 15, 11, 1.6, 1.6, '#f4eed4');
+    ell(b, 15, 13, 1.6, 1.6, '#f4eed4');
+  },
+  stalk: (b, c) => {
+    ([[6, -1], [9, 0], [12, 1]] as const).forEach(([x, lean]) => {
+      line(b, x, 15, x + lean * 2, 3, c);
+      line(b, x + 1, 15, x + 1 + lean * 2, 5, tint(c, -0.25));
+    });
+    rect(b, 5, 13, 9, 2, '#f0e0b0');
+  },
+  grain: (b, c) => {
+    ell(b, 9, 11, 6, 3.5, '#8a5530');
+    ell(b, 9, 10, 5, 2.6, c);
+    ([[6, 9], [9, 8], [12, 9], [8, 11], [11, 11]] as const).forEach(([x, y]) => sp(b, x, y, tint(c, 0.5)));
+    rect(b, 3, 12, 13, 2, '#6b4a2e');
+  },
   sack: (b, c) => {
     ell(b, 9, 11, 5.5, 4.5, c);
     rect(b, 7, 5, 4, 3, c);

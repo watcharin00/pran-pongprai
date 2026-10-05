@@ -1,15 +1,15 @@
-// End-to-end: CLAUDE.md DoD #4 — a full mossfang hunt with only the attack button held, and with AUTO.
+// End-to-end: CLAUDE.md DoD #4 — a full dhole hunt with only the attack button held, and with AUTO.
 import { describe, expect, it } from 'vitest';
 import { autoIntent, createAutoPilot } from '../src/core/autoPilot';
 import { createGame } from '../src/core/sim';
 import { addMonster, game, intent, MAP, NOW, openSpot, run } from './helpers';
 
 describe('full hunts', () => {
-  it('kills a mossfang by holding attack only', () => {
+  it('kills a dhole by holding attack only', () => {
     const s = game();
     const spot = openSpot(s);
     Object.assign(s.player, spot);
-    addMonster(s, 'mossfang', spot.x + 40, spot.y);
+    addMonster(s, 'dhole', spot.x + 40, spot.y);
     let killed = false;
     s.events.on('monster:killed', () => (killed = true));
     run(s, 60, () => intent({ attack: true }), () => killed);
@@ -17,23 +17,23 @@ describe('full hunts', () => {
     expect(s.inv.hide).toBeGreaterThanOrEqual(2);
   });
 
-  it('AUTO leaves the village, finds and kills a mossfang', () => {
+  it('AUTO leaves the village, finds and kills a dhole', () => {
     const s = createGame({ rngSeed: 3, now: NOW, map: MAP });
     s.autoOn = true;
     const ap = createAutoPilot();
     let kills = 0;
     s.events.on('monster:killed', (e) => {
-      if (e.kind === 'mossfang') kills++;
+      if (e.kind === 'dhole') kills++;
     });
     run(s, 180, () => autoIntent(s, ap, 1 / 60), () => kills >= 1);
     expect(kills).toBeGreaterThanOrEqual(1);
   });
 
-  it('cuts the cinderhorn tail by standing behind it', () => {
+  it('cuts the gaur tail by standing behind it', () => {
     const s = game();
     s.player.weapon = 'cleaver';
     const spot = openSpot(s);
-    const m = addMonster(s, 'cinderhorn', spot.x, spot.y, 1);
+    const m = addMonster(s, 'gaur', spot.x, spot.y, 1);
     m.hp = 99999;
     Object.assign(s.player, { x: spot.x - 26, y: spot.y });
     m.mode = 'stun';

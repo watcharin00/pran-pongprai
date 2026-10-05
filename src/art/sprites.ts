@@ -1,7 +1,7 @@
 // Character, monster, weapon and pickup sprites.
 import type { MonsterId, WeaponDef } from '../data/types';
 import { hash } from '../core/rng';
-import { createBuffer, ell, finish, fromRows, line, rect, sp } from './pixelBuffer';
+import { createBuffer, ell, finish, fromRows, line, rect, sp, type PixelBuffer } from './pixelBuffer';
 
 // ---------- player ----------
 const PLAYER_PAL: Record<string, string> = {
@@ -27,99 +27,197 @@ export function buildPlayerFrames(): HTMLCanvasElement[] {
 /** Builds one animation frame (0-3); broken parts must visibly disappear. */
 export type MonsterSpriteBuilder = (frame: number, headBroken: boolean, tailBroken: boolean) => HTMLCanvasElement;
 
-function buildMossfang(f: number, broken: boolean): HTMLCanvasElement {
+type Leg = readonly [x: number, phase: number];
+
+/** Four legs with a walk cycle; odd legs drawn darker, then a 1px foot. */
+function legs(b: PixelBuffer, f: number, xs: readonly Leg[], y: number, w: number, h: number, light: string, dark: string, foot: string): void {
+  xs.forEach(([x, ph], i) => {
+    const off = Math.round(Math.sin(((f + ph * 2) * Math.PI) / 2) * 1.3);
+    rect(b, x + off, y, w, h, i % 2 ? dark : light);
+    rect(b, x + off, y + h, w, 1, foot);
+  });
+}
+
+/** หมาใน (dhole): rusty red wild dog, black bushy tail. Head part = fangs. */
+function buildDhole(f: number, broken: boolean): HTMLCanvasElement {
   const b = createBuffer(25, 17);
   const o = 1;
-  const B = '#2f7d5c';
-  const D = '#225e44';
-  const L = '#cfe6a0';
-  const M = '#b6ec7a';
-  ell(b, 4 + o, 7 + o, 3.4, 1.6, D);
-  sp(b, 1 + o, 6 + o, M);
-  sp(b, 2 + o, 5 + o, M);
-  ([[6, 0], [8, 1], [14, 0], [16, 1]] as const).forEach(([x, ph], i) => {
-    const off = Math.round(Math.sin(((f + ph * 2) * Math.PI) / 2) * 1.3);
-    rect(b, x + off + o, 10 + o, 2, 3, i % 2 ? D : '#2a6e50');
-    sp(b, x + off + o, 13 + o, '#f4eed4');
-    sp(b, x + off + 1 + o, 13 + o, '#f4eed4');
-  });
-  ell(b, 10.5 + o, 8 + o, 6.8, 3.7, B);
-  ell(b, 10.5 + o, 10.2 + o, 4.6, 1.3, L);
-  for (let x = 5; x <= 14; x++) {
-    if (hash(x, 3) < 0.7) sp(b, x + o, 4 + o + (x % 3 === 0 ? -1 : 0), M);
-    sp(b, x + o, 5 + o, hash(x, 9) < 0.5 ? M : B);
-  }
-  ell(b, 16.5 + o, 6.5 + o, 3.8, 3.1, B);
-  rect(b, 18 + o, 6 + o, 3, 3, B);
+  const B = '#c0582e';
+  const D = '#8e3e20';
+  const L = '#f0d8b0';
+  ell(b, 4 + o, 7 + o, 3.6, 1.8, D);
+  ell(b, 2 + o, 6.5 + o, 2, 1.5, '#2a1e1a');
+  legs(b, f, [[6 + o, 0], [8 + o, 1], [14 + o, 0], [16 + o, 1]], 10 + o, 2, 3, B, D, '#3a2418');
+  ell(b, 10.5 + o, 8 + o, 6.6, 3.4, B);
+  ell(b, 10.5 + o, 10 + o, 4.6, 1.3, L);
+  for (let x = 6; x <= 14; x++) if (hash(x, 5) < 0.5) sp(b, x + o, 5 + o, '#d87040');
+  // head with pointed ears and a dark muzzle
+  ell(b, 16.5 + o, 6.5 + o, 3.6, 3, B);
+  sp(b, 15 + o, 3 + o, D);
+  sp(b, 15 + o, 2 + o, D);
+  sp(b, 17 + o, 3 + o, D);
+  sp(b, 17 + o, 2 + o, '#2a1e1a');
+  rect(b, 18 + o, 6 + o, 3, 2, L);
+  sp(b, 21 + o, 6 + o, '#2a1e1a');
   rect(b, 18 + o, 8 + o, 3, 1, '#7a1f1a');
   if (!broken) {
-    // fangs
     sp(b, 19 + o, 9 + o, '#ffffff');
     sp(b, 21 + o, 8 + o, '#ffffff');
-    sp(b, 18 + o, 9 + o, '#ffffff');
   }
-  sp(b, 15 + o, 2 + o, D);
-  sp(b, 15 + o, 3 + o, D);
-  sp(b, 16 + o, 3 + o, D);
-  sp(b, 16 + o, 2 + o, '#c86a6a');
-  sp(b, 17 + o, 5 + o, '#fff06a');
+  sp(b, 17 + o, 5 + o, '#221a2a');
   return finish(b);
 }
 
-function buildCinderhorn(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+/** ไก่ป่า (red junglefowl): red comb, golden hackles, arched dark tail. Head part = comb. */
+function buildJunglefowl(f: number, broken: boolean): HTMLCanvasElement {
+  const b = createBuffer(19, 17);
+  const o = 1;
+  ([[2, 3], [1, 4], [1, 5], [2, 6], [3, 7]] as const).forEach(([x, y]) => rect(b, x + o, y + o, 2, 1, '#1e4a5e'));
+  ([[3, 2], [4, 3], [4, 4], [5, 5]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#2a6e50'));
+  const step = Math.round(Math.sin((f * Math.PI) / 2) * 1.2);
+  rect(b, 8 + step + o, 11 + o, 1, 3, '#8a8f98');
+  rect(b, 10 - step + o, 11 + o, 1, 3, '#6c7078');
+  rect(b, 7 + step + o, 14 + o, 3, 1, '#6c7078');
+  rect(b, 9 - step + o, 14 + o, 3, 1, '#5a5e66');
+  ell(b, 8.5 + o, 8.5 + o, 4.5, 3.2, '#1e3a2e');
+  ell(b, 8 + o, 7.5 + o, 3, 1.6, '#2a5a44');
+  // golden hackles + head
+  ell(b, 12 + o, 6 + o, 2.4, 3, '#e8902e');
+  ell(b, 13 + o, 5 + o, 2, 1.8, '#d8803a');
+  sp(b, 13 + o, 4 + o, '#221a2a');
+  rect(b, 15 + o, 5 + o, 2, 1, '#f0c040');
+  sp(b, 14 + o, 7 + o, '#e0302a');
+  if (!broken) {
+    // tall serrated comb
+    ([[11, 2], [12, 1], [12, 2], [13, 0], [13, 1], [13, 2], [14, 1], [14, 2], [15, 2], [15, 3], [12, 3], [14, 3]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#ff2a2a'));
+  } else {
+    sp(b, 13 + o, 3 + o, '#a8302a');
+  }
+  return finish(b);
+}
+
+/** หมูป่า (wild boar): grey-brown, bristly mane, white tusks. Head = tusks, tail part = mane. */
+function buildBoar(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(31, 21);
+  const o = 1;
+  const B = '#5e4a3c';
+  const D = '#3e3028';
+  sp(b, 3 + o, 10 + o, D);
+  sp(b, 2 + o, 11 + o, D);
+  legs(b, f, [[7 + o, 0], [10 + o, 1], [18 + o, 0], [21 + o, 1]], 13 + o, 2, 3, B, D, '#1e1612');
+  ell(b, 13.5 + o, 10 + o, 9.5, 4.8, B);
+  ell(b, 13 + o, 12.5 + o, 7, 1.6, '#6e5a4a');
+  if (!tb) {
+    // bristle mane along the back
+    for (let x = 7; x <= 20; x++) {
+      const h = 2 + Math.round(hash(x, 11) * 1.5);
+      rect(b, x + o, 7 - h + o, 1, h, x % 2 ? '#2a2220' : '#3a3030');
+    }
+  }
+  ell(b, 23.5 + o, 10 + o, 4.4, 3.8, B);
+  rect(b, 26 + o, 10 + o, 3, 3, '#b08878');
+  sp(b, 28 + o, 11 + o, '#4a2a22');
+  sp(b, 22 + o, 6 + o, D);
+  sp(b, 23 + o, 5 + o, D);
+  sp(b, 24 + o, 8 + o, '#221a2a');
+  if (!hb) {
+    sp(b, 26 + o, 9 + o, '#f4eed4');
+    sp(b, 27 + o, 8 + o, '#f4eed4');
+    sp(b, 25 + o, 13 + o, '#f4eed4');
+  }
+  return finish(b);
+}
+
+/** กระทิงผาแดง (canyon gaur): near-black bull, white stockings, ember cracks, fire-tipped tail. */
+function buildGaur(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   const b = createBuffer(37, 24);
   const o = 1;
-  const B = '#3a2f31';
-  const P = '#564749';
+  const B = '#3a2a24';
+  const P = '#4e3a30';
   const K = '#ff7a2e';
   const Y = '#ffc34d';
   if (!tb) {
-    ell(b, 5 + o, 11 + o, 5, 2.1, B);
-    sp(b, 1 + o, 10 + o, Y);
-    sp(b, 2 + o, 10 + o, K);
-    sp(b, 1 + o, 11 + o, K);
+    line(b, 2 + o, 11 + o, 7 + o, 10 + o, B);
+    line(b, 2 + o, 12 + o, 7 + o, 11 + o, B);
+    ell(b, 1.5 + o, 11.5 + o, 1.6, 1.6, K);
     sp(b, 0 + o, 10 + o, Y);
   } else {
-    // stub
-    ell(b, 8 + o, 11 + o, 2.6, 1.8, B);
+    ell(b, 7 + o, 11 + o, 1.8, 1.4, B);
     sp(b, 6 + o, 11 + o, K);
   }
   ([[9, 0], [13, 1], [21, 0], [25, 1]] as const).forEach(([x, ph], i) => {
     const off = Math.round(Math.sin(((f + ph * 2) * Math.PI) / 2) * 1.3);
-    rect(b, x + off + o, 15 + o, 3, 4, i % 2 ? '#2a2224' : '#342b2d');
+    rect(b, x + off + o, 15 + o, 3, 2, i % 2 ? '#2a1e1a' : '#342622');
+    rect(b, x + off + o, 17 + o, 3, 2, '#f0ead8');
     rect(b, x + off + o, 19 + o, 3, 1, '#16100f');
   });
-  ell(b, 17 + o, 12 + o, 11, 5.6, B);
-  ell(b, 17 + o, 15 + o, 8, 1.4, '#2a2224');
-  for (let x = 9; x <= 24; x += 3) {
-    sp(b, x + o, 6 + o, P);
-    sp(b, x + 1 + o, 6 + o, P);
-    sp(b, x + o, 5 + o, P);
-    sp(b, x + o, 4 + o, '#6e5d5f');
-  }
-  ([[11, 10], [12, 11], [13, 11], [14, 12], [18, 9], [19, 10], [19, 11], [20, 12], [23, 11], [24, 10], [15, 14], [16, 14], [25, 12]] as const).forEach(([x, y]) => sp(b, x + o, y + o, K));
-  ([[13, 11], [19, 10], [24, 10]] as const).forEach(([x, y]) => sp(b, x + o, y + o, Y));
-  ell(b, 28 + o, 11 + o, 4.6, 3.6, B);
-  rect(b, 29 + o, 12 + o, 4, 2, P);
-  sp(b, 32 + o, 12 + o, K);
+  ell(b, 17 + o, 12 + o, 11, 5.4, B);
+  // shoulder hump
+  ell(b, 22 + o, 8 + o, 5, 3, P);
+  ell(b, 17 + o, 15 + o, 8, 1.3, '#2a1e1a');
+  ([[11, 10], [12, 11], [13, 11], [14, 12], [18, 9], [19, 10], [19, 11], [15, 14], [16, 14]] as const).forEach(([x, y]) => sp(b, x + o, y + o, K));
+  ([[13, 11], [19, 10]] as const).forEach(([x, y]) => sp(b, x + o, y + o, Y));
+  ell(b, 28 + o, 11 + o, 4.4, 3.6, B);
+  rect(b, 30 + o, 12 + o, 3, 2, P);
+  sp(b, 32 + o, 13 + o, '#b8a890');
   sp(b, 29 + o, 10 + o, '#ffb000');
-  sp(b, 30 + o, 10 + o, '#ffe070');
+  rect(b, 27 + o, 8 + o, 3, 1, '#c8b890');
   if (!hb) {
-    ([[29, 8], [30, 7], [30, 6], [31, 5], [31, 4], [32, 3], [32, 2], [33, 1]] as const).forEach(([x, y], i) => {
-      sp(b, x + o, y + o, '#ece2c6');
-      if (i < 5) sp(b, x + 1 + o, y + o, '#b9a984');
-    });
+    // horns curving up and inward
+    // far horn (darker) then near horn: thick at the base, curving up and forward
+    ([[30, 7], [30, 6], [31, 5], [31, 4], [32, 3]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#b9ab88'));
+    ([[27, 7], [28, 7], [26, 6], [27, 6], [26, 5], [26, 4], [27, 3], [28, 2]] as const).forEach(([x, y]) => sp(b, x + o, y + o, '#ece2c6'));
+    sp(b, 29 + o, 2 + o, '#3a3028');
+    sp(b, 33 + o, 3 + o, '#3a3028');
   } else {
-    // snapped horn
-    sp(b, 29 + o, 8 + o, '#b9a984');
-    sp(b, 30 + o, 7 + o, '#8a7d60');
+    sp(b, 27 + o, 7 + o, '#b9a984');
+    sp(b, 30 + o, 7 + o, '#b9a984');
+  }
+  return finish(b);
+}
+
+/** เสือโคร่ง (tiger): orange with black stripes, white muzzle. Head = fangs, tail = long striped tail. */
+function buildTiger(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(39, 22);
+  const o = 1;
+  const B = '#e8902e';
+  const D = '#c8701e';
+  const S = '#2a1e1a';
+  const W = '#f8f0e0';
+  if (!tb) {
+    const pts: [number, number][] = [[1, 4], [2, 5], [3, 6], [4, 7], [5, 8], [6, 9], [7, 9], [8, 10]];
+    pts.forEach(([x, y], i) => rect(b, x + o, y + o, 2, 2, i < 2 || i % 2 ? S : B));
+  } else {
+    rect(b, 7 + o, 9 + o, 2, 2, B);
+    sp(b, 7 + o, 9 + o, S);
+  }
+  legs(b, f, [[10 + o, 0], [13 + o, 1], [24 + o, 0], [27 + o, 1]], 14 + o, 3, 3, B, D, W);
+  ell(b, 19 + o, 11 + o, 10.5, 4.6, B);
+  ell(b, 19 + o, 13.5 + o, 8, 1.6, W);
+  for (let x = 11; x <= 27; x += 3) line(b, x + o, 7 + o, x + 1 + o, 11 + o, S);
+  ell(b, 31 + o, 9 + o, 4.6, 4, B);
+  sp(b, 28 + o, 5 + o, B);
+  sp(b, 28 + o, 4 + o, S);
+  sp(b, 32 + o, 5 + o, B);
+  sp(b, 32 + o, 4 + o, S);
+  rect(b, 33 + o, 9 + o, 3, 3, W);
+  sp(b, 36 + o, 9 + o, S);
+  sp(b, 31 + o, 7 + o, '#9fe07a');
+  line(b, 29 + o, 6 + o, 30 + o, 9 + o, S);
+  rect(b, 33 + o, 12 + o, 3, 1, '#7a1f1a');
+  if (!hb) {
+    sp(b, 34 + o, 13 + o, '#ffffff');
+    sp(b, 36 + o, 12 + o, '#ffffff');
   }
   return finish(b);
 }
 
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
-  mossfang: (f, hb) => buildMossfang(f, hb),
-  cinderhorn: (f, hb, tb) => buildCinderhorn(f, hb, tb),
+  junglefowl: (f, hb) => buildJunglefowl(f, hb),
+  dhole: (f, hb) => buildDhole(f, hb),
+  boar: (f, hb, tb) => buildBoar(f, hb, tb),
+  gaur: (f, hb, tb) => buildGaur(f, hb, tb),
+  tiger: (f, hb, tb) => buildTiger(f, hb, tb),
 };
 
 export const MONSTER_FRAMES = 4;

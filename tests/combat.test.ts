@@ -6,7 +6,7 @@ import { addMonster, game, openSpot } from './helpers';
 describe('position-based parts', () => {
   it('front hits the head, behind hits the tail, the middle hits the body', () => {
     const s = game();
-    const m = addMonster(s, 'cinderhorn', 500, 500, 1); // facing right, size 14 → threshold 3.5
+    const m = addMonster(s, 'gaur', 500, 500, 1); // facing right, size 14 → threshold 3.5
     expect(partFor(m, 520)).toBe('head');
     expect(partFor(m, 480)).toBe('tail');
     expect(partFor(m, 502)).toBe('body');
@@ -15,18 +15,18 @@ describe('position-based parts', () => {
     expect(partFor(m, 480)).toBe('head');
   });
 
-  it('falls back to body once a part is broken, and mossfang has no tail', () => {
+  it('falls back to body once a part is broken, and dhole has no tail', () => {
     const s = game();
-    const c = addMonster(s, 'cinderhorn', 500, 500, 1);
+    const c = addMonster(s, 'gaur', 500, 500, 1);
     if (c.parts.head) c.parts.head.broken = true;
     expect(partFor(c, 520)).toBe('body');
-    const m = addMonster(s, 'mossfang', 300, 300, 1);
+    const m = addMonster(s, 'dhole', 300, 300, 1);
     expect(partFor(m, 280)).toBe('body');
   });
 
   it('breaking a part drops its material and removes it from the sprite state', () => {
     const s = game();
-    const m = addMonster(s, 'cinderhorn', 500, 500, 1);
+    const m = addMonster(s, 'gaur', 500, 500, 1);
     s.player.x = 480; // behind → tail
     s.player.y = 500;
     const broken: string[] = [];
@@ -39,7 +39,7 @@ describe('position-based parts', () => {
 
   it('marks part hits with multiplier ≥ 1.4 as gold numbers', () => {
     const s = game();
-    const m = addMonster(s, 'cinderhorn', 500, 500, 1);
+    const m = addMonster(s, 'gaur', 500, 500, 1);
     s.player.x = 480;
     s.player.y = 500;
     let gold = false;
@@ -53,7 +53,7 @@ describe('stun and rage', () => {
   it('hammer hits to the head build stun until the monster is dazed', () => {
     const s = game();
     s.player.weapon = 'mossmaul'; // stun 34 per head hit
-    const m = addMonster(s, 'cinderhorn', 500, 500, 1);
+    const m = addMonster(s, 'gaur', 500, 500, 1);
     m.hp = 99999;
     s.player.x = 520;
     s.player.y = 500;
@@ -65,15 +65,15 @@ describe('stun and rage', () => {
     expect(m.stunT).toBeCloseTo(2.6);
   });
 
-  it('cinderhorn enrages below 50% HP; mossfang never does', () => {
+  it('gaur enrages below 50% HP; dhole never does', () => {
     const s = game();
-    const c = addMonster(s, 'cinderhorn', 500, 500, 1);
-    c.hp = MONSTERS.cinderhorn.hp * 0.5 + 1;
+    const c = addMonster(s, 'gaur', 500, 500, 1);
+    c.hp = MONSTERS.gaur.hp * 0.5 + 1;
     s.player.x = 502;
     s.player.y = 500;
     hitMonster(s, c, 1);
     expect(c.rage).toBe(true);
-    const m = addMonster(s, 'mossfang', 300, 300, 1);
+    const m = addMonster(s, 'dhole', 300, 300, 1);
     m.hp = 10;
     hitMonster(s, m, 0.5);
     expect(m.rage).toBe(false);
@@ -85,8 +85,8 @@ describe('i-frames', () => {
     const s = game();
     const spot = openSpot(s);
     Object.assign(s.player, spot);
-    const m = addMonster(s, 'mossfang', spot.x + 10, spot.y);
-    const attack = MONSTERS.mossfang.attacks[0];
+    const m = addMonster(s, 'dhole', spot.x + 10, spot.y);
+    const attack = MONSTERS.dhole.attacks[0];
     if (!attack) throw new Error('no attack');
     let dodged = 0;
     s.events.on('player:dodged', () => dodged++);
@@ -101,9 +101,9 @@ describe('i-frames', () => {
 
   it('rage adds 15% damage', () => {
     const s = game();
-    const m = addMonster(s, 'cinderhorn', 500, 500);
+    const m = addMonster(s, 'gaur', 500, 500);
     m.rage = true;
-    const charge = MONSTERS.cinderhorn.attacks.find((a) => a.id === 'charge');
+    const charge = MONSTERS.gaur.attacks.find((a) => a.id === 'charge');
     if (!charge) throw new Error('no charge');
     resolveMonsterHit(s, m, charge);
     expect(s.player.hp).toBe(100 - Math.round(32 * 1.15));
@@ -116,9 +116,9 @@ describe('knockout', () => {
     const s = game();
     const spot = openSpot(s);
     Object.assign(s.player, spot, { hp: 5 });
-    const m = addMonster(s, 'mossfang', spot.x + 10, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 10, spot.y);
     Object.assign(m, { aggro: true, huntT: 90, mode: 'chase' });
-    const attack = MONSTERS.mossfang.attacks[0];
+    const attack = MONSTERS.dhole.attacks[0];
     if (!attack) throw new Error();
     let ko = 0;
     s.events.on('player:knockedOut', () => ko++);

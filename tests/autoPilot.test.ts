@@ -9,10 +9,10 @@ describe('AUTO decisions', () => {
     const s = game();
     const spot = openSpot(s);
     Object.assign(s.player, spot);
-    const far = addMonster(s, 'mossfang', spot.x + 400, spot.y);
+    const far = addMonster(s, 'dhole', spot.x + 400, spot.y);
     let i = autoIntent(s, createAutoPilot(), 1 / 60);
     expect(i.attack).toBe(false);
-    const near = addMonster(s, 'mossfang', spot.x + 200, spot.y);
+    const near = addMonster(s, 'dhole', spot.x + 200, spot.y);
     i = autoIntent(s, createAutoPilot(), 1 / 60);
     expect(i.attack).toBe(true);
     expect(i.targetId).toBe(near.id);
@@ -33,7 +33,7 @@ describe('AUTO decisions', () => {
     const s = game();
     const spot = openSpot(s);
     Object.assign(s.player, spot);
-    const m = addMonster(s, 'mossfang', spot.x + 10, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 10, spot.y);
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual([false, false, true]);
     m.mode = 'tele';
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual([true, false, false]);
@@ -43,7 +43,7 @@ describe('AUTO decisions', () => {
     const s = game();
     const spot = openSpot(s);
     Object.assign(s.player, spot);
-    addMonster(s, 'mossfang', spot.x + 60, spot.y);
+    addMonster(s, 'dhole', spot.x + 60, spot.y);
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills[1]).toBe(true);
   });
 
@@ -51,7 +51,7 @@ describe('AUTO decisions', () => {
     const s = game();
     const spot = openSpot(s);
     Object.assign(s.player, spot);
-    const m = addMonster(s, 'mossfang', spot.x + 60, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 60, spot.y);
     m.mode = 'tele';
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual([false, false, false]);
     m.mode = 'dash';

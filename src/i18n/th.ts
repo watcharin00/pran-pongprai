@@ -14,34 +14,63 @@ import type {
 } from '../data/types';
 
 export const materials = {
-  hide: 'หนังมอสส์ฟาง',
-  fang: 'เขี้ยวมอสส์ฟาง',
+  hide: 'หนังหมาใน',
+  fang: 'เขี้ยวหมาใน',
   ore: 'แร่เหล็ก',
   herb: 'สมุนไพร',
-  scale: 'เกล็ดถ่านหิน',
-  horn: 'เขาซินเดอร์',
+  scale: 'หนังกระทิง',
+  horn: 'เขากระทิง',
   etail: 'หางเพลิง',
   core: 'แก่นเพลิง',
+  feather: 'ขนไก่ป่า',
+  fowlmeat: 'เนื้อไก่ป่า',
+  boarhide: 'หนังหมูป่า',
+  tusk: 'เขี้ยวหมูป่า',
+  bristle: 'แผงขนหมูป่า',
+  boarmeat: 'เนื้อหมูป่า',
+  tigerpelt: 'หนังเสือ',
+  tigerfang: 'เขี้ยวเสือ',
+  tigertail: 'หางเสือ',
+  tigereye: 'ตาเสือ',
   yam: 'มันหวาน',
   pepper: 'พริกเพลิง',
+  lemongrass: 'ตะไคร้',
+  rice: 'ข้าวเหนียว',
   seed_herb: 'เมล็ดหญ้ายา',
   seed_yam: 'หัวพันธุ์มันหวาน',
   seed_pepper: 'เมล็ดพริกเพลิง',
+  seed_lemongrass: 'เหง้าตะไคร้',
+  seed_rice: 'เมล็ดข้าวเหนียว',
   fert: 'ปุ๋ยซาก',
 } satisfies Record<MaterialId, string>;
 
 export const rarity = { 1: 'หายาก', 2: 'หายากมาก' } as const;
 
 export const monsters = {
-  mossfang: {
-    name: 'มอสส์ฟาง',
+  junglefowl: {
+    name: 'ไก่ป่า',
+    parts: { head: 'หงอน' },
+    attacks: { peck: 'จิก', flutter: 'บินกระพือ' },
+  },
+  dhole: {
+    name: 'หมาใน',
     parts: { head: 'หัว' },
     attacks: { bite: 'กัด', pounce: 'กระโจน' },
   },
-  cinderhorn: {
-    name: 'ซินเดอร์ฮอร์น',
+  boar: {
+    name: 'หมูป่า',
+    parts: { head: 'เขี้ยว', tail: 'แผงขน' },
+    attacks: { gore: 'ขวิด', charge: 'พุ่งชน' },
+  },
+  gaur: {
+    name: 'กระทิงผาแดง',
     parts: { head: 'เขา', tail: 'หาง' },
     attacks: { stomp: 'กระทืบ', flameRing: 'วงไฟรอบตัว', charge: 'พุ่งชน' },
+  },
+  tiger: {
+    name: 'เสือโคร่ง',
+    parts: { head: 'เขี้ยว', tail: 'หาง' },
+    attacks: { claw: 'ตะปบ', pounce: 'กระโจน', roar: 'คำราม' },
   },
 } satisfies Record<MonsterId, { name: string; parts: Partial<Record<PartId, string>>; attacks: Record<string, string> }>;
 
@@ -55,22 +84,31 @@ export const weaponTypes = {
 
 export const weapons = {
   bone: { name: 'ดาบกระดูก', desc: 'อาวุธเริ่มต้น' },
-  fangblade: { name: 'ดาบเขี้ยวมอสส์', desc: 'ฟันเร็ว ตัดหางได้ดี' },
-  mossmaul: { name: 'ค้อนหินมอสส์', desc: 'ตีหัวซ้ำจนมอนมึน' },
-  cleaver: { name: 'ดาบใหญ่ถ่านเพลิง', desc: 'ต้องหักเขาและตัดหางซินเดอร์ฮอร์น' },
+  fangblade: { name: 'ดาบเขี้ยวหมาใน', desc: 'ฟันเร็ว ตัดหางได้ดี' },
+  mossmaul: { name: 'ตะลุมพุก', desc: 'ค้อนไม้หัวหิน ตีหัวซ้ำจนมอนมึน' },
+  cleaver: { name: 'ดาบใหญ่เขากระทิง', desc: 'ต้องหักเขาและตัดหางกระทิงผาแดง' },
   coreblade: { name: 'ดาบแก่นเพลิง', desc: 'ต้องใช้วัสดุหายาก' },
   bamboospear: { name: 'หอกไม้ไผ่', desc: 'ระยะยาวกว่าดาบ แทงต่อเนื่อง' },
   bamboobow: { name: 'ธนูไม้ไผ่', desc: 'ยิงจากระยะไกล แต่ทำลายชิ้นส่วนช้า' },
-  redcrossbow: { name: 'หน้าไม้ผาแดง', desc: 'ยิงช้าแต่แรง ลูกดอกทะลุได้ 1 ตัว' },
+  redcrossbow: { name: 'หน้าไม้เขี้ยวหมูป่า', desc: 'ยิงช้าแต่แรง ลูกดอกทะลุได้ 1 ตัว' },
+  tuskaxe: { name: 'ขวานเขี้ยวหมูป่า', desc: 'หนักและทำให้มึนเร็ว ท่าประจำพุ่งขวิด' },
+  tigerspear: { name: 'หอกเขี้ยวเสือ', desc: 'หอกของพรานใหญ่ แทงทะลวงสองครั้ง' },
+  stripeblade: { name: 'ดาบลายพาดกลอน', desc: 'ดาบใหญ่ที่แรงที่สุด ต้องมีตาเสือ' },
 } satisfies Record<WeaponId, { name: string; desc: string }>;
 
 export const armor = {
-  mosshood: { name: 'หมวกหนังมอส', desc: 'หมวกเบาจากหนังมอสส์ฟาง' },
-  mossvest: { name: 'เสื้อหนังมอส', desc: 'เสื้อหนังเย็บแน่น กันเขี้ยวได้ดี' },
+  mosshood: { name: 'หมวกหนังหมาใน', desc: 'หมวกเบาจากหนังหมาใน' },
+  mossvest: { name: 'เสื้อหนังหมาใน', desc: 'เสื้อหนังเย็บแน่น กันเขี้ยวได้ดี' },
   fangcharm: { name: 'เครื่องรางเขี้ยว', desc: 'ร้อยเขี้ยวกับสมุนไพร ทำให้ไม่เหนื่อยง่าย' },
-  cinderhelm: { name: 'หมวกเกล็ดเพลิง', desc: 'เกล็ดถ่านหินซ้อนกันหลายชั้น' },
-  cindermail: { name: 'เกราะเกล็ดเพลิง', desc: 'เกราะหนักจากเกล็ดและหางเพลิง' },
+  feathercharm: { name: 'เครื่องรางขนไก่ป่า', desc: 'เบาเหมือนขนนก วิ่งกลิ้งได้นานขึ้น' },
+  boarhelm: { name: 'หมวกหนังหมูป่า', desc: 'หนังหนา มีเขี้ยวประดับ' },
+  boarvest: { name: 'เสื้อหนังหมูป่า', desc: 'บุแผงขนกันกระแทก' },
+  cinderhelm: { name: 'หมวกหนังกระทิง', desc: 'หนังกระทิงซ้อนกันหลายชั้น' },
+  cindermail: { name: 'เกราะหนังกระทิง', desc: 'เกราะหนักจากหนังกระทิงและหางเพลิง' },
   emberamulet: { name: 'เครื่องรางแก่นเพลิง', desc: 'อุ่นอยู่ตลอดเวลา เพิ่มทุกอย่างเล็กน้อย' },
+  tigerhood: { name: 'หมวกหนังเสือ', desc: 'หมวกของพรานผู้ล่าเสือได้' },
+  tigercoat: { name: 'เสื้อหนังเสือ', desc: 'เบาแต่ทนทาน ลายพาดกลอนทั้งตัว' },
+  tigereyecharm: { name: 'เครื่องรางตาเสือ', desc: 'ตาเสือเรืองแสงสีเขียว เพิ่มทุกอย่าง' },
 } satisfies Record<ArmorId, { name: string; desc: string }>;
 
 export const skills = {
@@ -88,23 +126,30 @@ export const skills = {
   pin: { name: 'ยิงตรึง', desc: 'ยิงแรงหนึ่งดอก สะสมความมึน (×2.6)' },
   piercer: { name: 'ศรเจาะ', desc: 'ลูกศรทะลุได้ 3 ตัว ทำลายชิ้นส่วนดี (×2.4)' },
   bolt: { name: 'ดอกทะลวง', desc: 'ลูกดอกแรงพุ่งทะลุทุกตัวในแนว (×4)' },
+  gore: { name: 'พุ่งขวิด', desc: 'พุ่งชนแบบหมูป่า อมตะช่วงสั้น สะสมความมึน (×2.6)' },
+  tigerlunge: { name: 'แทงพยัคฆ์', desc: 'ง้างแล้วแทงยาวสองครั้ง ทำลายชิ้นส่วนแรง (×2.6 ×2)' },
+  stripestorm: { name: 'พายุพาดกลอน', desc: 'หมุนฟันวงใหญ่ ทำลายชิ้นส่วนดี (×3)' },
 } satisfies Record<SkillId, { name: string; desc: string }>;
 
 export const crops = {
   herb: { name: 'หญ้ายา', source: 'เก็บสมุนไพรในป่า' },
-  yam: { name: 'มันหวาน', source: 'ล่ามอสส์ฟาง' },
-  pepper: { name: 'พริกเพลิง', source: 'ล่าซินเดอร์ฮอร์น' },
+  yam: { name: 'มันหวาน', source: 'ล่าหมาใน' },
+  lemongrass: { name: 'ตะไคร้', source: 'ล่าไก่ป่า' },
+  rice: { name: 'ข้าวเหนียว', source: 'ล่าหมูป่า' },
+  pepper: { name: 'พริกเพลิง', source: 'ล่ากระทิงผาแดง' },
 } satisfies Record<CropId, { name: string; source: string }>;
 
 export const meals = {
-  stew: { name: 'สตูมันหวานเนื้อมอส', desc: 'พลังชีวิตสูงสุด +30' },
+  stew: { name: 'แกงป่ามันหวาน', desc: 'พลังชีวิตสูงสุด +30' },
   spicy: { name: 'ข้าวผัดพริกเพลิง', desc: 'พลังโจมตี +20%' },
   tea: { name: 'ชาหญ้ายา', desc: 'ความอึดฟื้นเร็ว กลิ้งเปลืองน้อยลง' },
+  tomyum: { name: 'ต้มยำไก่ป่า', desc: 'ป้องกัน +15' },
+  grill: { name: 'ข้าวเหนียวหมูป่าย่าง', desc: 'พลังชีวิตสูงสุด +20 โจมตี +10%' },
 } satisfies Record<MealId, { name: string; desc: string }>;
 
 export const zones = {
   village: 'หมู่บ้านพราน',
-  forest: 'ป่ามอสส์',
+  forest: 'ป่าดงดิบ',
   bridge: 'สะพานไม้',
   canyon: 'หุบผาแดง',
 } satisfies Record<ZoneId, string>;
@@ -238,18 +283,22 @@ export const menu = {
 
 export const goals: readonly { title: string; desc: string }[] = [
   {
-    title: 'ล่ามอสส์ฟางในป่า',
-    desc: 'ออกทางเหนือของหมู่บ้าน ล่ามอสส์ฟาง เก็บเขี้ยว หนัง และแร่ (หินประกายฟ้า) แล้วกลับมาตีอาวุธ ระหว่างนั้นปลูกผักไว้ด้วย',
+    title: 'ล่าหมาในกับไก่ป่า',
+    desc: 'ออกทางเหนือของหมู่บ้าน ล่าหมาในและไก่ป่า เก็บเขี้ยว หนัง ขนไก่ และแร่ (หินประกายฟ้า) แล้วกลับมาตีอาวุธ ระหว่างนั้นปลูกผักไว้ด้วย',
   },
   {
-    title: 'กินสตูแล้วไปหุบผาแดง',
-    desc: 'ทำสตูมันหวานเนื้อมอส (HP +30) แล้วข้ามสะพานทางตะวันออก ตีหัวซินเดอร์ฮอร์นจากด้านหน้าเพื่อหักเขา และอ้อมไปด้านหลังเพื่อตัดหาง',
+    title: 'กินแกงป่าแล้วไปหุบผาแดง',
+    desc: 'ทำแกงป่ามันหวาน (HP +30) แล้วข้ามสะพานทางตะวันออก ตีหัวกระทิงผาแดงจากด้านหน้าเพื่อหักเขา และอ้อมไปด้านหลังเพื่อตัดหาง',
   },
   {
     title: 'ปลูกพริกเพลิง ล่าหาแก่นเพลิง',
-    desc: 'ซินเดอร์ฮอร์นให้เมล็ดพริกเพลิง ปลูกแล้วทำข้าวผัดพริกเพลิง (โจมตี +20%) แก่นเพลิงดรอป 25%',
+    desc: 'กระทิงผาแดงให้เมล็ดพริกเพลิง ปลูกแล้วทำข้าวผัดพริกเพลิง (โจมตี +20%) แก่นเพลิงดรอป 25%',
   },
-  { title: 'ครบทุกอาวุธแล้ว', desc: 'ลองล่าซินเดอร์ฮอร์นโดยไม่โดนตีเลยสักครั้ง' },
+  {
+    title: 'ล่าเสือโคร่งในป่าลึก',
+    desc: 'ข้ามสะพานเหนือไปป่าลึกฝั่งตะวันออก เสือโคร่งกระโจนไกลและคำรามเป็นวงกว้าง กินต้มยำไก่ป่า (ป้องกัน +15) ก่อนไป',
+  },
+  { title: 'พรานใหญ่แห่งพงไพร', desc: 'ลองล่าเสือโคร่งโดยไม่โดนตีเลยสักครั้ง' },
 ];
 
 /** Toast / log messages. */

@@ -5,7 +5,7 @@ import { addMonster, game, openSpot, run } from './helpers';
 describe('slow turning', () => {
   it('only flips after wanting the other direction longer than turnTime', () => {
     const s = game();
-    const m = addMonster(s, 'cinderhorn', 0, 0, 1);
+    const m = addMonster(s, 'gaur', 0, 0, 1);
     expect(updateFacing(m, -1, 0.5, 0.75)).toBe(false);
     expect(m.dirX).toBe(1);
     expect(updateFacing(m, -1, 0.3, 0.75)).toBe(true);
@@ -14,7 +14,7 @@ describe('slow turning', () => {
 
   it('resets the turn timer when the player goes back in front', () => {
     const s = game();
-    const m = addMonster(s, 'cinderhorn', 0, 0, 1);
+    const m = addMonster(s, 'gaur', 0, 0, 1);
     updateFacing(m, -1, 0.5, 0.75);
     updateFacing(m, 1, 0.1, 0.75);
     expect(updateFacing(m, -1, 0.5, 0.75)).toBe(false);
@@ -23,7 +23,7 @@ describe('slow turning', () => {
   it('does not attack while the player is behind it — the window to cut the tail', () => {
     const s = game();
     const spot = openSpot(s);
-    const m = addMonster(s, 'cinderhorn', spot.x, spot.y, 1);
+    const m = addMonster(s, 'gaur', spot.x, spot.y, 1);
     m.mode = 'chase';
     m.aggro = true;
     m.huntT = 150;
@@ -37,10 +37,10 @@ describe('slow turning', () => {
     expect(m.dirX).toBe(-1);
   });
 
-  it('mossfang turns faster than cinderhorn', () => {
+  it('dhole turns faster than gaur', () => {
     const s = game();
-    const a = addMonster(s, 'mossfang', 0, 0, 1);
-    const b = addMonster(s, 'cinderhorn', 0, 0, 1);
+    const a = addMonster(s, 'dhole', 0, 0, 1);
+    const b = addMonster(s, 'gaur', 0, 0, 1);
     updateFacing(a, -1, 0.4, 0.35);
     updateFacing(b, -1, 0.4, 0.75);
     expect(a.dirX).toBe(-1);
@@ -52,7 +52,7 @@ describe('monster state machine', () => {
   it('aggroes when the player comes near, telegraphs, then strikes', () => {
     const s = game();
     const spot = openSpot(s);
-    const m = addMonster(s, 'mossfang', spot.x, spot.y, -1);
+    const m = addMonster(s, 'dhole', spot.x, spot.y, -1);
     Object.assign(s.player, { x: spot.x + 18, y: spot.y });
     const modes = new Set<string>();
     run(s, 4, undefined, () => {
@@ -67,8 +67,8 @@ describe('monster state machine', () => {
 
   it('rage makes telegraphs 35% faster', () => {
     const s = game();
-    const a = addMonster(s, 'cinderhorn', 100, 100);
-    const b = addMonster(s, 'cinderhorn', 100, 100);
+    const a = addMonster(s, 'gaur', 100, 100);
+    const b = addMonster(s, 'gaur', 100, 100);
     for (const m of [a, b]) Object.assign(m, { mode: 'tele', t: 1, tt: 1, aggro: true, huntT: 100 });
     b.rage = true;
     s.player.x = 900;
@@ -81,7 +81,7 @@ describe('monster state machine', () => {
 
   it('runs away when the hunt timer expires', () => {
     const s = game();
-    const m = addMonster(s, 'mossfang', 100, 100);
+    const m = addMonster(s, 'dhole', 100, 100);
     Object.assign(m, { aggro: true, huntT: 0.01, mode: 'chase' });
     let fled = false;
     s.events.on('monster:fled', () => (fled = true));
@@ -93,7 +93,7 @@ describe('monster state machine', () => {
 
   it('does not follow the player into the village', () => {
     const s = game();
-    const m = addMonster(s, 'mossfang', 15 * 16, 10 * 16); // north of the village
+    const m = addMonster(s, 'dhole', 15 * 16, 10 * 16); // north of the village
     Object.assign(m, { aggro: true, huntT: 90, mode: 'chase' });
     // player stays at spawn inside the village, > 90px away
     run(s, 3);

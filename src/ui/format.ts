@@ -45,6 +45,9 @@ export const ICONS = {
   volley: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M16 9l3 3-3 3M4 12l13-7M14 4l3 1-1 3M4 12l13 7M16 16l1 3-3 1"/></svg>',
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13M13 8l4 4-4 4"/><path d="M20 5v14" stroke-width="2.6"/></svg>',
   piercer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h18M17 9l3 3-3 3"/><path d="M8 7v10M13 7v10" stroke-width="1.6"/></svg>',
+  gore: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14h9M3 9h6"/><path d="M13 16c5 0 8-3 8-8-2 3-4 4-8 4"/></svg>',
+  tigerlunge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9h15M14 6l4 3-4 3M2 16h15M14 13l4 3-4 3"/></svg>',
+  stripestorm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M8 6l2 4M14 5l-1 4M18 10l-4 2M17 16l-4-2M10 18l1-4"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h19M18 9l3 3-3 3"/><path d="M4 6l4 6-4 6" stroke-width="1.8"/></svg>',
   potion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M10 3h4M10 3v5l-5 9a3 3 0 0 0 3 4h8a3 3 0 0 0 3-4l-5-9V3"/></svg>',
 } as const;

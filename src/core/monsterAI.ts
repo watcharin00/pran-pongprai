@@ -5,10 +5,12 @@ import { MONSTERS, TUNING } from '../data';
 import type { AttackDef, MonsterId, PartId } from '../data/types';
 import { aggro, removeMonster, resolveMonsterHit } from './combat';
 import { canStand, moveBody } from './collision';
-import { inVillagePx, T } from './mapgen';
+import { inVillagePx, PLAZA, T } from './mapgen';
 import type { GameState, MonsterState, PartState, Shape } from './state';
 
 const C = TUNING.combat;
+/** Spawn-distance rules measure from the fountain. */
+const VILLAGE_CENTER = { x: PLAZA.x * T + 8, y: PLAZA.y * T + 8 } as const;
 
 export function createMonster(id: number, kind: MonsterId, x: number, y: number, dirX: 1 | -1): MonsterState {
   const def = MONSTERS[kind];
@@ -24,7 +26,8 @@ export function createMonster(id: number, kind: MonsterId, x: number, y: number,
 /** Places a monster on a random free cell of its zone, away from the player and other monsters. */
 export function spawnMonster(s: GameState, kind: MonsterId): MonsterState | null {
   const def = MONSTERS[kind];
-  const cells = def.zone === 'forest' ? s.map.forestCells : s.map.canyonCells;
+  const zoneCells = def.zone === 'forest' ? s.map.forestCells : s.map.canyonCells;
+  const cells = def.spawnMinVillageDist > 0 ? zoneCells.filter(([tx, ty]) => Math.hypot(tx * T + 8 - VILLAGE_CENTER.x, ty * T + 8 - VILLAGE_CENTER.y) >= def.spawnMinVillageDist) : zoneCells;
   if (cells.length === 0) return null;
   for (let tries = 0; tries < 80; tries++) {
     const [tx, ty] = s.rng.pick(cells);

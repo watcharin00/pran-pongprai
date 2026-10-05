@@ -40,7 +40,7 @@ describe('weapon skill sets', () => {
 describe('line strikes', () => {
   it('thrust strikes three times along the aim, then ends', () => {
     const { s, spot } = arena('bamboospear');
-    const m = addMonster(s, 'mossfang', spot.x + 30, spot.y, -1);
+    const m = addMonster(s, 'dhole', spot.x + 30, spot.y, -1);
     m.hp = 9999;
     let hits = 0;
     s.events.on('monster:hit', () => hits++);
@@ -52,8 +52,8 @@ describe('line strikes', () => {
 
   it('only hits monsters inside the strip, not beside it', () => {
     const { s, spot } = arena('bamboospear');
-    const front = addMonster(s, 'mossfang', spot.x + 30, spot.y);
-    const side = addMonster(s, 'mossfang', spot.x, spot.y + 30);
+    const front = addMonster(s, 'dhole', spot.x + 30, spot.y);
+    const side = addMonster(s, 'dhole', spot.x, spot.y + 30);
     front.hp = side.hp = 9999;
     s.player.lockId = front.id;
     step(s, intent({ skills: slotOf('bamboospear', 'pierce') }), 0, s.now);
@@ -64,7 +64,7 @@ describe('line strikes', () => {
 
   it('rolling cancels the remaining thrusts', () => {
     const { s, spot } = arena('bamboospear');
-    const m = addMonster(s, 'mossfang', spot.x + 30, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 30, spot.y);
     m.hp = 9999;
     let hits = 0;
     s.events.on('monster:hit', () => hits++);
@@ -79,7 +79,7 @@ describe('line strikes', () => {
 describe('projectiles', () => {
   it('a bow attacks from range with arrows that fly before landing', () => {
     const { s, spot } = arena('bamboobow');
-    const m = addMonster(s, 'mossfang', spot.x + 70, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 70, spot.y);
     m.hp = 9999;
     step(s, intent({ attack: true }), 1 / 60, s.now);
     expect(s.shots.length).toBe(1);
@@ -93,7 +93,7 @@ describe('projectiles', () => {
 
   it('part targeting still follows where the player stands', () => {
     const { s, spot } = arena('bamboobow');
-    const m = addMonster(s, 'mossfang', spot.x + 70, spot.y, -1); // facing the player
+    const m = addMonster(s, 'dhole', spot.x + 70, spot.y, -1); // facing the player
     m.hp = 9999;
     const parts: string[] = [];
     s.events.on('monster:hit', (e) => parts.push(e.part));
@@ -110,8 +110,8 @@ describe('projectiles', () => {
     expect(ys.sort()).toEqual([-1, 0, 1]);
 
     s.shots = [];
-    const a = addMonster(s, 'mossfang', spot.x + 30, spot.y);
-    const b = addMonster(s, 'mossfang', spot.x + 55, spot.y);
+    const a = addMonster(s, 'dhole', spot.x + 30, spot.y);
+    const b = addMonster(s, 'dhole', spot.x + 55, spot.y);
     a.hp = b.hp = 9999;
     fireShot(s, spot.x, spot.y, { x: 1, y: 0 }, { speed: 300, range: 120, pierce: 1, mult: 1 });
     run(s, 0.4);
@@ -132,9 +132,9 @@ describe('projectiles', () => {
     expect(s.shots.length).toBe(0);
   });
 
-  it('kills a mossfang with the bow by holding attack only', () => {
+  it('kills a dhole with the bow by holding attack only', () => {
     const { s, spot } = arena('bamboobow');
-    addMonster(s, 'mossfang', spot.x + 60, spot.y);
+    addMonster(s, 'dhole', spot.x + 60, spot.y);
     let killed = false;
     s.events.on('monster:killed', () => (killed = true));
     run(s, 60, () => intent({ attack: true }), () => killed);
@@ -143,7 +143,7 @@ describe('projectiles', () => {
 
   it('AUTO with a bow shoots from range using its skills', () => {
     const { s, spot } = arena('bamboobow');
-    const m = addMonster(s, 'mossfang', spot.x + 70, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 70, spot.y);
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual(slotOf('bamboobow', 'pin'));
     m.mode = 'tele';
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual(slotOf('bamboobow', 'volley'));

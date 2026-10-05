@@ -58,7 +58,7 @@ function armorSum(s: GameState, stat: 'defense' | 'maxHp' | 'stamina'): number {
 }
 
 export function defenseOf(s: GameState): number {
-  return armorSum(s, 'defense');
+  return armorSum(s, 'defense') + (mealEffect(s).defense ?? 0);
 }
 
 /** Fraction of incoming damage removed by armor (0..1). */
@@ -172,8 +172,10 @@ export function cookMeal(s: GameState, id: MealId): ActionResult {
 
 /** Index into the goal list (i18n `goals`), driven by weapon progress. */
 export function goalIndex(s: GameState): number {
-  if (!s.owned.has('fangblade') && !s.owned.has('mossmaul')) return 0;
-  if (!s.owned.has('cleaver')) return 1;
-  if (!s.owned.has('coreblade')) return 2;
-  return 3;
+  const has = (...ids: WeaponId[]): boolean => ids.some((id) => s.owned.has(id));
+  if (!has('fangblade', 'mossmaul', 'bamboospear', 'bamboobow')) return 0;
+  if (!has('cleaver')) return 1;
+  if (!has('coreblade')) return 2;
+  if (!has('tigerspear', 'stripeblade')) return 3;
+  return 4;
 }

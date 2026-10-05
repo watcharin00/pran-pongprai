@@ -760,7 +760,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     for (const { l, img } of this.glows) place(img, l.x, l.y, l.r, l.ga);
     const seen = new Set<number>();
     for (const m of this.s.monsters) {
-      if (m.kind !== 'cinderhorn') continue;
+      if (m.kind !== 'gaur') continue;
       seen.add(m.id);
       let img = this.dynGlows.get(m.id);
       if (!img) {

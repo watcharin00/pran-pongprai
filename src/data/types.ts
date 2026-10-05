@@ -23,7 +23,7 @@ export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon';
 export type ItemBag = Partial<Record<MaterialId, number>>;
 
 /** Procedural icon shape drawn by art/icons.ts; `color` tints it. */
-export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack'] as const;
+export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack', 'feather', 'meat', 'stalk', 'grain'] as const;
 export type IconShape = (typeof ICON_SHAPES)[number];
 
 export interface MaterialDef {
@@ -91,6 +91,8 @@ export interface MonsterDef {
   size: number;
   aggroRadius: number;
   zone: 'forest' | 'canyon';
+  /** only spawn this far (px) or more from the village centre; keeps bosses off the early route */
+  spawnMinVillageDist: number;
   huntTime: number;
   turnTime: number;
   recover: number;
@@ -249,6 +251,8 @@ export interface MealEffect {
   attackMul?: number;
   staminaRegenMul?: number;
   dodgeCost?: number;
+  /** added to armor defense */
+  defense?: number;
 }
 
 export interface MealDef {

@@ -12,10 +12,13 @@
     "mossmaul":    { "type": "hammer",     "damage": 28, "rate": 0.9,  "range": 18, "partMul": { "head": 1.8, "tail": 0.7 }, "stun": 34, "color": "#a8b898", "signature": "quake",     "recipe": { "hide": 4, "ore": 4, "fang": 1 } },
     "cleaver":     { "type": "greatsword", "damage": 44, "rate": 0.72, "range": 22, "partMul": { "head": 1.3, "tail": 1.5 }, "stun": 10, "color": "#ff8a3d", "signature": "slam",      "recipe": { "horn": 1, "etail": 1, "scale": 3, "ore": 2 } },
     "coreblade":   { "type": "greatsword", "damage": 62, "rate": 0.66, "range": 22, "partMul": { "head": 1.5, "tail": 1.6 }, "stun": 16, "color": "#ffd35c", "signature": "coreburst", "recipe": { "core": 1, "horn": 2, "scale": 5 } },
-    "bamboospear": { "type": "spear",      "damage": 14, "rate": 0.5,  "range": 28, "partMul": { "head": 1.2, "tail": 1.2 }, "stun": 0,  "color": "#d8c878", "signature": "pierce",    "recipe": { "hide": 2, "ore": 1, "herb": 2 } },
-    "bamboobow":   { "type": "bow",        "damage": 9,  "rate": 0.42, "range": 90, "partMul": { "head": 0.8, "tail": 0.8 }, "stun": 0,  "color": "#c8a060", "signature": "piercer",   "recipe": { "hide": 2, "fang": 1, "herb": 3 },
+    "bamboospear": { "type": "spear",      "damage": 14, "rate": 0.5,  "range": 28, "partMul": { "head": 1.2, "tail": 1.2 }, "stun": 0,  "color": "#d8c878", "signature": "pierce",    "recipe": { "feather": 2, "fang": 1, "ore": 1 } },
+    "bamboobow":   { "type": "bow",        "damage": 9,  "rate": 0.42, "range": 90, "partMul": { "head": 0.8, "tail": 0.8 }, "stun": 0,  "color": "#c8a060", "signature": "piercer",   "recipe": { "feather": 4, "hide": 1, "herb": 2 },
                      "projectile": { "speed": 300, "range": 120, "pierce": 0 } },
-    "redcrossbow": { "type": "bow",        "damage": 24, "rate": 0.85, "range": 100, "partMul": { "head": 0.9, "tail": 0.9 }, "stun": 0, "color": "#b85a3a", "signature": "bolt",      "recipe": { "scale": 3, "horn": 1, "ore": 3 },
-                     "projectile": { "speed": 380, "range": 140, "pierce": 1 }, "look": "crossbow" }
+    "redcrossbow": { "type": "bow",        "damage": 24, "rate": 0.85, "range": 100, "partMul": { "head": 0.9, "tail": 0.9 }, "stun": 0, "color": "#b85a3a", "signature": "bolt",      "recipe": { "tusk": 2, "boarhide": 2, "ore": 3 },
+                     "projectile": { "speed": 380, "range": 140, "pierce": 1 }, "look": "crossbow" },
+    "tuskaxe":     { "type": "hammer",     "damage": 34, "rate": 0.85, "range": 18, "partMul": { "head": 1.7, "tail": 0.8 }, "stun": 30, "color": "#f4eed4", "signature": "gore",      "recipe": { "tusk": 3, "boarhide": 2, "bristle": 1 } },
+    "tigerspear":  { "type": "spear",      "damage": 40, "rate": 0.48, "range": 30, "partMul": { "head": 1.4, "tail": 1.4 }, "stun": 6,  "color": "#ffb04a", "signature": "tigerlunge", "recipe": { "tigerfang": 1, "tigerpelt": 2, "tusk": 2 } },
+    "stripeblade": { "type": "greatsword", "damage": 70, "rate": 0.68, "range": 22, "partMul": { "head": 1.6, "tail": 1.6 }, "stun": 18, "color": "#e8902e", "signature": "stripestorm", "recipe": { "tigereye": 1, "tigertail": 1, "tigerpelt": 3 } }
   }
 }

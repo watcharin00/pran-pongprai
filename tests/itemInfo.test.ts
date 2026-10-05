@@ -4,9 +4,9 @@ import { itemSources, itemUses } from '../src/ui/itemInfo';
 
 describe('item info (bag detail card)', () => {
   it('derives sources from monster parts, carves, rares and crops', () => {
-    expect(itemSources('fang')).toEqual(expect.arrayContaining([{ kind: 'part', monster: 'mossfang', part: 'head' }, { kind: 'carve', monster: 'mossfang' }]));
-    expect(itemSources('core')).toContainEqual({ kind: 'rare', monster: 'cinderhorn', chance: 0.25 });
-    expect(itemSources('seed_yam')).toContainEqual({ kind: 'bonus', monster: 'mossfang', chance: 0.5 });
+    expect(itemSources('fang')).toEqual(expect.arrayContaining([{ kind: 'part', monster: 'dhole', part: 'head' }, { kind: 'carve', monster: 'dhole' }]));
+    expect(itemSources('core')).toContainEqual({ kind: 'rare', monster: 'gaur', chance: 0.25 });
+    expect(itemSources('seed_yam')).toContainEqual({ kind: 'bonus', monster: 'dhole', chance: 0.5 });
     expect(itemSources('pepper')).toContainEqual({ kind: 'crop', crop: 'pepper' });
     expect(itemSources('ore').some((x) => x.kind === 'gather')).toBe(true);
   });

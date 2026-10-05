@@ -11,12 +11,12 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 describe('content data', () => {
   it('matches the monster table in CLAUDE.md', () => {
-    const m = MONSTERS.mossfang;
+    const m = MONSTERS.dhole;
     expect([m.hp, m.speed, m.size, m.aggroRadius, m.turnTime, m.huntTime, m.recover, m.count, m.respawn]).toEqual([120, 48, 8, 60, 0.35, 90, 0.8, 6, 14]);
     expect(m.parts.head?.hp).toBe(45);
     expect(m.rage).toBeNull();
 
-    const c = MONSTERS.cinderhorn;
+    const c = MONSTERS.gaur;
     expect([c.hp, c.speed, c.size, c.aggroRadius, c.turnTime, c.huntTime, c.recover, c.count, c.respawn]).toEqual([560, 40, 14, 56, 0.75, 150, 1.0, 1, 25]);
     expect(c.parts.head?.hp).toBe(150);
     expect(c.parts.tail?.hp).toBe(110);
@@ -25,17 +25,17 @@ describe('content data', () => {
   });
 
   it('keeps attack shapes as discriminated unions', () => {
-    const charge = MONSTERS.cinderhorn.attacks.find((a) => a.id === 'charge');
+    const charge = MONSTERS.gaur.attacks.find((a) => a.id === 'charge');
     expect(charge?.shape).toBe('line');
     if (charge?.shape === 'line') {
       expect([charge.length, charge.width, charge.telegraph, charge.damage, charge.minRange, charge.dash]).toEqual([130, 24, 1.0, 32, 40, true]);
     }
-    const bite = MONSTERS.mossfang.attacks.find((a) => a.id === 'bite');
+    const bite = MONSTERS.dhole.attacks.find((a) => a.id === 'bite');
     expect(bite?.shape === 'circle' && [bite.radius, bite.offset, bite.telegraph, bite.damage]).toEqual([15, 11, 0.65, 10]);
   });
 
   it('matches the weapon table', () => {
-    expect(Object.keys(WEAPONS)).toEqual(['bone', 'fangblade', 'mossmaul', 'cleaver', 'coreblade', 'bamboospear', 'bamboobow', 'redcrossbow']);
+    expect(Object.keys(WEAPONS)).toEqual(['bone', 'fangblade', 'mossmaul', 'cleaver', 'coreblade', 'bamboospear', 'bamboobow', 'redcrossbow', 'tuskaxe', 'tigerspear', 'stripeblade']);
     expect(WEAPONS.mossmaul).toMatchObject({ type: 'hammer', damage: 28, rate: 0.9, stun: 34, partMul: { head: 1.8, tail: 0.7 } });
     expect(WEAPONS.bone.recipe).toBeNull();
     expect(WEAPON_TYPES.hammer.hitstop).toBe(0.085);
@@ -66,20 +66,20 @@ describe('content data', () => {
 
 describe('data validation', () => {
   it('rejects an unknown attack shape', () => {
-    const bad = clone(monstersJson) as unknown as { mossfang: { attacks: [{ shape: string }] } };
-    bad.mossfang.attacks[0].shape = 'cone';
-    expect(() => loadMonsters(bad, MATERIAL_IDS)).toThrow(/monsters\.mossfang\.attacks\[0\]\.shape/);
+    const bad = clone(monstersJson) as unknown as { dhole: { attacks: [{ shape: string }] } };
+    bad.dhole.attacks[0].shape = 'cone';
+    expect(() => loadMonsters(bad, MATERIAL_IDS)).toThrow(/monsters\.dhole\.attacks\[0\]\.shape/);
   });
 
   it('rejects drops that reference unknown materials', () => {
-    const bad = clone(monstersJson) as unknown as { cinderhorn: { carve: [{ item: string }] } };
-    bad.cinderhorn.carve[0].item = 'dragonscale';
+    const bad = clone(monstersJson) as unknown as { gaur: { carve: [{ item: string }] } };
+    bad.gaur.carve[0].item = 'dragonscale';
     expect(() => loadMonsters(bad, MATERIAL_IDS)).toThrow(DataError);
   });
 
   it('rejects chances above 1', () => {
-    const bad = clone(monstersJson) as unknown as { cinderhorn: { rare: Record<string, number> } };
-    bad.cinderhorn.rare.core = 25;
+    const bad = clone(monstersJson) as unknown as { gaur: { rare: Record<string, number> } };
+    bad.gaur.rare.core = 25;
     expect(() => loadMonsters(bad, MATERIAL_IDS)).toThrow(/rare\.core/);
   });
 

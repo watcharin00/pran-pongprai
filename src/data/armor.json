@@ -1,10 +1,16 @@
 {
   "armor": {
-    "mosshood":    { "slot": "head",  "defense": 4,  "maxHp": 10, "stamina": 0,  "color": "#3f8f6a", "recipe": { "hide": 3, "fang": 1 } },
-    "mossvest":    { "slot": "body",  "defense": 6,  "maxHp": 15, "stamina": 0,  "color": "#2f7d5c", "recipe": { "hide": 4, "ore": 1 } },
-    "fangcharm":   { "slot": "charm", "defense": 0,  "maxHp": 0,  "stamina": 15, "color": "#e9e2c8", "recipe": { "fang": 2, "herb": 2 } },
-    "cinderhelm":  { "slot": "head",  "defense": 9,  "maxHp": 15, "stamina": 0,  "color": "#6a5856", "recipe": { "scale": 3, "horn": 1 } },
-    "cindermail":  { "slot": "body",  "defense": 12, "maxHp": 25, "stamina": 0,  "color": "#564749", "recipe": { "scale": 4, "ore": 2, "etail": 1 } },
-    "emberamulet": { "slot": "charm", "defense": 4,  "maxHp": 20, "stamina": 20, "color": "#ffd35c", "recipe": { "core": 1, "scale": 2 } }
+    "mosshood":       {"slot": "head", "defense": 4, "maxHp": 10, "stamina": 0, "color": "#b5552e", "recipe": {"hide": 3, "fang": 1}},
+    "mossvest":       {"slot": "body", "defense": 6, "maxHp": 15, "stamina": 0, "color": "#9a4426", "recipe": {"hide": 4, "ore": 1}},
+    "fangcharm":      {"slot": "charm", "defense": 0, "maxHp": 0, "stamina": 15, "color": "#e9e2c8", "recipe": {"fang": 2, "herb": 2}},
+    "feathercharm":   {"slot": "charm", "defense": 0, "maxHp": 5, "stamina": 25, "color": "#c8442e", "recipe": {"feather": 4, "herb": 1}},
+    "boarhelm":       {"slot": "head", "defense": 7, "maxHp": 12, "stamina": 0, "color": "#5e4a3c", "recipe": {"boarhide": 3, "tusk": 1}},
+    "boarvest":       {"slot": "body", "defense": 9, "maxHp": 20, "stamina": 0, "color": "#4a3a30", "recipe": {"boarhide": 4, "bristle": 1}},
+    "cinderhelm":     {"slot": "head", "defense": 9, "maxHp": 15, "stamina": 0, "color": "#5a4034", "recipe": {"scale": 3, "horn": 1}},
+    "cindermail":     {"slot": "body", "defense": 12, "maxHp": 25, "stamina": 0, "color": "#4a3428", "recipe": {"scale": 4, "ore": 2, "etail": 1}},
+    "emberamulet":    {"slot": "charm", "defense": 4, "maxHp": 20, "stamina": 20, "color": "#ffd35c", "recipe": {"core": 1, "scale": 2}},
+    "tigerhood":      {"slot": "head", "defense": 12, "maxHp": 20, "stamina": 5, "color": "#e8902e", "recipe": {"tigerpelt": 2, "tigerfang": 1}},
+    "tigercoat":      {"slot": "body", "defense": 15, "maxHp": 30, "stamina": 0, "color": "#d8782a", "recipe": {"tigerpelt": 3, "tigertail": 1}},
+    "tigereyecharm":  {"slot": "charm", "defense": 6, "maxHp": 25, "stamina": 20, "color": "#9fe07a", "recipe": {"tigereye": 1, "tigerfang": 1}}
   }
 }

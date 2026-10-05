@@ -1,8 +1,10 @@
 {
   "fertilizerTimeMul": 0.5,
   "crops": {
-    "herb":   { "seed": "seed_herb",   "growSeconds": 40,  "yield": { "item": "herb",   "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#5fc26a" },
-    "yam":    { "seed": "seed_yam",    "growSeconds": 75,  "yield": { "item": "yam",    "min": 2, "max": 3 }, "seedBack": 0.6, "color": "#e0a050" },
-    "pepper": { "seed": "seed_pepper", "growSeconds": 120, "yield": { "item": "pepper", "min": 1, "max": 2 }, "seedBack": 0.4, "color": "#ff4a2e" }
+    "herb":       { "seed": "seed_herb",       "growSeconds": 40,  "yield": { "item": "herb",       "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#5fc26a" },
+    "yam":        { "seed": "seed_yam",        "growSeconds": 75,  "yield": { "item": "yam",        "min": 2, "max": 3 }, "seedBack": 0.6, "color": "#e0a050" },
+    "lemongrass": { "seed": "seed_lemongrass", "growSeconds": 50,  "yield": { "item": "lemongrass", "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#9fd86a" },
+    "rice":       { "seed": "seed_rice",       "growSeconds": 90,  "yield": { "item": "rice",       "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f0e6b0" },
+    "pepper":     { "seed": "seed_pepper",     "growSeconds": 120, "yield": { "item": "pepper",     "min": 1, "max": 2 }, "seedBack": 0.4, "color": "#ff4a2e" }
   }
 }

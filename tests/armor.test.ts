@@ -52,7 +52,7 @@ describe('armor', () => {
 
   it('defense reduces incoming damage by defense / (defense + K)', () => {
     const s = village();
-    const m = addMonster(s, 'mossfang', s.player.x + 20, s.player.y);
+    const m = addMonster(s, 'dhole', s.player.x + 20, s.player.y);
     hurtPlayer(s, 30, m);
     const bare = 100 - s.player.hp;
     expect(bare).toBe(30);
@@ -63,7 +63,7 @@ describe('armor', () => {
     equipArmor(t, 'cindermail');
     t.player.hp = t.player.maxHp;
     const before = t.player.hp;
-    hurtPlayer(t, 30, addMonster(t, 'mossfang', t.player.x + 20, t.player.y));
+    hurtPlayer(t, 30, addMonster(t, 'dhole', t.player.x + 20, t.player.y));
     const def = ARMOR.cinderhelm.defense + ARMOR.cindermail.defense;
     expect(damageReduction(t)).toBeCloseTo(def / (def + TUNING.combat.defenseK));
     expect(before - t.player.hp).toBe(Math.round(30 * (1 - damageReduction(t))));

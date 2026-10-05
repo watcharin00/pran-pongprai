@@ -16,9 +16,9 @@ function arena() {
 describe('skills', () => {
   it('whirl hits every monster within 32 + size, ×1.5', () => {
     const { s, spot } = arena();
-    const near1 = addMonster(s, 'mossfang', spot.x + 30, spot.y);
-    const near2 = addMonster(s, 'mossfang', spot.x - 30, spot.y);
-    const far = addMonster(s, 'mossfang', spot.x + 50, spot.y);
+    const near1 = addMonster(s, 'dhole', spot.x + 30, spot.y);
+    const near2 = addMonster(s, 'dhole', spot.x - 30, spot.y);
+    const far = addMonster(s, 'dhole', spot.x + 50, spot.y);
     const hits: number[] = [];
     s.events.on('monster:hit', (e) => hits.push(e.id));
     step(s, intent({ skills: [true, false, false] }), 0, s.now);
@@ -29,7 +29,7 @@ describe('skills', () => {
 
   it('cannot be recast during cooldown', () => {
     const { s, spot } = arena();
-    addMonster(s, 'mossfang', spot.x + 20, spot.y);
+    addMonster(s, 'dhole', spot.x + 20, spot.y);
     let casts = 0;
     s.events.on('skill:cast', () => casts++);
     step(s, intent({ skills: [true, false, false] }), 0, s.now);
@@ -39,7 +39,7 @@ describe('skills', () => {
 
   it('dash moves fast toward the stick, grants i-frames and hits each monster once', () => {
     const { s, spot } = arena();
-    const m = addMonster(s, 'mossfang', spot.x + 20, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 20, spot.y);
     m.hp = 9999;
     let hits = 0;
     s.events.on('monster:hit', () => hits++);
@@ -52,7 +52,7 @@ describe('skills', () => {
 
   it('slam winds up, then hits ×3.2 with +45 stun', () => {
     const { s, spot } = arena();
-    const m = addMonster(s, 'mossfang', spot.x + 15, spot.y, -1);
+    const m = addMonster(s, 'dhole', spot.x + 15, spot.y, -1);
     m.hp = 9999;
     step(s, intent({ skills: [false, false, true] }), 0, s.now);
     expect(s.player.cast).not.toBeNull();
@@ -68,7 +68,7 @@ describe('skills', () => {
 
   it('rolling cancels the slam wind-up', () => {
     const { s, spot } = arena();
-    addMonster(s, 'mossfang', spot.x + 15, spot.y);
+    addMonster(s, 'dhole', spot.x + 15, spot.y);
     step(s, intent({ skills: [false, false, true] }), 0, s.now);
     step(s, intent({ dodge: true }), 1 / 60, s.now);
     expect(s.player.cast).toBeNull();
@@ -77,7 +77,7 @@ describe('skills', () => {
 
   it('getting hit cancels the slam wind-up', () => {
     const { s, spot } = arena();
-    const m = addMonster(s, 'mossfang', spot.x + 15, spot.y, -1);
+    const m = addMonster(s, 'dhole', spot.x + 15, spot.y, -1);
     step(s, intent({ skills: [false, false, true] }), 0, s.now);
     // land a bite before the slam resolves
     Object.assign(m, { mode: 'tele', t: 0.001, tt: 0.65, aggro: true, huntT: 90, attack: m.attack ?? null });
@@ -120,7 +120,7 @@ describe('roll', () => {
 
   it('with no stick input, rolls sideways out of a charge line', () => {
     const { s, spot } = arena();
-    const m = addMonster(s, 'cinderhorn', spot.x - 40, spot.y + 1);
+    const m = addMonster(s, 'gaur', spot.x - 40, spot.y + 1);
     Object.assign(m, { mode: 'tele', t: 1, tt: 1 });
     m.shape = { kind: 'line', sx: m.x, sy: m.y, ux: 1, uy: 0, len: 130, wd: 24 };
     step(s, intent({ dodge: true }), 0, s.now);

@@ -1,5 +1,23 @@
 {
-  "mossfang": {
+  "junglefowl": {
+    "hp": 60, "speed": 52, "size": 6, "aggroRadius": 50, "zone": "forest",
+    "huntTime": 60, "turnTime": 0.25, "recover": 0.7, "respawn": 12, "count": 5,
+    "rage": null,
+    "parts": {
+      "head": { "hp": 20, "drop": { "feather": 2 }, "offset": [4, -4] }
+    },
+    "carve": [
+      { "item": "fowlmeat", "min": 1, "max": 1 },
+      { "item": "feather",  "min": 1, "max": 2 }
+    ],
+    "bonus": { "seed_lemongrass": 0.5 },
+    "rare": {},
+    "attacks": [
+      { "id": "peck",    "shape": "circle", "radius": 11, "offset": 8, "telegraph": 0.5, "damage": 7, "range": 16, "weight": 3 },
+      { "id": "flutter", "shape": "line", "length": 50, "width": 12, "telegraph": 0.7, "damage": 10, "range": 50, "minRange": 20, "dash": true, "weight": 2 }
+    ]
+  },
+  "dhole": {
     "hp": 120, "speed": 48, "size": 8, "aggroRadius": 60, "zone": "forest",
     "huntTime": 90, "turnTime": 0.35, "recover": 0.8, "respawn": 14, "count": 6,
     "rage": null,
@@ -18,7 +36,28 @@
       { "id": "pounce", "shape": "line", "length": 70, "width": 14, "telegraph": 0.85, "damage": 16, "range": 70, "minRange": 28, "dash": true, "weight": 2 }
     ]
   },
-  "cinderhorn": {
+  "boar": {
+    "hp": 260, "speed": 44, "size": 11, "aggroRadius": 58, "zone": "forest", "spawnMinVillageDist": 220,
+    "huntTime": 120, "turnTime": 0.6, "recover": 0.9, "respawn": 20, "count": 2,
+    "rage": null,
+    "parts": {
+      "head": { "hp": 80, "drop": { "tusk": 2 },    "offset": [9, 0] },
+      "tail": { "hp": 60, "drop": { "bristle": 1 }, "offset": [-6, -5] }
+    },
+    "carve": [
+      { "item": "boarhide", "min": 2, "max": 3 },
+      { "item": "boarmeat", "min": 1, "max": 2 },
+      { "item": "tusk",     "min": 0, "max": 1 },
+      { "item": "fert",     "min": 1, "max": 1 }
+    ],
+    "bonus": { "seed_rice": 0.6 },
+    "rare": {},
+    "attacks": [
+      { "id": "gore",   "shape": "circle", "radius": 16, "offset": 13, "telegraph": 0.7, "damage": 16, "range": 26, "weight": 3 },
+      { "id": "charge", "shape": "line", "length": 110, "width": 20, "telegraph": 0.95, "damage": 24, "range": 110, "minRange": 34, "dash": true, "weight": 3 }
+    ]
+  },
+  "gaur": {
     "hp": 560, "speed": 40, "size": 14, "aggroRadius": 56, "zone": "canyon",
     "huntTime": 150, "turnTime": 0.75, "recover": 1.0, "respawn": 25, "count": 1,
     "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.35, "damageMul": 1.15 },
@@ -38,6 +77,27 @@
       { "id": "stomp",     "shape": "circle", "radius": 22, "offset": 16, "telegraph": 0.75, "damage": 20, "range": 32, "weight": 3 },
       { "id": "flameRing", "shape": "circle", "radius": 46, "offset": 0,  "telegraph": 1.2,  "damage": 26, "range": 44, "weight": 2 },
       { "id": "charge",    "shape": "line", "length": 130, "width": 24, "telegraph": 1.0, "damage": 32, "range": 140, "minRange": 40, "dash": true, "weight": 3 }
+    ]
+  },
+  "tiger": {
+    "hp": 700, "speed": 50, "size": 13, "aggroRadius": 64, "zone": "forest", "spawnMinVillageDist": 420,
+    "huntTime": 180, "turnTime": 0.6, "recover": 0.9, "respawn": 30, "count": 1,
+    "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.3, "damageMul": 1.15 },
+    "parts": {
+      "head": { "hp": 170, "drop": { "tigerfang": 1 }, "offset": [11, -3] },
+      "tail": { "hp": 120, "drop": { "tigertail": 1 }, "offset": [-14, -4] }
+    },
+    "carve": [
+      { "item": "tigerpelt", "min": 2, "max": 3 },
+      { "item": "tigerfang", "min": 0, "max": 1 },
+      { "item": "fert",      "min": 1, "max": 2 }
+    ],
+    "bonus": {},
+    "rare": { "tigereye": 0.25 },
+    "attacks": [
+      { "id": "claw",   "shape": "circle", "radius": 18, "offset": 14, "telegraph": 0.6, "damage": 22, "range": 28, "weight": 3 },
+      { "id": "pounce", "shape": "line", "length": 120, "width": 22, "telegraph": 0.9, "damage": 30, "range": 120, "minRange": 40, "dash": true, "weight": 3 },
+      { "id": "roar",   "shape": "circle", "radius": 50, "offset": 0,  "telegraph": 1.1, "damage": 24, "range": 44, "weight": 2 }
     ]
   }
 }
