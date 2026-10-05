@@ -4,8 +4,8 @@ import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONS
 import { ARMOR_SLOTS, type AreaId, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
-import { AREA_IDS, areaMap } from '../core/areas';
-import { MH, MW, T } from '../core/mapgen';
+import { AREA_IDS } from '../core/areas';
+import { FARM_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
 import { fastTravelHome, inFight } from '../core/travel';
 import { areaThumbUrl } from '../art/mapThumb';
 import { activeMeal, attackMul, upgradeCost, upgradeWeapon, weaponLevel, weaponPower, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
@@ -47,6 +47,14 @@ const WORLD_GRID: Record<AreaId, [number, number]> = {
   limestone: [2, 3],
   swamp: [1, 4],
 };
+
+/** Connections drawn between world-map nodes (the area exits). */
+const WORLD_LINKS: readonly [AreaId, AreaId][] = [
+  ['deepwild', 'bamboo'],
+  ['bamboo', 'home'],
+  ['home', 'limestone'],
+  ['home', 'swamp'],
+];
 
 /** Integer pixel scale that makes a portrait roughly `target` px wide. */
 const portraitScale = (w: number, target: number): number => Math.max(2, Math.min(5, Math.floor(target / w)));
@@ -366,27 +374,53 @@ export class Sheet {
         const mid = e.at + e.width / 2;
         const pos =
           e.edge === 'n' ? `left:${pct(mid, MW)};top:0` : e.edge === 's' ? `left:${pct(mid, MW)};bottom:0` : e.edge === 'w' ? `left:0;top:${pct(mid, MH)}` : `right:0;top:${pct(mid, MH)}`;
-        return `<span class="mexit e-${e.edge}" style="${pos}">${M.exitTo(th.areas[e.to])}</span>`;
+        const arrow = { n: '▲', s: '▼', e: '▶', w: '◀' }[e.edge];
+        return `<span class="mexit e-${e.edge}" style="${pos}">${arrow} ${th.areas[e.to]}</span>`;
       })
       .join('');
-    h += `<div class="amap"><img src="${areaThumbUrl(map)}" alt=""><i class="me" style="left:${pct(s.player.x, W)};top:${pct(s.player.y, H)}" title="${M.youAreHere}"></i>${exits}</div>`;
+    // markers: monsters (bosses larger), village stations, then the player on top
+    const mons = s.monsters
+      .map((m) => {
+        const boss = MONSTERS[m.kind].rage !== null;
+        return `<i class="mdot${boss ? ' boss' : ''}${m.aggro ? ' hunt' : ''}" style="left:${pct(m.x, W)};top:${pct(m.y, H)}" title="${th.monsters[m.kind].name}"></i>`;
+      })
+      .join('');
+    const places =
+      s.area === 'home'
+        ? [
+            // labels sit on the buildings, which are far enough apart not to overlap on a phone
+            [{ x: (SMITH.x + SMITH.w / 2) * T, y: (SMITH.y + 1) * T }, th.menu.map.forge],
+            [{ x: (INN.x + INN.w / 2) * T, y: (INN.y + 1) * T }, th.menu.map.kitchen],
+            [FARM_CENTER, th.menu.map.farm],
+          ]
+            .map(([o, name]) => `<span class="mplace" style="left:${pct((o as { x: number }).x, W)};top:${pct((o as { y: number }).y, H)}">${name as string}</span>`)
+            .join('')
+        : '';
+    const me = `<span class="mme" style="left:${pct(s.player.x, W)};top:${pct(s.player.y, H)}"><i></i><b>${M.you}</b></span>`;
+    h += `<div class="amap"><img src="${areaThumbUrl(map)}" alt="">${places}${mons}${exits}${me}</div>`;
+    h += `<div class="mlegend"><span><i class="lg-me"></i>${M.you}</span><span><i class="mdot"></i>${M.legendMonster}</span><span><i class="mdot boss"></i>${M.legendBoss}</span><span><i class="lg-sw path"></i>${M.legendPath}</span><span><i class="lg-sw woods"></i>${M.legendWoods}</span><span><i class="lg-sw water"></i>${M.legendWater}</span></div>`;
     if (s.area !== 'home') {
       const fight = inFight(s);
       h += `<div class="row"><span class="note${fight ? ' warn' : ''}">${fight ? M.inFight : M.goHomeHelp}</span><button type="button" class="btn" data-travel="home" ${fight || s.player.dead ? 'disabled' : ''}>${M.goHome}</button></div>`;
     }
 
-    h += `<h3 class="sec">${M.world}</h3><div class="wgrid">`;
+    // world diagram: one node per area with connector lines matching the exits
+    h += `<h3 class="sec">${M.world}</h3><div class="wgraph">`;
     for (const id of AREA_IDS) {
       const [col, row] = WORLD_GRID[id];
       const seen = s.visited.has(id);
       const here = s.area === id;
-      const mons = MONSTER_IDS.filter((k) => MONSTERS[k].area === id);
-      const monHtml = mons.length
-        ? mons.map((k) => ((s.kills[k] ?? 0) > 0 ? img(monsterIconUrl(k), 'ico mon') : `<img class="ico mon unk" src="${monsterIconUrl(k)}" alt="">`)).join('')
-        : `<span class="meta">${M.noMonsters}</span>`;
-      h += `<div class="wcell${here ? ' here' : ''}${seen ? '' : ' unseen'}" style="grid-column:${col};grid-row:${row}">${
-        seen ? `<img class="wthumb" src="${areaThumbUrl(areaMap(id))}" alt="">` : '<div class="wthumb blank"></div>'
-      }<b>${th.areas[id]}</b>${here ? `<span class="tag">${M.youAreHere}</span>` : seen ? '' : `<span class="meta">${M.unvisited}</span>`}<div class="wmons">${monHtml}</div></div>`;
+      const kinds = MONSTER_IDS.filter((k) => MONSTERS[k].area === id);
+      const monHtml = kinds.map((k) => ((s.kills[k] ?? 0) > 0 ? img(monsterIconUrl(k), 'ico mon') : `<img class="ico mon unk" src="${monsterIconUrl(k)}" alt="">`)).join('');
+      h += `<div class="wnode${here ? ' here' : ''}${seen ? '' : ' unseen'}" style="grid-column:${col * 2 - 1};grid-row:${row * 2 - 1}"><b>${th.areas[id]}</b>${
+        here ? `<span class="tag">${M.youAreHere}</span>` : seen ? '' : `<span class="meta">${M.unvisited}</span>`
+      }<div class="wmons">${monHtml}</div></div>`;
+    }
+    for (const [a, b] of WORLD_LINKS) {
+      const [c1, r1] = WORLD_GRID[a];
+      const [c2, r2] = WORLD_GRID[b];
+      const vertical = c1 === c2;
+      h += `<i class="wlink ${vertical ? 'v' : 'h'}" style="grid-column:${vertical ? c1 * 2 - 1 : c1 * 2};grid-row:${vertical ? Math.min(r1, r2) * 2 : r1 * 2 - 1}"></i>`;
     }
     return `${h}</div>`;
   }

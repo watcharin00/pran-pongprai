@@ -1,45 +1,48 @@
-// One pixel per tile overview of an area, for the map tab. Cached per area.
+// Readable overview of an area for the map tab: big flat shapes instead of
+// per-tile noise. Woods are one colour, open ground another, roads and water
+// stand out. 4 px per tile, cached per area.
 import type { AreaId } from '../data/types';
 import { MH, MW, Tile, tileAt, inCanyon, type Biome, type WorldMap } from '../core/mapgen';
 
-const GROUND: Record<Biome, string> = {
-  home: '#78bb4b',
-  bamboo: '#99cc60',
-  swamp: '#5f9a52',
-  limestone: '#8aa965',
-  deepwild: '#4b9640',
+const PX = 4;
+
+interface ThumbPalette {
+  ground: string;
+  woods: string;
+  path: string;
+}
+
+const PAL: Record<Biome, ThumbPalette> = {
+  home: { ground: '#8fcf5e', woods: '#3f8a3e', path: '#f1d696' },
+  bamboo: { ground: '#b2dc78', woods: '#5f9e3c', path: '#efdaa4' },
+  swamp: { ground: '#7fb06a', woods: '#3d7841', path: '#c8ae7e' },
+  limestone: { ground: '#a6c47f', woods: '#4f8a46', path: '#ebe7da' },
+  deepwild: { ground: '#6cb85a', woods: '#2f6a2c', path: '#e8ca8e' },
 };
 
-function tileColour(map: WorldMap, x: number, y: number): string {
+const isWoodsTile = (t: number): boolean => t === Tile.TREE || t === Tile.WALL || t === Tile.BUSH;
+
+/** A tree counts as woods only inside a clump, so lone trees don't speckle the map. */
+function woods(map: WorldMap, x: number, y: number): boolean {
+  if (!isWoodsTile(tileAt(map, x, y))) return false;
+  if (tileAt(map, x, y) === Tile.WALL) return true;
+  let n = 0;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && isWoodsTile(tileAt(map, x + dx, y + dy))) n++;
+  return n >= 4;
+}
+
+function tileColour(map: WorldMap, x: number, y: number, p: ThumbPalette): string {
   const t = tileAt(map, x, y);
-  switch (t) {
-    case Tile.WALL:
-      return '#2c5a2a';
-    case Tile.TREE:
-      return map.biome === 'bamboo' ? '#5a9a3a' : '#2f6e36';
-    case Tile.BUSH:
-      return '#3f7d3a';
-    case Tile.WATER:
-      return '#2db2a6';
-    case Tile.BRIDGE:
-      return '#c08242';
-    case Tile.SAND:
-      return inCanyon(map, x, y) ? '#e0b070' : map.biome === 'limestone' ? '#d8d3c4' : '#ebcb89';
-    case Tile.ROCK:
-      return inCanyon(map, x, y) ? '#a8462a' : '#8d9098';
-    case Tile.CLIFF:
-      return '#a5622e';
-    case Tile.HOUSE:
-      return '#e2763a';
-    case Tile.STONE:
-    case Tile.FOUNTAIN:
-      return '#d8d0b6';
-    case Tile.SOIL:
-    case Tile.FENCE:
-      return '#8f5e34';
-    default:
-      return GROUND[map.biome];
-  }
+  if (t === Tile.WATER) return '#3cbcb0';
+  if (t === Tile.BRIDGE) return '#b9773c';
+  if (t === Tile.HOUSE) return '#e2763a';
+  if (t === Tile.STONE || t === Tile.FOUNTAIN) return '#e6dfc8';
+  if (t === Tile.SOIL || t === Tile.FENCE) return '#9a6a3c';
+  if (t === Tile.CLIFF) return '#a5622e';
+  if (inCanyon(map, x, y)) return '#e8be80';
+  if (t === Tile.SAND) return p.path;
+  if (woods(map, x, y)) return p.woods;
+  return p.ground;
 }
 
 const cache = new Map<AreaId, string>();
@@ -48,14 +51,15 @@ export function areaThumbUrl(map: WorldMap): string {
   let url = cache.get(map.area);
   if (url) return url;
   const c = document.createElement('canvas');
-  c.width = MW;
-  c.height = MH;
+  c.width = MW * PX;
+  c.height = MH * PX;
   const g = c.getContext('2d');
   if (g) {
+    const p = PAL[map.biome];
     for (let y = 0; y < MH; y++) {
       for (let x = 0; x < MW; x++) {
-        g.fillStyle = tileColour(map, x, y);
-        g.fillRect(x, y, 1, 1);
+        g.fillStyle = tileColour(map, x, y, p);
+        g.fillRect(x * PX, y * PX, PX, PX);
       }
     }
   }
