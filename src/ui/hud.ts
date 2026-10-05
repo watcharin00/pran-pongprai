@@ -1,4 +1,4 @@
-// Minimal HUD: HP/stamina, meal chip, one-line goal, AUTO + menu, slim monster bar, toasts, zone banner.
+// Minimal HUD: HP/stamina, meal chip, one-line goal, AUTO + one icon per menu tab, slim monster bar, toasts, zone banner.
 import { MEALS, MONSTERS } from '../data';
 import type { PartId } from '../data/types';
 import { findMonster } from '../core/combat';
@@ -6,6 +6,7 @@ import { goalIndex } from '../core/inventory';
 import type { GameState, MonsterState } from '../core/state';
 import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
+import { TABS, type Tab } from './sheet';
 
 export interface LogEntry {
   msg: string;
@@ -21,7 +22,7 @@ export class Hud {
 
   constructor(
     overlay: HTMLElement,
-    handlers: { onAuto: () => void; onMenu: () => void; onGoal: () => void },
+    handlers: { onAuto: () => void; onMenu: (tab: Tab) => void; onGoal: () => void },
   ) {
     const h = th.hud.keyboardHint;
     overlay.insertAdjacentHTML(
@@ -41,8 +42,8 @@ export class Hud {
         </div>
         <div class="tbtns">
           <button id="autoBtn" class="tb" type="button" aria-pressed="false"><span class="dot"></span>${th.hud.auto}</button>
-          <button id="menuBtn" class="tb" type="button" aria-label="${th.hud.menu}">${ICONS.menu}</button>
         </div>
+        <nav class="mbtns" aria-label="${th.hud.menu}">${TABS.map((t) => `<button class="tb mb" type="button" data-menu="${t}" aria-label="${th.menu.tabs[t]}" title="${th.menu.tabs[t]}">${ICONS[`tab_${t}`]}</button>`).join('')}</nav>
         <ul id="toasts"></ul>
       </div>
       <div id="zone"></div>
@@ -50,7 +51,7 @@ export class Hud {
     );
     this.root = overlay;
     $(overlay, '#autoBtn').addEventListener('click', handlers.onAuto);
-    $(overlay, '#menuBtn').addEventListener('click', handlers.onMenu);
+    overlay.querySelectorAll<HTMLElement>('[data-menu]').forEach((b) => b.addEventListener('click', () => handlers.onMenu(b.dataset.menu as Tab)));
     $(overlay, '#goalLine').addEventListener('click', handlers.onGoal);
   }
 

@@ -32,7 +32,7 @@ interface BagItem {
 const img = (src: string, cls = 'ico'): string => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
 
 export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm' | 'book';
-const TABS: Tab[] = ['bag', 'forge', 'kitchen', 'farm', 'book'];
+export const TABS: readonly Tab[] = ['bag', 'forge', 'kitchen', 'farm', 'book'];
 
 /** Integer pixel scale that makes a portrait roughly `target` px wide. */
 const portraitScale = (w: number, target: number): number => Math.max(2, Math.min(5, Math.floor(target / w)));

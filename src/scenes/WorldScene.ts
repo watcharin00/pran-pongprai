@@ -205,7 +205,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     overlay.innerHTML = '';
     this.hud = new Hud(overlay, {
       onAuto: () => this.toggleAuto(),
-      onMenu: () => this.sheet.open(),
+      onMenu: (tab) => this.sheet.open(tab),
       onGoal: () => this.sheet.open('bag'),
     });
     this.pad = new ActionPad(overlay, {
