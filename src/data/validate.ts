@@ -185,6 +185,7 @@ export function loadMonsters(v: unknown, materials: readonly string[]): Record<s
       aggroRadius: num(m.aggroRadius, `${p}.aggroRadius`, 0),
       zone: oneOf(m.zone, `${p}.zone`, ['forest', 'canyon'] as const),
       spawnMinVillageDist: optional(m, 'spawnMinVillageDist', (x) => num(x, `${p}.spawnMinVillageDist`, 0)) ?? 0,
+      spawnEastOfRiver: optional(m, 'spawnEastOfRiver', (x) => bool(x, `${p}.spawnEastOfRiver`)) ?? false,
       huntTime: num(m.huntTime, `${p}.huntTime`, 1),
       turnTime: num(m.turnTime, `${p}.turnTime`, 0),
       recover: num(m.recover, `${p}.recover`, 0),

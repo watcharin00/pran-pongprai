@@ -93,6 +93,8 @@ export interface MonsterDef {
   zone: 'forest' | 'canyon';
   /** only spawn this far (px) or more from the village centre; keeps bosses off the early route */
   spawnMinVillageDist: number;
+  /** only spawn on the far (east) bank of the river */
+  spawnEastOfRiver: boolean;
   huntTime: number;
   turnTime: number;
   recover: number;

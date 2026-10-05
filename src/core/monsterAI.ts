@@ -5,7 +5,7 @@ import { MONSTERS, TUNING } from '../data';
 import type { AttackDef, MonsterId, PartId } from '../data/types';
 import { aggro, removeMonster, resolveMonsterHit } from './combat';
 import { canStand, moveBody } from './collision';
-import { inVillagePx, PLAZA, T } from './mapgen';
+import { inVillagePx, PLAZA, T, type WorldMap } from './mapgen';
 import type { GameState, MonsterState, PartState, Shape } from './state';
 
 const C = TUNING.combat;
@@ -23,11 +23,30 @@ export function createMonster(id: number, kind: MonsterId, x: number, y: number,
   };
 }
 
+/** Cells of a zone where `kind` may spawn, after its distance / river-bank rules. Pure; cached per map. */
+const cellCache = new WeakMap<WorldMap, Map<MonsterId, readonly (readonly [number, number])[]>>();
+export function spawnCells(map: WorldMap, kind: MonsterId, zoneCells: readonly (readonly [number, number])[]): readonly (readonly [number, number])[] {
+  let byKind = cellCache.get(map);
+  if (!byKind) {
+    byKind = new Map();
+    cellCache.set(map, byKind);
+  }
+  const hit = byKind.get(kind);
+  if (hit) return hit;
+  const def = MONSTERS[kind];
+  const cells = zoneCells.filter(([tx, ty]) => {
+    if (def.spawnEastOfRiver && tx <= (map.riverX[ty] ?? 0)) return false;
+    return Math.hypot(tx * T + 8 - VILLAGE_CENTER.x, ty * T + 8 - VILLAGE_CENTER.y) >= def.spawnMinVillageDist;
+  });
+  byKind.set(kind, cells);
+  return cells;
+}
+
 /** Places a monster on a random free cell of its zone, away from the player and other monsters. */
 export function spawnMonster(s: GameState, kind: MonsterId): MonsterState | null {
   const def = MONSTERS[kind];
   const zoneCells = def.zone === 'forest' ? s.map.forestCells : s.map.canyonCells;
-  const cells = def.spawnMinVillageDist > 0 ? zoneCells.filter(([tx, ty]) => Math.hypot(tx * T + 8 - VILLAGE_CENTER.x, ty * T + 8 - VILLAGE_CENTER.y) >= def.spawnMinVillageDist) : zoneCells;
+  const cells = spawnCells(s.map, kind, zoneCells);
   if (cells.length === 0) return null;
   for (let tries = 0; tries < 80; tries++) {
     const [tx, ty] = s.rng.pick(cells);

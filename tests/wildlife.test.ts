@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { ARMOR, ARMOR_IDS, CROPS, MEALS, MONSTERS, MONSTER_IDS, WEAPONS } from '../src/data';
 import type { ItemBag, MaterialId, WeaponId } from '../src/data/types';
-import { spawnMonster } from '../src/core/monsterAI';
+import { spawnCells, spawnMonster } from '../src/core/monsterAI';
 import { goalIndex } from '../src/core/inventory';
 import { PLAZA, T } from '../src/core/mapgen';
 import { itemSources } from '../src/ui/itemInfo';
@@ -26,8 +26,19 @@ describe('wildlife content', () => {
       expect(m).not.toBeNull();
       if (!m) continue;
       expect(Math.hypot(m.x - cx, m.y - cy)).toBeGreaterThanOrEqual(MONSTERS.tiger.spawnMinVillageDist);
+      // the far bank of the river, as the goal text promises
+      expect(Math.floor(m.x / T)).toBeGreaterThan(s.map.riverX[Math.floor(m.y / T)] ?? 0);
       s.monsters = [];
     }
+  });
+
+  it('keeps the boar off the forest edge next to the village exits', () => {
+    const s = game();
+    const all = s.map.forestCells.length;
+    const kept = spawnCells(s.map, 'boar', s.map.forestCells).length;
+    expect(kept).toBeLessThan(all * 0.8);
+    expect(kept).toBeGreaterThan(100);
+    expect(spawnCells(s.map, 'tiger', s.map.forestCells).length).toBeGreaterThan(50);
   });
 
   it('every recipe ingredient can actually be obtained', () => {
