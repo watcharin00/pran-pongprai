@@ -1,5 +1,5 @@
 // Save format + migration. Storage access (localStorage) lives outside core.
-import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, WEAPONS, WEAPONS_DATA } from '../data';
+import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, REQUESTS, WEAPONS, WEAPONS_DATA } from '../data';
 import { ARMOR_SLOTS, type ArmorId, type ArmorSlot, type CropId, type MaterialId, type MealId, type MonsterId, type WeaponId, type AreaId } from '../data/types';
 import { refreshStats, startingInventory } from './inventory';
 import { AREA_IDS } from './areas';
@@ -29,6 +29,9 @@ export interface SaveData {
   kills: Partial<Record<MonsterId, number>>;
   visited: AreaId[];
   plots: SavedPlot[];
+  /** finished hunt requests and progress on the current one */
+  requestsDone: string[];
+  requestProgress: number;
 }
 
 export function snapshot(s: GameState): SaveData {
@@ -47,6 +50,8 @@ export function snapshot(s: GameState): SaveData {
     kills: { ...s.kills },
     visited: [...s.visited],
     plots: s.plots.map((p) => ({ crop: p.crop, at: p.at, dur: p.dur, fert: p.fert })),
+    requestsDone: [...s.requests.done],
+    requestProgress: s.requests.progress,
   };
 }
 
@@ -116,6 +121,9 @@ export function parseSave(raw: string | null): SaveData | null {
     }
   }
 
+  const requestsDone: string[] = [];
+  if (Array.isArray(d.requestsDone)) for (const r of d.requestsDone) if (typeof r === 'string' && REQUESTS.some((q) => q.id === r)) requestsDone.push(r);
+
   return {
     version: SAVE_VERSION,
     inv,
@@ -131,6 +139,8 @@ export function parseSave(raw: string | null): SaveData | null {
     kills,
     visited: [...visited],
     plots,
+    requestsDone,
+    requestProgress: isNum(d.requestProgress) && d.requestProgress > 0 ? Math.floor(d.requestProgress) : 0,
   };
 }
 
@@ -152,6 +162,8 @@ export function applySave(s: GameState, d: SaveData): void {
   s.autoOn = d.autoOn;
   s.kills = { ...d.kills };
   s.visited = new Set(d.visited);
+  s.requests.done = new Set(d.requestsDone);
+  s.requests.progress = d.requestProgress;
   d.plots.forEach((sp, i) => {
     const plot = s.plots[i];
     if (plot) Object.assign(plot, sp);

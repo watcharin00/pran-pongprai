@@ -8,8 +8,10 @@ import cropsJson from './crops.json';
 import mealsJson from './meals.json';
 import tuningJson from './tuning.json';
 import armorJson from './armor.json';
-import { DataError, loadArmor, loadCrops, loadMaterials, loadMonsters, loadSkills, loadWeapons } from './validate';
-import type { ArmorId, MaterialId, MealsData, MonsterDef, MonsterId, SkillId, Tuning } from './types';
+import npcsJson from './npcs.json';
+import requestsJson from './requests.json';
+import { DataError, loadArmor, loadCrops, loadMaterials, loadMonsters, loadNpcs, loadRequests, loadSkills, loadWeapons } from './validate';
+import type { ArmorId, MaterialId, MealsData, MonsterDef, MonsterId, NpcId, SkillId, Tuning } from './types';
 
 export type * from './types';
 
@@ -28,6 +30,10 @@ export const WEAPON_TYPES = WEAPONS_DATA.types;
 
 export const ARMOR = loadArmor(armorJson, MATERIAL_IDS);
 export const ARMOR_IDS = Object.keys(ARMOR) as ArmorId[];
+
+export const NPCS = loadNpcs(npcsJson);
+export const NPC_IDS = Object.keys(NPCS) as NpcId[];
+export const REQUESTS = loadRequests(requestsJson, MATERIAL_IDS, MONSTERS);
 
 export const CROPS_DATA = loadCrops(cropsJson, MATERIAL_IDS);
 export const CROPS = CROPS_DATA.crops;

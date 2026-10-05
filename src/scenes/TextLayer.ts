@@ -23,6 +23,7 @@ const DISPLAY_FONT = "'Mitr', 'IBM Plex Sans Thai', sans-serif";
 export class TextLayer {
   private floats: Float[] = [];
   private readonly warnings = new Map<number, Phaser.GameObjects.Text>();
+  private readonly bubbles = new Map<string, { text: Phaser.GameObjects.Text; bg: Phaser.GameObjects.Graphics; seen: boolean }>();
   private readonly labels: { text: Phaser.GameObjects.Text; bg: Phaser.GameObjects.Graphics }[] = [];
   private vignette: Phaser.GameObjects.Image | null = null;
   private readonly deathShade: Phaser.GameObjects.Rectangle;
@@ -92,6 +93,57 @@ export class TextLayer {
     if (t.getData('dpr') !== m.dpr) t.setFontSize(18 * m.dpr).setStroke('#1a0806', 4 * m.dpr).setData('dpr', m.dpr);
     t.setPosition(x, y + Math.sin(time * 20) * 2 * m.dpr);
     t.setData('seen', true);
+  }
+
+  /**
+   * A villager's speech bubble above (wx, wy): white rounded box with a tail.
+   * Keyed so each villager keeps one bubble; call every frame it should stay visible.
+   */
+  bubble(m: ScreenMapper, key: string, name: string, line: string, wx: number, wy: number): void {
+    let b = this.bubbles.get(key);
+    if (!b) {
+      const bg = this.add(this.scene.add.graphics().setDepth(5));
+      const text = this.add(this.scene.add.text(0, 0, '', { fontFamily: "'IBM Plex Sans Thai', sans-serif", color: '#2a2018', align: 'center' }).setOrigin(0.5, 1).setDepth(6));
+      b = { text, bg, seen: true };
+      this.bubbles.set(key, b);
+    }
+    b.seen = true;
+    const dpr = m.dpr;
+    const content = `${name}\n${line}`;
+    // style changes re-render the text texture, so only touch them when something differs
+    if (b.text.getData('dpr') !== dpr) {
+      b.text.setFontSize(12 * dpr).setLineSpacing(2 * dpr).setWordWrapWidth(170 * dpr).setData('dpr', dpr);
+      b.text.setData('content', '');
+    }
+    if (b.text.getData('content') !== content) b.text.setText(content).setData('content', content);
+    const { x, y } = m.toScreen(wx, wy);
+    const pad = 7 * dpr;
+    const tail = 6 * dpr;
+    const w = b.text.width + pad * 2;
+    const h = b.text.height + pad * 2;
+    const top = y - tail - h;
+    b.text.setPosition(x, y - tail - pad).setVisible(true);
+    b.bg
+      .clear()
+      .fillStyle(0x1a1410, 0.35)
+      .fillRoundedRect(x - w / 2, top + 2 * dpr, w, h, 8 * dpr)
+      .fillStyle(0xfffbf0, 0.97)
+      .fillRoundedRect(x - w / 2, top, w, h, 8 * dpr)
+      .fillTriangle(x - tail, y - tail - 1, x + tail, y - tail - 1, x, y)
+      .lineStyle(Math.max(1, dpr), 0x5a3418, 0.9)
+      .strokeRoundedRect(x - w / 2, top, w, h, 8 * dpr)
+      .setVisible(true);
+  }
+
+  /** Hide bubbles not refreshed this frame. */
+  endBubbles(): void {
+    for (const b of this.bubbles.values()) {
+      if (!b.seen) {
+        b.text.setVisible(false);
+        b.bg.setVisible(false);
+      }
+      b.seen = false;
+    }
   }
 
   /** Drop warnings that were not refreshed this frame. */

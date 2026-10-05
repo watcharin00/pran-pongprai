@@ -27,7 +27,7 @@ export interface GameEvents {
   /** a circle attack resolved (hit or miss) */
   'monster:strike': { id: number; kind: MonsterId; at: Vec2; radius: number };
   'monster:dashEnd': { id: number; kind: MonsterId; at: Vec2 };
-  'monster:killed': { id: number; kind: MonsterId; at: Vec2; drops: Drops; rare: MaterialId | null; corpse: CorpseInfo };
+  'monster:killed': { id: number; kind: MonsterId; at: Vec2; drops: Drops; rare: MaterialId | null; corpse: CorpseInfo; /** it never hit the player */ flawless: boolean };
   'monster:fled': { id: number; kind: MonsterId; at: Vec2 };
   'player:attack': { weapon: WeaponId; at: Vec2 };
   'player:hurt': { damage: number; at: Vec2; heavy: boolean };
@@ -52,6 +52,9 @@ export interface GameEvents {
   /** the player walked through an exit, fast-travelled or was carried home */
   'area:changed': { area: AreaId; from: AreaId };
   'meal:expired': { meal: MealId };
+  'request:progress': { id: string; progress: number; count: number };
+  'request:ready': { id: string };
+  'request:claimed': { id: string; items: Drops; potions: number };
 }
 
 type Handler<T> = (payload: T) => void;

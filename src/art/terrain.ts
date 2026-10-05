@@ -1,8 +1,8 @@
 // Paints the whole world once: ground (incl. buildings) and a separate canopy
 // layer that is drawn above entities so characters can walk "under" trees.
 import { hash, vnoise } from '../core/rng';
-import { inCanyon, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
-import { drawAnvil, drawFountain, drawHouse, drawLamps, drawPot, type StaticLight } from './buildings';
+import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
+import { drawAnvil, drawBoard, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, type StaticLight } from './buildings';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
 interface GroundPalette {
@@ -75,6 +75,10 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   if (map.area !== 'home') return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
   drawHouse(mb, SMITH, 'smith');
   drawHouse(mb, INN, 'inn');
+  drawHouse(mb, ELDER_HOUSE, 'elder');
+  for (const h of HUTS) drawHouse(mb, h, 'hut');
+  drawGranary(mb, GRANARY);
+  drawBoard(mb, BOARD.x, BOARD.y);
   drawFountain(mb);
   drawAnvil(mb);
   drawPot(mb);

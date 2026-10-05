@@ -1,0 +1,6 @@
+{
+  "smith": { "tile": [12, 22], "wander": 10, "role": "forge" },
+  "cook":  { "tile": [17, 22], "wander": 10, "role": "kitchen" },
+  "elder": { "tile": [11, 40], "wander": 6,  "role": "requests" },
+  "kid":   { "tile": [18, 30], "wander": 44, "role": "tips" }
+}

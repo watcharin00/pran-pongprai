@@ -53,7 +53,12 @@
     "stationRadius": 26,
     "plotRadius": 11,
     "farmRadius": 48,
-    "harvestRadius": 10
+    "harvestRadius": 10,
+    "npcTalkRadius": 22,
+    "npcBubbleRadius": 56,
+    "npcSpeed": 16,
+    "npcPauseMin": 1.5,
+    "npcPauseMax": 4
   },
   "input": {
     "joystickRadius": 50,

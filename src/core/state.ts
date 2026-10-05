@@ -1,6 +1,6 @@
 // Plain-data game state. Everything the simulation needs lives here so that a
 // server could own it and clients could render it.
-import type { AreaId, ArmorId, ArmorSlot, AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
+import type { AreaId, ArmorId, ArmorSlot, AttackDef, CropId, MaterialId, MealId, MonsterId, NpcId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 import type { EventBus, Vec2 } from './events';
 import type { WorldMap } from './mapgen';
 import type { TilePath } from './pathfinding';
@@ -154,6 +154,8 @@ export interface MonsterState {
   /** distance walked, drives the leg animation */
   anim: number;
   tipT: number;
+  /** this monster has landed a hit on the player (spoils "flawless" requests) */
+  hitPlayer: boolean;
 }
 
 export interface GatherNode {
@@ -201,6 +203,28 @@ export interface Shot {
   hit: Set<number>;
 }
 
+/** A villager. Only simulated while the player is in the home area. */
+export interface NpcState {
+  id: NpcId;
+  x: number;
+  y: number;
+  /** home point (centre of its home tile) */
+  hx: number;
+  hy: number;
+  face: 1 | -1;
+  moving: boolean;
+  walkT: number;
+  /** pause before picking the next stroll target */
+  waitT: number;
+  waypoint: Vec2 | null;
+}
+
+/** Hunt requests: which are done, and progress on the current one. */
+export interface RequestState {
+  done: Set<string>;
+  progress: number;
+}
+
 export type Inventory = Record<MaterialId, number>;
 
 export interface GameState {
@@ -236,4 +260,8 @@ export interface GameState {
   kills: Partial<Record<MonsterId, number>>;
   /** areas the player has been to (shown on the world map) */
   visited: Set<AreaId>;
+  npcs: NpcState[];
+  /** separate stream so villagers strolling never shifts combat randomness */
+  readonly npcRng: Rng;
+  requests: RequestState;
 }

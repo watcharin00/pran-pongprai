@@ -1,4 +1,5 @@
 import type materialsJson from './materials.json';
+import type npcsJson from './npcs.json';
 import type monstersJson from './monsters.json';
 import type weaponsJson from './weapons.json';
 import type skillsJson from './skills.json';
@@ -8,6 +9,7 @@ import type mealsJson from './meals.json';
 
 // Ids are derived from the JSON keys so adding an entry to the JSON extends the union.
 export type MaterialId = keyof typeof materialsJson;
+export type NpcId = keyof typeof npcsJson;
 export type MonsterId = keyof typeof monstersJson;
 export type WeaponId = keyof (typeof weaponsJson)['weapons'];
 export type WeaponType = keyof (typeof weaponsJson)['types'];
@@ -349,8 +351,43 @@ export interface Tuning {
     plotRadius: number;
     farmRadius: number;
     harvestRadius: number;
+    /** close enough for the context button to talk to an NPC */
+    npcTalkRadius: number;
+    /** close enough for an NPC's speech bubble to show */
+    npcBubbleRadius: number;
+    npcSpeed: number;
+    npcPauseMin: number;
+    npcPauseMax: number;
   };
   input: { joystickRadius: number; joystickDeadzone: number; joystickArea: number };
   save: { key: string; legacyKey: string; intervalSeconds: number };
   world: { seed: number; tile: number; width: number; height: number };
+}
+
+/** What an NPC does when the player talks to them. */
+export type NpcRole = 'forge' | 'kitchen' | 'requests' | 'tips';
+
+export interface NpcDef {
+  /** home tile (stands / wanders around its centre) */
+  tile: [number, number];
+  /** wander radius in px (0 = stands still) */
+  wander: number;
+  role: NpcRole;
+}
+
+/** A hunt request from the village elder. Progress counts only while it is the current request. */
+export type RequestGoal =
+  | { type: 'kill'; monster: MonsterId; count: number }
+  /** kill without the monster ever landing a hit on the player */
+  | { type: 'flawless'; monster: MonsterId; count: number }
+  | { type: 'break'; monster: MonsterId; part: PartId; count: number }
+  /** gather from nodes or harvest from the farm */
+  | { type: 'collect'; item: MaterialId; count: number };
+
+export interface RequestDef {
+  id: string;
+  /** shown once goalIndex (weapon progress) reaches this */
+  unlockGoal: number;
+  goal: RequestGoal;
+  reward: { items: ItemBag; potions?: number };
 }

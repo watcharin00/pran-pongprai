@@ -1,5 +1,5 @@
 // Character, monster, weapon and pickup sprites.
-import type { MonsterId, WeaponDef } from '../data/types';
+import type { MonsterId, NpcId, WeaponDef } from '../data/types';
 import { hash } from '../core/rng';
 import { createBuffer, ell, finish, fromRows, line, rect, sp, type PixelBuffer } from './pixelBuffer';
 
@@ -21,6 +21,48 @@ const PLAYER_LEGS = [
 /** Frame 0 = idle, 1-2 = walk. */
 export function buildPlayerFrames(): HTMLCanvasElement[] {
   return PLAYER_LEGS.map((legs) => finish(fromRows(PLAYER_TOP.concat(legs), PLAYER_PAL), true));
+}
+
+// ---------- villagers ----------
+const SKIN = { S: '#d39a76', s: '#f6c8a0', e: '#221a2a' };
+interface NpcArt {
+  rows: readonly string[];
+  pal: Record<string, string>;
+  /** leg rows per frame (idle, walk A, walk B) */
+  legs?: readonly (readonly string[])[];
+}
+const NPC_ART: Record<NpcId, NpcArt> = {
+  // blacksmith: red headband, leather apron
+  smith: {
+    rows: ['............', '...HHHHHH...', '..HHHHHHHH..', '..bbbbbbbb..', '..SSSSSSSS..', '..ssssssess.', '..sssssssss.', '...ssssss...', '..TaaaaaaT..', '.sTaaaaaaTs.', '..taaaaaat..', '..taaaaaat..', '..pppppppp..'],
+    pal: { ...SKIN, H: '#2a2420', b: '#d8473c', a: '#5a4a3c', T: '#7a5a40', t: '#8a6a4c', p: '#3a3440', k: '#2a2018' },
+  },
+  // cook: white head wrap, pink blouse, apron, sarong
+  cook: {
+    rows: ['....hhhh....', '...hhhhhh...', '..hhhhhhhh..', '..HHHHHHHH..', '..SSSSSSSS..', '..ssssssess.', '..sssssssss.', '...ssssss...', '..TaaaaaaT..', '.sTaaaaaaTs.', '..TaaaaaaT..', '..aaaaaaaa..', '..pppppppp..'],
+    pal: { ...SKIN, h: '#f4f0e6', H: '#3a2a20', T: '#d86a8a', a: '#f4f0e6', p: '#6a3a58', k: '#3b2a20' },
+  },
+  // village elder: white hair and beard, indigo farmer shirt
+  elder: {
+    rows: ['............', '...wwwwww...', '..wwwwwwww..', '..wSSSSSSw..', '..SSSSSSSS..', '..ssssssess.', '..swwwwwwss.', '...swwwws...', '..TTttttTT..', '.sTttttttTs.', '..TtttttTT..', '..tttttttt..', '..pppppppp..'],
+    pal: { ...SKIN, w: '#f0ece4', T: '#3a5a7a', t: '#4a6e94', p: '#2a2a34', k: '#3b2a20' },
+  },
+  // buffalo boy: wide straw hat, red shirt, shorts, bare feet
+  kid: {
+    rows: ['............', '............', '...hhhhhh...', '.HHHHHHHHHH.', '...SSSSSS...', '...ssssess..', '...sssssss..', '...cccccc...', '..sccccccs..', '...tttttt...', '...pppppp...'],
+    pal: { ...SKIN, h: '#e8c050', H: '#c89a30', c: '#d8473c', t: '#b8382c', p: '#3a5a8a', k: '#d39a76' },
+    legs: [
+      ['...ss..ss...', '...kk..kk...'],
+      ['..ss....ss..', '..kk....kk..'],
+      ['....ss.ss...', '....kk.kk...'],
+    ],
+  },
+};
+
+/** Frame 0 = idle, 1-2 = walk, same layout as the player. */
+export function buildNpcFrames(id: NpcId): HTMLCanvasElement[] {
+  const art = NPC_ART[id];
+  return (art.legs ?? PLAYER_LEGS).map((legs) => finish(fromRows(art.rows.concat(legs), art.pal), true));
 }
 
 // ---------- monsters ----------

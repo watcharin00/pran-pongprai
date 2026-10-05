@@ -3,7 +3,7 @@
 // generated from its own seed. Pure and deterministic: no Math.random.
 import type { AreaId, ZoneId } from '../data/types';
 import { TUNING } from '../data';
-import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, T, Tile, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
+import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampVillageQuarter, T, Tile, VILLAGE, walkable, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
 import { parkMiller, vnoise } from './rng';
 import { openTrails } from './trails';
 
@@ -111,9 +111,15 @@ function homeArea(): WorldMap {
       if (t === Tile.ROCK || t === Tile.WALL || t === Tile.SAND || t === Tile.CLIFF) tiles[y * MW + x] = Tile.SAND;
     }
   }
+  // the village's south quarter (elder, huts, granary) sits where the prototype had forest edge
+  stampVillageQuarter(tiles);
   const partial = { ...base, tiles };
   const reach = floodReach(partial, PLAZA.x, 29);
-  return { ...partial, reach, area: 'home', zone: 'forest', biome: 'home', exits: HOME_EXITS.map(toExit) };
+  // monsters keep spawning 3+ tiles outside the (now larger) village, only on reachable open ground
+  const forestCells = base.forestCells.filter(
+    ([x, y]) => reach[y * MW + x] && walkable(partial, x, y) && !(x >= VILLAGE.x0 - 3 && x <= VILLAGE.x1 + 3 && y >= VILLAGE.y0 - 3 && y <= VILLAGE.y1 + 3),
+  );
+  return { ...partial, reach, forestCells, area: 'home', zone: 'forest', biome: 'home', exits: HOME_EXITS.map(toExit) };
 }
 
 /** Generic wild area: border wall, biome-specific obstacles, roads joining every exit at the centre. */

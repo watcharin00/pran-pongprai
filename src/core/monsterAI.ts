@@ -19,7 +19,7 @@ export function createMonster(id: number, kind: MonsterId, x: number, y: number,
   return {
     id, kind, x, y, hx: x, hy: y, hp: def.hp, parts, mode: 'wander', t: 0, tt: 1, dirX, turnT: 0, wanderT: 0, waypoint: null,
     atkCd: 0, flash: 0, stunMeter: 0, stunT: 0, huntT: null, aggro: false, leash: 0, rage: false, shape: null, attack: null,
-    dashLeft: 0, dashHit: false, anim: 0, tipT: 0,
+    dashLeft: 0, dashHit: false, anim: 0, tipT: 0, hitPlayer: false,
   };
 }
 

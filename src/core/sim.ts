@@ -10,6 +10,8 @@ import { createNodes, populateArea } from './travel';
 import { processActions, updatePlayer } from './player';
 import { updateShots } from './shots';
 import { Rng } from './rng';
+import { createNpcs, updateNpcs } from './npc';
+import { createRequests, trackRequests } from './requests';
 import { applySave, type SaveData } from './save';
 import type { GameState, Intent, PlayerState } from './state';
 
@@ -63,7 +65,11 @@ export function createGame(o: CreateOptions): GameState {
     autoOn: false,
     kills: {},
     visited: new Set(['home']),
+    npcs: createNpcs(),
+    npcRng: new Rng((o.rngSeed ^ 0x2545f491) >>> 0 || 7),
+    requests: createRequests(),
   };
+  trackRequests(s);
   s.player.zone = zoneAtPx(map, s.player.x, s.player.y);
   if (o.save) applySave(s, o.save);
   else {
@@ -97,6 +103,7 @@ export function step(s: GameState, intent: Intent, dt: number, now: number): voi
   }
 
   updatePlayer(s, intent, dt);
+  updateNpcs(s, dt);
   updateShots(s, dt);
   for (const m of s.monsters.slice()) updateMonster(s, m, dt);
 

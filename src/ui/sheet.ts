@@ -5,7 +5,9 @@ import { ARMOR_SLOTS, type AreaId, type ArmorId, type CropId, type ItemBag, type
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS } from '../core/areas';
-import { FARM_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
+import { ELDER_HOUSE, FARM_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
+import { allRequestsDone, currentRequest } from '../core/requests';
+import { requestText, rewardText } from './talk';
 import { fastTravelHome, inFight } from '../core/travel';
 import { areaThumbUrl } from '../art/mapThumb';
 import { activeMeal, attackMul, upgradeCost, upgradeWeapon, weaponLevel, weaponPower, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
@@ -254,6 +256,7 @@ export class Sheet {
     h += `<div class="grid">${cells.join('')}</div></div></div>`;
 
     if (goal) h += `<div class="goalbox"><b>${goal.title}</b><p>${goal.desc}</p></div>`;
+    h += this.requestCard(s);
     h += `<h3 class="sec">${M.skills}</h3><div class="skl">${weaponSkills(p.weapon)
       .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${M.cooldown(SKILLS[id].cooldown)}</span></div>`)
       .join('')}<div><b>${M.partsTitle}</b><span class="meta">${M.partsHelp}</span></div></div>`;
@@ -263,6 +266,22 @@ export class Sheet {
     h += `<div class="row"><h3 class="sec">${M.log}</h3><button type="button" class="btn" id="btnReset">${armed ? M.confirmNewGame : M.newGame}</button></div>`;
     h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
     return h;
+  }
+
+  /** The elder's current hunt request with progress and reward. */
+  private requestCard(s: GameState): string {
+    const R = th.request;
+    const r = currentRequest(s);
+    if (!r) return `<div class="goalbox reqbox" id="reqbox"><b>${R.title}</b><p>${allRequestsDone(s) ? R.allDone : R.none}</p></div>`;
+    const pct = Math.min(100, (s.requests.progress / r.goal.count) * 100);
+    const ready = s.requests.progress >= r.goal.count;
+    return `<div class="goalbox reqbox${ready ? ' ready' : ''}" id="reqbox"><b>${R.title}</b><p>${requestText(r)} <span class="n">${s.requests.progress}/${r.goal.count}</span></p><span class="reqbar"><i style="width:${pct}%"></i></span><p class="meta">${R.reward}: ${rewardText(r)}</p>${ready ? `<p class="note ok">${R.claimHint}</p>` : ''}</div>`;
+  }
+
+  /** Opens the bag tab scrolled to the hunt request (talking to the elder). */
+  openRequests(): void {
+    this.open('bag');
+    this.body.querySelector('#reqbox')?.scrollIntoView({ block: 'center' });
   }
 
   /** Everything the player holds: owned weapons, potions, then materials with a count. */
@@ -426,6 +445,7 @@ export class Sheet {
             [{ x: (SMITH.x + SMITH.w / 2) * T, y: (SMITH.y + 1) * T }, th.menu.map.forge],
             [{ x: (INN.x + INN.w / 2) * T, y: (INN.y + 1) * T }, th.menu.map.kitchen],
             [FARM_CENTER, th.menu.map.farm],
+            [{ x: (ELDER_HOUSE.x + ELDER_HOUSE.w / 2) * T, y: (ELDER_HOUSE.y + 1) * T }, th.menu.map.elder],
           ]
             .map(([o, name]) => `<span class="mplace" style="left:${pct((o as { x: number }).x, W)};top:${pct((o as { y: number }).y, H)}">${name as string}</span>`)
             .join('')

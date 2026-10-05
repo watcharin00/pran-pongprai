@@ -43,7 +43,14 @@ export interface Rect {
 }
 
 // --- Village layout (tile coordinates) ---
-export const VILLAGE = { x0: 4, y0: 15, x1: 25, y1: 35 } as const;
+/**
+ * Village bounds the prototype generator uses (tree density, cleared ground). Never change these:
+ * generateMap() must stay identical to reference/prototype.html.
+ */
+const GEN_VILLAGE = { x0: 4, y0: 15, x1: 25, y1: 35 } as const;
+const inGenVillage = (x: number, y: number): boolean => x >= GEN_VILLAGE.x0 && x <= GEN_VILLAGE.x1 && y >= GEN_VILLAGE.y0 && y <= GEN_VILLAGE.y1;
+/** Village bounds for gameplay (HP regen, menus, monster leash): the prototype village plus the south quarter. */
+export const VILLAGE = { x0: 4, y0: 15, x1: 25, y1: 41 } as const;
 /** Plaza / fountain centre (a tile corner). */
 export const PLAZA = { x: 15, y: 27 } as const;
 export const SMITH: Rect = { x: 6, y: 18, w: 5, h: 4 };
@@ -63,6 +70,42 @@ export const POT = { x: 18 * T + 7, y: 21 * T + 9 } as const;
 export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
 export const CHIMNEY = { x: SMITH.x * T + SMITH.w * T - 13, y: SMITH.y * T - 12 } as const;
+
+// --- South quarter: the village expansion, stamped onto the home map in areas.ts ---
+export const QUARTER = { x0: 4, y0: 36, x1: 25, y1: 41 } as const;
+/** Village elder's house (gives hunt requests); the request board stands by its door. */
+export const ELDER_HOUSE: Rect = { x: 5, y: 36, w: 6, h: 4 };
+export const HUTS: readonly Rect[] = [
+  { x: 17, y: 36, w: 4, h: 3 },
+  { x: 22, y: 36, w: 4, h: 3 },
+];
+/** Rice granary on stilts. */
+export const GRANARY: Rect = { x: 19, y: 40, w: 3, h: 2 };
+/** Hunt request board (one tile). */
+export const BOARD = { x: 12, y: 39 } as const;
+/** Fence row closing the quarter to the south; the road keeps its gap. */
+export const QUARTER_FENCE_Y = 42;
+export const QUARTER_LAMPS: readonly (readonly [number, number])[] = [
+  [13, 37],
+  [16, 37],
+];
+const QUARTER_FLOWERS: readonly (readonly [number, number])[] = [[5, 41], [9, 41], [11, 41], [17, 41], [23, 40], [24, 41]];
+
+/** Stamps the south quarter onto a home-map tile array (after generation, so the prototype parity holds). */
+export function stampVillageQuarter(tiles: Uint8Array): void {
+  const set = (x: number, y: number, t: number): void => {
+    tiles[y * MW + x] = t;
+  };
+  for (let y: number = QUARTER.y0; y <= QUARTER.y1; y++) {
+    for (let x: number = QUARTER.x0; x <= QUARTER.x1; x++) set(x, y, x === 14 || x === 15 ? Tile.SAND : Tile.GRASS);
+  }
+  for (const H of [ELDER_HOUSE, ...HUTS, GRANARY]) for (let y = H.y; y < H.y + H.h; y++) for (let x = H.x; x < H.x + H.w; x++) set(x, y, Tile.HOUSE);
+  set(BOARD.x, BOARD.y, Tile.HOUSE);
+  // a short sand path from the elder's door to the road
+  for (let x = ELDER_HOUSE.x + 2; x <= 13; x++) set(x, ELDER_HOUSE.y + ELDER_HOUSE.h, Tile.SAND);
+  for (const [x, y] of QUARTER_FLOWERS) set(x, y, Tile.FLOWER);
+  for (let x: number = QUARTER.x0; x <= QUARTER.x1; x++) if (x < 13 || x > 16) set(x, QUARTER_FENCE_Y, Tile.FENCE);
+}
 
 export type Edge = 'n' | 's' | 'e' | 'w';
 /** Ground palette / decoration set used by the terrain painter. */
@@ -172,8 +215,8 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
   // forest: trees except in noise clearings, sparser near the village
   for (let y = 3; y < MH - 3; y++) {
     for (let x = 3; x < MW - 3; x++) {
-      if (get(x, y) !== Tile.GRASS || inVillageTile(x, y)) continue;
-      const dv = Math.max(VILLAGE.x0 - x, x - VILLAGE.x1, VILLAGE.y0 - y, y - VILLAGE.y1, 0);
+      if (get(x, y) !== Tile.GRASS || inGenVillage(x, y)) continue;
+      const dv = Math.max(GEN_VILLAGE.x0 - x, x - GEN_VILLAGE.x1, GEN_VILLAGE.y0 - y, y - GEN_VILLAGE.y1, 0);
       const clearing = vnoise(x, y, 7) > 0.54;
       const r = rnd();
       const dens = dv < 3 ? 0.1 : 0.32;
@@ -184,7 +227,7 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
   }
   for (let y = 21; y < MH - 3; y++) for (let x = rx(y) + 3; x < MW - 3; x++) if (get(x, y) === Tile.SAND && rnd() < 0.065) set(x, y, Tile.ROCK);
   // village ground + oval stone plaza
-  for (let y = VILLAGE.y0; y <= VILLAGE.y1; y++) for (let x = VILLAGE.x0; x <= VILLAGE.x1; x++) set(x, y, Tile.GRASS);
+  for (let y = GEN_VILLAGE.y0; y <= GEN_VILLAGE.y1; y++) for (let x = GEN_VILLAGE.x0; x <= GEN_VILLAGE.x1; x++) set(x, y, Tile.GRASS);
   for (let y = PLAZA.y - 4; y <= PLAZA.y + 4; y++) {
     for (let x = PLAZA.x - 6; x <= PLAZA.x + 6; x++) {
       const dx = (x + 0.5 - PLAZA.x) / 5.4;
@@ -229,7 +272,7 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
     for (let x = 0; x < MW; x++) {
       if (!reach[y * MW + x]) continue;
       const t = get(x, y);
-      const nearVillage = x >= VILLAGE.x0 - 3 && x <= VILLAGE.x1 + 3 && y >= VILLAGE.y0 - 3 && y <= VILLAGE.y1 + 3;
+      const nearVillage = x >= GEN_VILLAGE.x0 - 3 && x <= GEN_VILLAGE.x1 + 3 && y >= GEN_VILLAGE.y0 - 3 && y <= GEN_VILLAGE.y1 + 3;
       if ((t === Tile.GRASS || t === Tile.FLOWER) && !inCanyon(map, x, y) && !nearVillage) forestCells.push([x, y]);
       if (t === Tile.SAND && inCanyon(map, x, y) && x > rx(y) + 4 && y >= 22 && !(y >= BE - 1 && y <= BE + 2 && x < rx(y) + 9)) canyonCells.push([x, y]);
     }

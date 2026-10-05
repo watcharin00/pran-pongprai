@@ -7,6 +7,7 @@ import type {
   MaterialId,
   MealId,
   MonsterId,
+  NpcId,
   PartId,
   SkillId,
   WeaponId,
@@ -300,6 +301,8 @@ export const hud = {
 
 /** Labels on the attack button when it turns into the context button. */
 export const context = {
+  /** talking to a villager: the button says what it will do, names are too long for it */
+  npc: { forge: 'ตีอาวุธ', kitchen: 'ทำอาหาร', requests: 'งานล่า', tips: 'คุย' },
   forge: 'ตีอาวุธ',
   kitchen: 'ทำอาหาร',
   plant: 'ปลูก',
@@ -312,6 +315,8 @@ export const places = {
   kitchen: 'โรงครัว',
   farm: 'แปลงผัก',
   farmRipe: (n: number) => `แปลงผัก · พร้อมเก็บ ${n}`,
+  board: 'ป้ายงานล่า',
+  boardReady: 'ป้ายงานล่า · งานเสร็จ',
 };
 
 /** Floating text above entities. */
@@ -389,6 +394,7 @@ export const menu = {
     forge: 'ตีเหล็ก',
     kitchen: 'ครัว',
     farm: 'แปลงผัก',
+    elder: 'ผู้ใหญ่บ้าน',
     legendMonster: 'สัตว์',
     legendBoss: 'บอส',
     legendPath: 'ทางเดิน',
@@ -524,3 +530,57 @@ export const log = {
 
 /** Weapon name with its upgrade level, e.g. "ดาบกระดูก +2". */
 export const weaponName = (id: WeaponId, level: number): string => (level > 0 ? `${weapons[id].name} +${level}` : weapons[id].name);
+
+// ---------------------------------------------------------------- villagers
+
+export const npcs = {
+  smith: { name: 'ลุงเหล็ก', title: 'ช่างตีเหล็ก' },
+  cook: { name: 'ป้าแก้ว', title: 'แม่ครัว' },
+  elder: { name: 'พ่อเฒ่าทอง', title: 'ผู้ใหญ่บ้าน' },
+  kid: { name: 'ไอ้จุก', title: 'เด็กเลี้ยงควาย' },
+} satisfies Record<NpcId, { name: string; title: string }>;
+
+/** Speech bubbles. Keep each line short, with spaces between phrases so it can wrap. */
+export const npcSay = {
+  smithReady: (weapon: string) => `${weapon} ตีได้แล้ว มาที่ทั่งเลย`,
+  smithNeed: (weapon: string, items: string) => `อยากได้${weapon}ไหม หา ${items} มาให้ข้า`,
+  smithAllOwned: 'อาวุธข้าตีให้ครบแล้ว เอาแร่มาตีบวกได้นะ',
+  cookFull: (meal: string) => `อิ่ม${meal}แล้ว ออกไปล่าได้เลยลูก`,
+  cookEat: (meal: string, desc: string) => `ทำ${meal}ให้ไหม ${desc}`,
+  cookNeed: (meal: string, items: string) => `อยากกิน${meal}ไหม หา ${items} มาให้ป้า`,
+  elderReady: (task: string) => `${task} เสร็จแล้วรึ มารับรางวัลสิ`,
+  elderProgress: (task: string, progress: number, count: number) => `ฝากด้วยนะ ${task} (${progress}/${count})`,
+  elderWait: 'ยังไม่มีงานให้ ไปหาอาวุธที่ดีกว่านี้ก่อน',
+  elderAllDone: 'เจ้าเป็นพรานที่เก่งที่สุดในหมู่บ้านแล้ว',
+  kidTips: [
+    'วงแดงขึ้นเมื่อไหร่ กดกลิ้งหนีเลย',
+    'อ้อมไปตีข้างหลัง จะโดนหางมัน',
+    'ยืนหน้ามันแล้วตีหัว ค้อนทำให้มึนได้',
+    'ยืนนิ่งๆ บนสมุนไพร เดี๋ยวก็เก็บได้',
+    'เดินผ่านแปลงผักที่สุก มันเก็บให้เอง',
+    'กินข้าวป้าแก้วก่อน ค่อยออกไปล่า',
+    'AUTO เดินตีให้ แต่ไม่หลบให้นะ',
+    'ธนูยิงข้ามต้นไม้ได้ แต่ข้ามหินไม่ได้',
+    'อยู่ในหมู่บ้าน เลือดจะค่อยๆ เต็ม',
+    'มอนโกรธแล้วจะเร็วขึ้น ระวังด้วย',
+  ],
+};
+
+/** Hunt request descriptions, generated from requests.json. */
+export const request = {
+  kill: (monster: string, n: number) => (n > 1 ? `ล่า${monster} ${n} ตัว` : `ล่า${monster}`),
+  flawless: (monster: string) => `ล่า${monster}โดยไม่โดนตีเลย`,
+  break: (part: string, monster: string) => `ทำลาย${part}${monster}`,
+  collect: (item: string, n: number) => `เก็บ${item} ${n} ชิ้น`,
+  title: 'งานล่าจากผู้ใหญ่บ้าน',
+  reward: 'รางวัล',
+  potions: (n: number) => `ยา ×${n}`,
+  claimHint: 'งานเสร็จแล้ว กลับไปคุยกับพ่อเฒ่าทองที่หมู่บ้านฝั่งใต้',
+  none: 'ยังไม่มีงานใหม่ ตีอาวุธที่ดีขึ้นแล้วกลับมาถาม',
+  allDone: 'ทำงานล่าครบทุกงานแล้ว',
+  claim: 'รับรางวัล',
+  progressLog: (task: string, progress: number, count: number) => `งานล่า: ${task} ${progress}/${count}`,
+  readyLog: 'งานล่าเสร็จแล้ว กลับไปหาพ่อเฒ่าทอง',
+  claimedLog: (got: string) => `รับรางวัลงานล่า ได้ ${got}`,
+  done: 'งานเสร็จ!',
+};

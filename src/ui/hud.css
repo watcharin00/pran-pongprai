@@ -295,3 +295,10 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 #minimap{width:100px;height:100px;border-radius:50%;border:3px solid var(--ink);box-shadow:0 0 0 2px rgba(247,236,208,.35),0 2px 0 rgba(0,0,0,.35);background:#2c5a2a;margin-top:4px;cursor:pointer;transition:opacity .25s;touch-action:manipulation}
 #minimap.dim{opacity:.18;pointer-events:none}
 @media (max-height:500px){#minimap{width:84px;height:84px}}
+
+/* hunt request card (bag tab) */
+.reqbox{border-color:#7a5a30}
+.reqbox.ready{border-color:var(--gold)}
+.reqbox .n{font-family:var(--pixel);color:var(--cream);margin-left:4px}
+.reqbar{display:block;position:relative;height:6px;margin:6px 0 2px;background:#1a1008;border-radius:3px;overflow:hidden}
+.reqbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(#ffe08a,#e8b440)}

@@ -22,6 +22,12 @@ import type {
   WeaponDef,
   WeaponType,
   WeaponsData,
+  NpcDef,
+  NpcId,
+  NpcRole,
+  RequestDef,
+  RequestGoal,
+  MonsterId,
 } from './types';
 import { ARMOR_SLOTS, ICON_SHAPES } from './types';
 
@@ -341,4 +347,60 @@ export function loadCrops(v: unknown, materials: readonly string[]): CropsData {
     fertilizerTimeMul: num(o.fertilizerTimeMul, 'crops.fertilizerTimeMul', 0.01, 1),
     crops: crops as CropsData['crops'],
   };
+}
+
+const NPC_ROLES: readonly NpcRole[] = ['forge', 'kitchen', 'requests', 'tips'];
+
+export function loadNpcs(v: unknown): Record<NpcId, NpcDef> {
+  const o = obj(v, 'npcs');
+  const out: Record<string, NpcDef> = {};
+  for (const [k, raw] of Object.entries(o)) {
+    const p = `npcs.${k}`;
+    const n = obj(raw, p);
+    const tile = arr(n.tile, `${p}.tile`);
+    if (tile.length !== 2) throw new DataError(`${p}.tile`, 'expected [x, y]');
+    out[k] = {
+      tile: [num(tile[0], `${p}.tile[0]`, 0, 63), num(tile[1], `${p}.tile[1]`, 0, 47)],
+      wander: num(n.wander, `${p}.wander`, 0, 200),
+      role: oneOf(n.role, `${p}.role`, NPC_ROLES),
+    };
+  }
+  return out as Record<NpcId, NpcDef>;
+}
+
+/**
+ * Hunt requests. Monster/part/material references are checked against the loaded data
+ * so a typo cannot create a request that can never be finished.
+ */
+export function loadRequests(v: unknown, materials: readonly string[], monsters: Readonly<Record<string, MonsterDef>>): RequestDef[] {
+  const list = arr(obj(v, 'requests').requests, 'requests.requests');
+  const seen = new Set<string>();
+  return list.map((raw, i) => {
+    const p = `requests.requests[${i}]`;
+    const r = obj(raw, p);
+    const id = str(r.id, `${p}.id`);
+    if (seen.has(id)) throw new DataError(`${p}.id`, `duplicate id ${id}`);
+    seen.add(id);
+    const g = obj(r.goal, `${p}.goal`);
+    const type = oneOf(g.type, `${p}.goal.type`, ['kill', 'flawless', 'break', 'collect'] as const);
+    const count = num(g.count, `${p}.goal.count`, 1);
+    let goal: RequestGoal;
+    if (type === 'collect') goal = { type, item: oneOf(g.item, `${p}.goal.item`, materials) as MaterialId, count };
+    else {
+      const monster = oneOf(g.monster, `${p}.goal.monster`, Object.keys(monsters)) as MonsterId;
+      if (type === 'break') {
+        const part = oneOf(g.part, `${p}.goal.part`, PART_IDS);
+        if (!monsters[monster]?.parts[part]) throw new DataError(`${p}.goal.part`, `${monster} has no ${part}`);
+        goal = { type, monster, part, count };
+      } else goal = { type, monster, count };
+    }
+    const rw = obj(r.reward, `${p}.reward`);
+    const potions = optional(rw, 'potions', (x) => num(x, `${p}.reward.potions`, 0, 9));
+    return {
+      id,
+      unlockGoal: num(r.unlockGoal, `${p}.unlockGoal`, 0),
+      goal,
+      reward: potions === undefined ? { items: itemBag(rw.items, `${p}.reward.items`, materials) } : { items: itemBag(rw.items, `${p}.reward.items`, materials), potions },
+    };
+  });
 }

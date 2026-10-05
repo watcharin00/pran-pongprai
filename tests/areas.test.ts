@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AREA_IDS, areaMap, areaSeed, buildAreaMap, exitAt } from '../src/core/areas';
 import { trailWaypoints } from '../src/core/trails';
 import { TUNING } from '../src/data';
-import { generateMap, inVillageTile, MH, MW, SPAWN, T, Tile, walkable, zoneAtPx } from '../src/core/mapgen';
+import { generateMap, inVillageTile, MH, MW, QUARTER, QUARTER_FENCE_Y, SPAWN, T, Tile, walkable, zoneAtPx } from '../src/core/mapgen';
 import { findPath } from '../src/core/pathfinding';
 import { createGame, step } from '../src/core/sim';
 import { hurtPlayer } from '../src/core/combat';
@@ -33,7 +33,7 @@ describe('area maps', () => {
     expect(monsterWhere('dhole')).toBe(th.zones.forest);
   });
 
-  it('home keeps the prototype world: only exits open and trees/bushes clear for trails', () => {
+  it('home keeps the prototype world: only exits, trails and the south quarter differ', () => {
     const base = generateMap();
     const home = areaMap('home');
     let exits = 0;
@@ -42,6 +42,10 @@ describe('area maps', () => {
       const was = base.tiles[i];
       const now = home.tiles[i];
       if (was === now) continue;
+      const x = i % MW;
+      const y = Math.floor(i / MW);
+      // the village expansion (rows QUARTER.y0..fence) is stamped on top of the prototype
+      if (x >= QUARTER.x0 && x <= QUARTER.x1 && y >= QUARTER.y0 && y <= QUARTER_FENCE_Y) continue;
       if (now === Tile.SAND) exits++;
       else {
         expect(now, `tile ${i}`).toBe(Tile.GRASS);

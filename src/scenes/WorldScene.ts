@@ -2,12 +2,14 @@
 // steps the core simulation, then turns simulation events into feel
 // (hitstop, shake, flashes, numbers, toasts) and draws.
 import Phaser from 'phaser';
-import { CROPS, MATERIALS, MONSTERS, SKILLS, TUNING, WEAPON_TYPES, WEAPONS } from '../data';
-import type { AreaId, MaterialId, PartId } from '../data/types';
+import { CROPS, MATERIALS, MONSTERS, NPCS, REQUESTS, SKILLS, TUNING, WEAPON_TYPES, WEAPONS } from '../data';
+import type { AreaId, MaterialId, NpcId, PartId } from '../data/types';
 import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPilot';
 import { findMonster } from '../core/combat';
 import { isRipe, plant, plotProgress } from '../core/farm';
-import { ANVIL, FARM, FARM_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { ANVIL, BOARD, FARM, FARM_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { npcLine, npcNear } from '../core/npc';
+import { claimRequest, requestReady } from '../core/requests';
 import { loadFromStorage, serialize } from '../core/save';
 import { createGame, step } from '../core/sim';
 import type { GameState, MonsterState } from '../core/state';
@@ -24,6 +26,8 @@ import * as th from '../i18n/th';
 import { readKey, removeKey, writeKey } from '../storage';
 import { PlayerView } from '../entities/Player';
 import { MonsterView } from '../entities/Monster';
+import { NpcView } from '../entities/Npc';
+import { lineText, requestText } from '../ui/talk';
 import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
 import { TEX } from './textures';
@@ -93,6 +97,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   // views
   private playerView!: PlayerView;
   private monsterViews = new Map<number, MonsterView>();
+  private npcViews = new Map<NpcId, NpcView>();
+  /** which line each villager is on (advances when the kid is tapped) */
+  private talkN: Partial<Record<NpcId, number>> = {};
   private nodeImgs = new Map<number, Phaser.GameObjects.Image>();
   private corpses: Corpse[] = [];
   private effects!: Effects;
@@ -159,6 +166,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.gShadow = w(this.add.graphics().setDepth(D.shadow));
     this.gShadowAdd = w(this.add.graphics().setDepth(D.shadow + 0.1).setBlendMode(Phaser.BlendModes.ADD));
     this.playerView = new PlayerView(this, w);
+    for (const n of this.s.npcs) this.npcViews.set(n.id, new NpcView(this, w, n));
     this.canopyImg = w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
     this.gBars = w(this.add.graphics().setDepth(D.bars));
     this.effects = new Effects(this, w, { fx: D.fx, particles: D.particles });
@@ -231,6 +239,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     for (const c of this.corpses) c.img.destroy();
     this.corpses = [];
     this.auto = createAutoPilot();
+    for (const v of this.npcViews.values()) v.setVisible(area === 'home');
     const p = s.player;
     this.camFX = Phaser.Math.Clamp(p.x - this.VW / 2, 0, Math.max(0, MW * T - this.VW));
     this.camFY = Phaser.Math.Clamp(p.y - this.VH / 2, 0, Math.max(0, MH * T - this.VH));
@@ -351,7 +360,29 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private runContext(c: ContextAction): void {
     if (c.kind === 'plant') {
       if (plant(this.s, c.plot)) this.save();
-    } else this.sheet.open(c.kind);
+    } else if (c.kind === 'npc') this.talkTo(c.npc);
+    else this.sheet.open(c.kind);
+  }
+
+  /** The context button next to a villager. */
+  private talkTo(id: NpcId): void {
+    switch (NPCS[id].role) {
+      case 'forge':
+        this.sheet.open('forge');
+        break;
+      case 'kitchen':
+        this.sheet.open('kitchen');
+        break;
+      case 'requests':
+        // a finished request is handed in on the spot; otherwise show it in the bag tab
+        if (requestReady(this.s)) claimRequest(this.s);
+        else this.sheet.openRequests();
+        break;
+      case 'tips':
+        this.talkN[id] = (this.talkN[id] ?? 0) + 1;
+        this.sfx.play('ui');
+        break;
+    }
   }
 
   /** Tapping directly on a monster locks onto it. */
@@ -565,6 +596,29 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     ev.on('zone:entered', (e) => hud.showZone(th.zones[e.zone]));
     ev.on('meal:expired', (e) => hud.toast(th.log.mealExpired(th.meals[e.meal].name)));
+    const reqById = (id: string) => REQUESTS.find((r) => r.id === id);
+    ev.on('request:progress', (e) => {
+      const r = reqById(e.id);
+      if (r && e.progress < e.count) hud.toast(th.request.progressLog(requestText(r), e.progress, e.count));
+      this.sheet.markDirty();
+    });
+    ev.on('request:ready', () => {
+      const p = this.s.player;
+      float(p.x, p.y - 22, th.request.done, '#ffd166', true);
+      hud.toast(th.request.readyLog, 'gold');
+      snd('craft');
+    });
+    ev.on('request:claimed', (e) => {
+      // the elder's bubble sits above both heads, so the celebration goes low, by the player's feet
+      const at = this.s.player;
+      const got = [fmtItems(e.items), e.potions ? th.request.potions(e.potions) : ''].filter(Boolean).join(', ');
+      hud.toast(th.request.claimedLog(got), 'gold');
+      float(at.x, at.y + 4, th.request.done, '#ffd166', true);
+      fx.burst(at.x, at.y, '#ffd35c', 18, 90);
+      snd('craft');
+      this.sheet.markDirty();
+      this.save();
+    });
   }
 
   // ---------------------------------------------------------------- loop
@@ -799,6 +853,12 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       v.destroy();
       this.monsterViews.delete(id);
     }
+    if (s.area === 'home') {
+      for (const n of s.npcs) {
+        this.npcViews.get(n.id)?.update(n, time);
+        sh.fillStyle(0x142814, 0.3).fillEllipse(n.x, n.y + 8, 12, 4);
+      }
+    }
     this.playerView.update(s, time, this.hitstop > 0 ? 0 : Math.min(0.05, this.game.loop.delta / 1000));
 
     for (const c of this.corpses) {
@@ -886,16 +946,32 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const p = s.player;
     const t = this.text;
     t.begin();
+    // villagers within earshot talk; their station's name label steps aside for the bubble
+    // only the nearest one talks, so two bubbles never overlap
+    const nearest = s.area === 'home' && !p.dead ? npcNear(s, TUNING.village.npcBubbleRadius) : null;
+    const talking = nearest ? [nearest] : [];
+    const roleTalking = (role: string): boolean => talking.some((n) => NPCS[n.id].role === role);
     if (p.inVillage && !p.dead) {
       const near = (o: { x: number; y: number }): boolean => Math.hypot(o.x - p.x, o.y - p.y) < 90;
-      if (near(ANVIL)) t.label(this, th.places.forge, ANVIL.x, ANVIL.y - 14, '#ffe7a6');
-      if (near(POT)) t.label(this, th.places.kitchen, POT.x, POT.y - 16, '#ffe7a6');
+      if (near(ANVIL) && !roleTalking('forge')) t.label(this, th.places.forge, ANVIL.x, ANVIL.y - 14, '#ffe7a6');
+      if (near(POT) && !roleTalking('kitchen')) t.label(this, th.places.kitchen, POT.x, POT.y - 16, '#ffe7a6');
       if (near(FARM_CENTER)) {
         const ripe = s.plots.filter((pl) => isRipe(pl, s.now)).length;
         t.label(this, ripe ? th.places.farmRipe(ripe) : th.places.farm, FARM_CENTER.x, (FARM.y0 - 1) * T - 4, ripe ? '#ffe08a' : '#ffe7a6');
       }
     }
+    if (s.area === 'home' && p.inVillage && !p.dead && !roleTalking('requests') && Math.hypot(BOARD.x * T + 8 - p.x, BOARD.y * T + 8 - p.y) < 90) {
+      t.label(this, requestReady(s) ? th.places.boardReady : th.places.board, BOARD.x * T + 8, BOARD.y * T - 6, requestReady(s) ? '#ffe08a' : '#ffe7a6');
+    }
     t.endLabels();
+    {
+      const reqById = (id: string) => REQUESTS.find((r) => r.id === id);
+      for (const n of talking) {
+        const line = lineText(npcLine(s, n.id, this.talkN[n.id] ?? 0), reqById);
+        t.bubble(this, n.id, th.npcs[n.id].name, line, n.x, n.y - 16);
+      }
+    }
+    t.endBubbles();
     for (const m of s.monsters) {
       const v = this.monsterViews.get(m.id);
       if (m.mode === 'tele' && v) t.warning(this, m.id, m.x, m.y - v.img.height / 2 - 10, time);

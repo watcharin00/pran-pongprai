@@ -1,9 +1,10 @@
 // Thumb-arc action pad (bottom-right). Buttons sit on an arc around the attack
 // button; radius/angle/size per button match the prototype's data-r/data-a/data-s.
-import { SKILLS } from '../data';
+import { NPCS, SKILLS } from '../data';
 import { dodgeCost } from '../core/inventory';
 import { weaponSkills } from '../core/skills';
 import type { GameState } from '../core/state';
+import { requestReady } from '../core/requests';
 import type { ContextAction } from '../core/village';
 import * as th from '../i18n/th';
 import { $, ICONS } from './format';
@@ -105,7 +106,7 @@ export class ActionPad {
     });
     const atk = this.q('#bAtk');
     atk.classList.toggle('ctx', !!ctx);
-    this.q('#atkLbl').textContent = ctx ? th.context[ctx.kind] : th.hud.attack;
+    this.q('#atkLbl').textContent = contextLabel(s, ctx);
   }
 }
 
@@ -128,4 +129,12 @@ function hold(el: HTMLElement, down: () => void, up?: () => void): void {
   el.addEventListener('pointerup', release);
   el.addEventListener('pointercancel', release);
   el.addEventListener('lostpointercapture', release);
+}
+
+/** The attack button's text: a context action, a villager's name, or "attack". */
+function contextLabel(s: GameState, ctx: ContextAction | null): string {
+  if (!ctx) return th.hud.attack;
+  if (ctx.kind !== 'npc') return th.context[ctx.kind];
+  if (NPCS[ctx.npc].role === 'requests' && requestReady(s)) return th.request.claim;
+  return th.context.npc[NPCS[ctx.npc].role];
 }

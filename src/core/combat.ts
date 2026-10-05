@@ -165,6 +165,7 @@ export function killMonster(s: GameState, m: MonsterState): void {
     drops,
     rare,
     corpse: { dirX: m.dirX, frame: Math.floor(m.anim) % MONSTER_FRAME_COUNT, headBroken: !!m.parts.head?.broken, tailBroken: !!m.parts.tail?.broken },
+    flawless: !m.hitPlayer,
   });
 }
 
@@ -193,6 +194,7 @@ export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void 
   const H = TUNING.player.hurt;
   const dmg = Math.max(1, Math.round(rawDmg * (1 - damageReduction(s))));
   p.hp -= dmg;
+  m.hitPlayer = true;
   p.hurt = H.flash;
   p.hurtIF = H.iframe;
   p.cast = null; // getting hit cancels a skill wind-up
