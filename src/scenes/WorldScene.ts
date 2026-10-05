@@ -28,6 +28,7 @@ import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
 import { TEX } from './textures';
 import { buildTerrain } from '../art/terrain';
+import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
 
 // Draw order (CLAUDE.md): ground → plants/nodes → telegraphs → skill fx → entities (y-sorted)
 // → canopy → monster bars → particles → cloud shadows → glow → text → vignette.
@@ -60,6 +61,8 @@ interface SceneData {
 }
 
 const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** localStorage key for the sound on/off + volume (kept out of the game save) */
+const SOUND_KEY = 'pranpongprai-sound';
 const vibrate = (ms: number): void => {
   try {
     navigator.vibrate?.(ms);
@@ -119,6 +122,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private hud!: Hud;
   private pad!: ActionPad;
   private sheet!: Sheet;
+  private sfx!: Sfx;
   private ctx: ContextAction | null = null;
   private uiT = 0;
   private saveT: number = TUNING.save.intervalSeconds;
@@ -163,6 +167,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.clouds = Array.from({ length: 5 }, () => ({ x: Math.random() * MW * T, y: Math.random() * MH * T, rx: 60 + Math.random() * 50, ry: 28 + Math.random() * 17, v: 5 + Math.random() * 4 }));
     this.text = new TextLayer(this, this.inUi);
 
+    this.sfx = new Sfx(parseSoundSettings(readKey(SOUND_KEY)));
     this.setupUi();
     this.subscribe();
     this.resize();
@@ -280,12 +285,24 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         location.reload();
       },
       opened: () => {
+        this.sfx.play('ui');
         this.padAttackHeld = false;
         this.keyboard.reset();
         this.joystick.release();
       },
       closed: () => surface.focus({ preventScroll: true }),
-      crafted: () => this.effects.burst(ANVIL.x, ANVIL.y - 3, '#ffd35c', 16, 90),
+      crafted: () => {
+        this.effects.burst(ANVIL.x, ANVIL.y - 3, '#ffd35c', 16, 90);
+        this.sfx.play('craft');
+      },
+      sound: {
+        get: () => this.sfx.current,
+        set: (v) => {
+          this.sfx.set(v);
+          writeKey(SOUND_KEY, JSON.stringify(v));
+        },
+      },
+      sfx: (name) => this.sfx.play(name),
     });
     surface.tabIndex = 0;
     surface.setAttribute('aria-label', th.game.canvasLabel);
@@ -393,16 +410,24 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.hitstop = Math.max(this.hitstop, hitstop);
       this.shake = Math.max(this.shake, shake);
     };
+    // sounds fade with distance from the player
+    const snd = (name: SfxName, at?: { x: number; y: number }, gain = 1): void => {
+      const p = this.s.player;
+      this.sfx.play(name, at ? gain * distanceGain(Math.hypot(at.x - p.x, at.y - p.y)) : gain);
+    };
     const monName = (k: keyof typeof th.monsters): string => th.monsters[k].name;
     const partName = (k: keyof typeof th.monsters, p: PartId): string => (th.monsters[k].parts as Partial<Record<PartId, string>>)[p] ?? p;
 
     ev.on('monster:spawned', (e) => fx.burst(e.at.x, e.at.y, '#fff8e0', 8, 40, 'dust'));
     ev.on('player:attack', (e) => {
-      const type = WEAPON_TYPES[WEAPONS[e.weapon].type];
+      const w = WEAPONS[e.weapon];
+      const type = WEAPON_TYPES[w.type];
       bump(type.hitstop, type.shake);
+      snd(w.projectile ? 'bow' : w.type === 'hammer' || w.type === 'greatsword' ? 'swingHeavy' : 'swing');
     });
     ev.on('monster:hit', (e) => {
       if (this.s.player.dash) bump(0.05, 0);
+      snd(e.big || e.gold ? 'hitHeavy' : 'hit', e.at);
       if (e.tip && e.part !== 'body') float(e.at.x, e.at.y - 18, partName(e.kind, e.part), '#ffe08a');
       float(e.at.x + (Math.random() * 6 - 3), e.at.y - 8, e.damage, e.gold ? '#ffd35c' : '#ffffff', e.big);
       fx.burst(e.at.x, e.at.y, '#ffffff', 4, 90);
@@ -413,15 +438,18 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       fx.burst(e.at.x, e.at.y, '#ffd35c', 14, 100);
       fx.burst(e.at.x, e.at.y, e.part === 'head' ? '#ece2c6' : '#ff9a40', 8, 80, 'chunk');
       bump(TUNING.combat.partBreakHitstop, 0.22);
+      snd('partBreak');
       hud.toast(th.log.partBroken(partName(e.kind, e.part), monName(e.kind), fmtItems(e.drops)), 'gold');
     });
     ev.on('monster:stunned', (e) => {
       float(e.at.x, e.at.y - MONSTERS[e.kind].size - 10, th.floats.stunned, '#ffd35c', true);
       hud.toast(th.log.stunned(monName(e.kind)), 'gold');
+      snd('stun', e.at);
     });
     ev.on('monster:enraged', (e) => {
       float(e.at.x, e.at.y - MONSTERS[e.kind].size - 12, th.floats.enraged, '#ff6b5e', true);
       hud.toast(th.log.enraged(monName(e.kind)), 'bad');
+      snd('enrage', e.at);
       bump(0, 0.3);
     });
     ev.on('monster:strike', (e) => {
@@ -429,6 +457,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       fx.ring(e.at.x, e.at.y, e.radius);
       fx.burst(e.at.x, e.at.y, heavy ? '#ff8a3d' : '#c8b890', e.radius > 30 ? 18 : 8, e.radius * 2, 'dust');
       if (heavy) bump(0, 0.14);
+      snd('strike', e.at, heavy ? 1 : 0.6);
+    });
+    ev.on('monster:telegraph', (e) => {
+      const m = findMonster(this.s, e.id);
+      if (m) snd(MONSTERS[e.kind].size >= 12 ? 'telegraphBig' : 'telegraph', m);
     });
     ev.on('monster:dashEnd', (e) => {
       if (MONSTERS[e.kind].size >= 12) bump(0, 0.14);
@@ -439,6 +472,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const img = this.inWorld(this.add.image(e.at.x, e.at.y, TEX.monster(e.kind, e.corpse.frame, e.corpse.headBroken, e.corpse.tailBroken)).setDepth(D.corpse));
       this.corpses.push({ img, x: e.at.x, y: e.at.y, t: 1 });
       bump(TUNING.combat.killHitstop, 0.22);
+      snd('kill');
       hud.toast(th.log.hunted(monName(e.kind), fmtItems(e.drops)));
       if (e.rare) hud.toast(th.log.rareDrop(th.materials[e.rare]), 'gold');
       this.corpses.at(-1)?.img.setScale(e.corpse.dirX, 1);
@@ -453,18 +487,27 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       fx.burst(e.at.x, e.at.y, '#ff6b5e', 8);
       bump(0.06, e.heavy ? 0.25 : 0.14);
       vibrate(40);
+      snd('hurt');
     });
     ev.on('player:dodged', (e) => {
       float(e.at.x, e.at.y - 18, th.floats.dodged, '#ffd35c', true);
       fx.burst(e.at.x, e.at.y, '#fff3c4', 6, 60);
+      snd('dodge');
     });
-    ev.on('player:roll', (e) => fx.burst(e.at.x, e.at.y + 6, '#e8d8b0', 6, 40, 'dust'));
+    ev.on('player:roll', (e) => {
+      fx.burst(e.at.x, e.at.y + 6, '#e8d8b0', 6, 40, 'dust');
+      snd('roll');
+    });
     ev.on('player:tired', (e) => float(e.at.x, e.at.y - 16, th.floats.tired, '#c8c2b0'));
     ev.on('player:drink', (e) => {
       float(e.at.x, e.at.y - 16, `+${e.heal}`, '#8ff08a', true);
       fx.healGlow(e.at.x, e.at.y);
+      snd('drink');
     });
-    ev.on('player:noPotion', () => hud.toast(th.log.noPotion, 'bad'));
+    ev.on('player:noPotion', () => {
+      hud.toast(th.log.noPotion, 'bad');
+      snd('error');
+    });
     ev.on('player:knockedOut', () => hud.toast(th.log.knockedOut, 'bad'));
     ev.on('area:changed', () => this.enterArea());
     ev.on('player:revived', (e) => {
@@ -473,6 +516,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     ev.on('skill:cast', (e) => {
       const def = SKILLS[e.skill];
+      snd(def.kind === 'radial' ? 'swingHeavy' : 'skill');
       if (def.kind === 'radial') {
         fx.whirl();
         bump(def.hitstop, def.shake);
@@ -482,32 +526,40 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const def = SKILLS[e.skill];
       bump(def.hitstop, def.shake);
       if (e.line) {
+        snd('swingHeavy');
         fx.slash(e.line.from.x, e.line.from.y, e.line.ux, e.line.uy, e.line.len, e.line.wd);
         return;
       }
       fx.shock(e.at.x, e.at.y, e.radius);
       fx.burst(e.at.x, e.at.y, '#e8d0a0', 18, 110, 'dust');
       vibrate(30);
+      snd('impact');
     });
     ev.on('shot:blocked', (e) => fx.burst(e.at.x, e.at.y - 4, '#e8d8b0', 4, 40, 'dust'));
     ev.on('crop:planted', (e) => {
       float(e.at.x, e.at.y - 10, th.floats.planted(th.crops[e.crop].name), CROPS[e.crop].color);
       fx.burst(e.at.x, e.at.y + 3, '#a8754a', 6, 40, 'dust');
+      snd('plant');
       this.sheet.markDirty();
       this.save();
     });
     ev.on('crop:harvested', (e) => {
       float(e.at.x, e.at.y - 12, th.floats.harvested, '#ffd166', true);
       fx.burst(e.at.x, e.at.y, CROPS[e.crop].color, 12, 70, 'chunk');
+      snd('harvest');
       hud.toast(th.log.harvested(th.crops[e.crop].name, fmtItems(e.drops)), 'gold');
       this.sheet.markDirty();
       this.save();
     });
-    ev.on('farm:noSeed', (e) => hud.toast(th.log.noSeed(th.materials[CROPS[e.crop].seed], th.crops[e.crop].source), 'bad'));
+    ev.on('farm:noSeed', (e) => {
+      snd('error');
+      hud.toast(th.log.noSeed(th.materials[CROPS[e.crop].seed], th.crops[e.crop].source), 'bad');
+    });
     ev.on('item:gathered', (e) => {
       const c = MATERIALS[e.item as MaterialId].color;
       float(e.at.x, e.at.y - 10, `+${e.amount}`, c, true);
       fx.burst(e.at.x, e.at.y, c, 8, 50);
+      snd('pickup');
       hud.toast(th.log.gathered(fmtItems({ [e.item]: e.amount })));
       if (e.bonusSeed) hud.toast(th.log.herbSeedBonus);
     });

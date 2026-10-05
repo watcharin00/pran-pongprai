@@ -334,6 +334,7 @@ export const menu = {
   cooldown: (s: number) => `คูลดาวน์ ${s} วิ`,
   materials: 'วัสดุ',
   log: 'บันทึก',
+  sound: { title: 'เสียง', on: 'เปิดเสียง', volume: 'ระดับเสียง' },
   // bag
   filters: { all: 'ทั้งหมด', gear: 'อุปกรณ์', material: 'วัสดุ', seed: 'เมล็ด' },
   slots: { weapon: 'อาวุธ', head: 'หมวก', body: 'เสื้อ', charm: 'เครื่องราง' },

@@ -14,6 +14,7 @@ import { armorIconUrl, armorSlotIconUrl, materialIconUrl, mealIconUrl, monsterIc
 import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
 import type { Hud } from './hud';
+import type { SfxName, SoundSettings } from '../audio/sfx';
 import { itemSources, itemUses, monsterWhere, type ItemSource, type ItemUse } from './itemInfo';
 
 type BagFilter = 'all' | 'gear' | 'material' | 'seed';
@@ -68,6 +69,10 @@ export interface SheetHooks {
   closed: () => void;
   /** world feedback for crafting (sparks at the anvil etc.) */
   crafted: () => void;
+  /** sound on/off + volume, stored outside the game save */
+  sound: { get: () => SoundSettings; set: (v: SoundSettings) => void };
+  /** UI feedback sounds */
+  sfx: (name: SfxName) => void;
 }
 
 export class Sheet {
@@ -106,6 +111,7 @@ export class Sheet {
     this.sheet.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) =>
       b.addEventListener('click', () => {
         this.tab = b.dataset.tab as Tab;
+        this.hooks.sfx('ui');
         this.render();
         this.body.scrollTop = 0;
       }),
@@ -115,6 +121,17 @@ export class Sheet {
     this.body.addEventListener('change', (e) => {
       const t = e.target as HTMLInputElement;
       if (t.id === 'useFert') this.s().useFert = t.checked;
+      if (t.id === 'sndOn') {
+        this.hooks.sound.set({ ...this.hooks.sound.get(), on: t.checked });
+        this.hooks.sfx('ui');
+        this.render();
+      }
+      // play a sample once the slider is let go, so the player hears the new level
+      if (t.id === 'sndVol') this.hooks.sfx('pickup');
+    });
+    this.body.addEventListener('input', (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.id === 'sndVol') this.hooks.sound.set({ ...this.hooks.sound.get(), volume: Number(t.value) / 100 });
     });
     this.body.addEventListener('click', (e) => this.onClick(e));
     hud.onLog = () => {
@@ -225,6 +242,8 @@ export class Sheet {
     h += `<h3 class="sec">${M.skills}</h3><div class="skl">${weaponSkills(p.weapon)
       .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${M.cooldown(SKILLS[id].cooldown)}</span></div>`)
       .join('')}<div><b>${M.partsTitle}</b><span class="meta">${M.partsHelp}</span></div></div>`;
+    const snd = this.hooks.sound.get();
+    h += `<div class="sound"><h3 class="sec">${M.sound.title}</h3><label class="chk"><input type="checkbox" id="sndOn" ${snd.on ? 'checked' : ''}>${M.sound.on}</label><input type="range" id="sndVol" min="0" max="100" step="5" value="${Math.round(snd.volume * 100)}" aria-label="${M.sound.volume}" ${snd.on ? '' : 'disabled'}></div>`;
     const armed = Date.now() - this.resetArm < 3000;
     h += `<div class="row"><h3 class="sec">${M.log}</h3><button type="button" class="btn" id="btnReset">${armed ? M.confirmNewGame : M.newGame}</button></div>`;
     h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
