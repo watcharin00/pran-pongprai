@@ -1,6 +1,6 @@
 // Plain-data game state. Everything the simulation needs lives here so that a
 // server could own it and clients could render it.
-import type { ArmorId, ArmorSlot, AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
+import type { AreaId, ArmorId, ArmorSlot, AttackDef, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 import type { EventBus, Vec2 } from './events';
 import type { WorldMap } from './mapgen';
 import type { TilePath } from './pathfinding';
@@ -201,7 +201,11 @@ export interface Shot {
 export type Inventory = Record<MaterialId, number>;
 
 export interface GameState {
-  readonly map: WorldMap;
+  /** the area the player is in; swapped by core/travel.ts */
+  map: WorldMap;
+  area: AreaId;
+  /** the home map (village), kept so returning does not rebuild it */
+  readonly homeMap: WorldMap;
   readonly rng: Rng;
   readonly events: EventBus;
   /** simulation seconds */

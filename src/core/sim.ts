@@ -1,15 +1,17 @@
 // Builds a game and advances it. The only entry points the renderer needs.
-import { MONSTER_IDS, MONSTERS, TUNING } from '../data';
+import { TUNING } from '../data';
 import { EventBus } from './events';
 import { createPlots } from './farm';
 import { startingInventory } from './inventory';
-import { generateMap, SPAWN, T, zoneAtPx, type WorldMap } from './mapgen';
+import { areaMap } from './areas';
+import { SPAWN, zoneAtPx, type WorldMap } from './mapgen';
 import { spawnMonster, updateMonster } from './monsterAI';
+import { createNodes, populateArea } from './travel';
 import { processActions, updatePlayer } from './player';
 import { updateShots } from './shots';
-import { parkMiller, Rng } from './rng';
+import { Rng } from './rng';
 import { applySave, type SaveData } from './save';
-import type { GameState, GatherNode, Intent, PlayerState } from './state';
+import type { GameState, Intent, PlayerState } from './state';
 
 export interface CreateOptions {
   /** gameplay randomness seed (not the map seed) */
@@ -34,30 +36,12 @@ export function createPlayer(): PlayerState {
 }
 
 /** Herb and ore nodes are placed by a fixed seed so they are always in the same spots. */
-function createNodes(map: WorldMap): GatherNode[] {
-  const G = TUNING.gather;
-  const r = parkMiller(G.nodeSeed);
-  const nodes: GatherNode[] = [];
-  const place = (cells: WorldMap['forestCells'], n: number, kind: GatherNode['kind']): void => {
-    let placed = 0;
-    let guard = 0;
-    while (placed < n && guard++ < 500 && cells.length) {
-      const [tx, ty] = cells[Math.floor(r() * cells.length)] ?? [0, 0];
-      if (nodes.some((o) => Math.hypot(o.tx - tx, o.ty - ty) < 4)) continue;
-      nodes.push({ id: nodes.length + 1, kind, tx, ty, x: tx * T + 8, y: ty * T + 8, ready: true, regen: 0 });
-      placed++;
-    }
-  };
-  place(map.forestCells, G.nodes.forestHerb, 'herb');
-  place(map.forestCells, G.nodes.forestOre, 'ore');
-  place(map.canyonCells, G.nodes.canyonOre, 'ore');
-  return nodes;
-}
-
 export function createGame(o: CreateOptions): GameState {
-  const map = o.map ?? generateMap();
+  const map = o.map ?? areaMap('home');
   const s: GameState = {
     map,
+    area: 'home',
+    homeMap: map,
     rng: new Rng(o.rngSeed),
     events: new EventBus(),
     time: 0,
@@ -91,7 +75,7 @@ export function createGame(o: CreateOptions): GameState {
     seed(1, 'herb', 41000, 40000);
     seed(5, 'herb', 15000, 40000);
   }
-  if (!o.noMonsters) for (const k of MONSTER_IDS) for (let i = 0; i < MONSTERS[k].count; i++) spawnMonster(s, k);
+  if (!o.noMonsters) populateArea(s);
   return s;
 }
 

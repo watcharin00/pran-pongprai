@@ -157,6 +157,10 @@ export const zones = {
   forest: 'ป่าดงดิบ',
   bridge: 'สะพานไม้',
   canyon: 'หุบผาแดง',
+  bamboo: 'ป่าไผ่',
+  swamp: 'บึงจระเข้',
+  limestone: 'ดอยหินปูน',
+  deepwild: 'ป่าลึกช้างป่า',
 } satisfies Record<ZoneId, string>;
 
 export const game = {

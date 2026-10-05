@@ -183,6 +183,7 @@ export function loadMonsters(v: unknown, materials: readonly string[]): Record<s
       speed: num(m.speed, `${p}.speed`, 0),
       size: num(m.size, `${p}.size`, 1),
       aggroRadius: num(m.aggroRadius, `${p}.aggroRadius`, 0),
+      area: optional(m, 'area', (x) => oneOf(x, `${p}.area`, ['home', 'bamboo', 'swamp', 'limestone', 'deepwild'] as const)) ?? 'home',
       zone: oneOf(m.zone, `${p}.zone`, ['forest', 'canyon'] as const),
       spawnMinVillageDist: optional(m, 'spawnMinVillageDist', (x) => num(x, `${p}.spawnMinVillageDist`, 0)) ?? 0,
       spawnEastOfRiver: optional(m, 'spawnEastOfRiver', (x) => bool(x, `${p}.spawnEastOfRiver`)) ?? false,

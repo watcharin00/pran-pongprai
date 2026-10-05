@@ -139,7 +139,7 @@ function think(s: GameState, m: MonsterState, dt: number): void {
   const rage = m.rage ? def.rage : null;
   const spd = def.speed * (rage ? rage.speedMul : 1);
   const r = def.size * 0.5;
-  const playerInVillage = inVillagePx(p.x, p.y);
+  const playerInVillage = s.area === 'home' && inVillagePx(p.x, p.y);
 
   switch (m.mode) {
     case 'stun':

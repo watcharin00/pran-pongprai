@@ -3,7 +3,7 @@
 // (hitstop, shake, flashes, numbers, toasts) and draws.
 import Phaser from 'phaser';
 import { CROPS, MATERIALS, MONSTERS, SKILLS, TUNING, WEAPON_TYPES, WEAPONS } from '../data';
-import type { MaterialId, PartId } from '../data/types';
+import type { AreaId, MaterialId, PartId } from '../data/types';
 import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPilot';
 import { findMonster } from '../core/combat';
 import { isRipe, plant, plotProgress } from '../core/farm';
@@ -27,6 +27,7 @@ import { MonsterView } from '../entities/Monster';
 import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
 import { TEX } from './textures';
+import { buildTerrain } from '../art/terrain';
 
 // Draw order (CLAUDE.md): ground → plants/nodes → telegraphs → skill fx → entities (y-sorted)
 // → canopy → monster bars → particles → cloud shadows → glow → text → vignette.
@@ -103,6 +104,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private glows: { l: StaticLight; img: Phaser.GameObjects.Image }[] = [];
   private dynGlows = new Map<number, Phaser.GameObjects.Image>();
   private clouds: { x: number; y: number; rx: number; ry: number; v: number }[] = [];
+  private groundImg!: Phaser.GameObjects.Image;
+  private canopyImg!: Phaser.GameObjects.Image;
+  /** static lights per area, filled when an area's terrain is first built */
+  private areaLights = new Map<AreaId, StaticLight[]>();
 
   // input + ui
   private joystick!: Joystick;
@@ -139,21 +144,20 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.cameras.main.setBackgroundColor('#15202b');
 
     const w = this.inWorld;
-    w(this.add.image(0, 0, TEX.ground).setOrigin(0).setDepth(D.ground));
+    this.groundImg = w(this.add.image(0, 0, TEX.ground).setOrigin(0).setDepth(D.ground));
+    this.areaLights.set('home', data.lights);
     this.gGround = w(this.add.graphics().setDepth(D.groundFx));
-    for (const n of this.s.nodes) this.nodeImgs.set(n.id, w(this.add.image(n.x, n.y, n.kind === 'ore' ? TEX.ore : TEX.herb).setDepth(D.nodes)));
+    this.makeNodeImages();
     this.gNodeFx = w(this.add.graphics().setDepth(D.nodeFx));
     this.gTele = w(this.add.graphics().setDepth(D.tele));
     this.gShadow = w(this.add.graphics().setDepth(D.shadow));
     this.gShadowAdd = w(this.add.graphics().setDepth(D.shadow + 0.1).setBlendMode(Phaser.BlendModes.ADD));
     this.playerView = new PlayerView(this, w);
-    w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
+    this.canopyImg = w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
     this.gBars = w(this.add.graphics().setDepth(D.bars));
     this.effects = new Effects(this, w, { fx: D.fx, particles: D.particles });
     this.gClouds = w(this.add.graphics().setDepth(D.clouds));
-    for (const l of data.lights.concat([{ x: POT.x, y: POT.y + 4, r: 16, c: '255,150,60', ga: 0.18 }])) {
-      this.glows.push({ l, img: this.makeGlow(l.c) });
-    }
+    this.makeGlows(data.lights);
     this.clouds = Array.from({ length: 5 }, () => ({ x: Math.random() * MW * T, y: Math.random() * MH * T, rx: 60 + Math.random() * 50, ry: 28 + Math.random() * 17, v: 5 + Math.random() * 4 }));
     this.text = new TextLayer(this, this.inUi);
 
@@ -181,6 +185,50 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     else this.hud.toast(th.log.welcome);
     this.hud.showZone(th.zones[p.zone ?? 'village']);
     this.hud.update(this.s);
+  }
+
+  private makeNodeImages(): void {
+    for (const img of this.nodeImgs.values()) img.destroy();
+    this.nodeImgs.clear();
+    for (const n of this.s.nodes) this.nodeImgs.set(n.id, this.inWorld(this.add.image(n.x, n.y, n.kind === 'ore' ? TEX.ore : TEX.herb).setDepth(D.nodes)));
+  }
+
+  private makeGlows(lights: readonly StaticLight[]): void {
+    for (const g of this.glows) g.img.destroy();
+    this.glows = [];
+    const extra: StaticLight[] = this.s.area === 'home' ? [{ x: POT.x, y: POT.y + 4, r: 16, c: '255,150,60', ga: 0.18 }] : [];
+    for (const l of lights.concat(extra)) this.glows.push({ l, img: this.makeGlow(l.c) });
+  }
+
+  /** Swaps terrain, nodes, glows and entity views after core/travel.ts changed the area. */
+  private enterArea(): void {
+    const s = this.s;
+    const area = s.area;
+    const gKey = area === 'home' ? TEX.ground : `${TEX.ground}:${area}`;
+    const cKey = area === 'home' ? TEX.canopy : `${TEX.canopy}:${area}`;
+    if (!this.textures.exists(gKey)) {
+      // painted once per area on first visit, then reused
+      const art = buildTerrain(s.map);
+      this.textures.addCanvas(gKey, art.ground);
+      this.textures.addCanvas(cKey, art.canopy);
+      this.areaLights.set(area, art.lights);
+    }
+    this.groundImg.setTexture(gKey);
+    this.canopyImg.setTexture(cKey);
+    this.makeNodeImages();
+    this.makeGlows(this.areaLights.get(area) ?? []);
+    for (const v of this.monsterViews.values()) v.destroy();
+    this.monsterViews.clear();
+    for (const img of this.dynGlows.values()) img.destroy();
+    this.dynGlows.clear();
+    for (const c of this.corpses) c.img.destroy();
+    this.corpses = [];
+    this.auto = createAutoPilot();
+    const p = s.player;
+    this.camFX = Phaser.Math.Clamp(p.x - this.VW / 2, 0, Math.max(0, MW * T - this.VW));
+    this.camFY = Phaser.Math.Clamp(p.y - this.VH / 2, 0, Math.max(0, MH * T - this.VH));
+    this.cameras.main.fadeIn(260, 21, 32, 43);
+    this.save();
   }
 
   private inWorld = <T extends Phaser.GameObjects.GameObject>(o: T): T => {
@@ -416,6 +464,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     ev.on('player:noPotion', () => hud.toast(th.log.noPotion, 'bad'));
     ev.on('player:knockedOut', () => hud.toast(th.log.knockedOut, 'bad'));
+    ev.on('area:changed', () => this.enterArea());
     ev.on('player:revived', (e) => {
       this.camFX = e.at.x - this.VW / 2;
       this.camFY = e.at.y - this.VH / 2;
@@ -588,6 +637,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         if (Math.sin(time * 2 + o) > 0.3) px(xx * T + 3 + ((o + Math.floor(time * 4)) % 9), yy * T + 7 + ((o * 5) % 6), 0xc8fff0, 2, 1);
       }
     }
+    if (this.s.area !== 'home') return;
     // fountain spray + pot fire
     const fx = PLAZA.x * T;
     const fy = PLAZA.y * T;

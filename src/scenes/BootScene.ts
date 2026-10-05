@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { MONSTER_IDS, WEAPONS } from '../data';
 import type { WeaponId } from '../data/types';
-import { generateMap } from '../core/mapgen';
+import { areaMap } from '../core/areas';
 import { MONSTER_FRAME_COUNT } from '../core/state';
 import { buildGlow, buildHerb, buildOre, buildPlayerFrames, buildWeapon, MONSTER_SPRITES } from '../art/sprites';
 import { buildTerrain } from '../art/terrain';
@@ -17,7 +17,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    const map = generateMap();
+    const map = areaMap('home');
     const terrain = buildTerrain(map);
     const t = this.textures;
     t.addCanvas(TEX.ground, terrain.ground);

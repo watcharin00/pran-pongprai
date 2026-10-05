@@ -9,7 +9,7 @@ export type ContextAction = { kind: 'forge' } | { kind: 'kitchen' } | { kind: 'p
 
 export function contextAction(s: GameState): ContextAction | null {
   const p = s.player;
-  if (p.dead) return null;
+  if (p.dead || s.area !== 'home') return null;
   if (s.monsters.some((m) => Math.hypot(m.x - p.x, m.y - p.y) < V.contextMonsterClear)) return null;
   const near = (o: { x: number; y: number }, r: number): boolean => Math.hypot(o.x - p.x, o.y - p.y) < r;
   if (near(ANVIL, V.stationRadius)) return { kind: 'forge' };

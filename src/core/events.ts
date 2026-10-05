@@ -1,6 +1,6 @@
 // Typed event bus. Game logic emits; rendering, audio and UI subscribe.
 // Pure TypeScript so the same logic can later run on a server.
-import type { CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
+import type { AreaId, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 
 export interface Vec2 {
   x: number;
@@ -49,6 +49,8 @@ export interface GameEvents {
   'farm:noSeed': { crop: CropId };
   'item:gathered': { item: MaterialId; amount: number; at: Vec2; bonusSeed: boolean };
   'zone:entered': { zone: ZoneId };
+  /** the player walked through an exit, fast-travelled or was carried home */
+  'area:changed': { area: AreaId; from: AreaId };
   'meal:expired': { meal: MealId };
 }
 

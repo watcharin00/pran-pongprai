@@ -1,15 +1,57 @@
 // Paints the whole world once: ground (incl. buildings) and a separate canopy
 // layer that is drawn above entities so characters can walk "under" trees.
 import { hash, vnoise } from '../core/rng';
-import { inCanyon, INN, MH, MW, SMITH, T, Tile, tileAt, type WorldMap } from '../core/mapgen';
+import { inCanyon, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
 import { drawAnvil, drawFountain, drawHouse, drawLamps, drawPot, type StaticLight } from './buildings';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
-const GRASS = ['#5c9f39', '#6aae42', '#78bb4b', '#86c754'];
-const GRASS_DARK = ['#3f7d2e', '#478933', '#509439'];
-const SAND = ['#dcb46e', '#e4c07c', '#ebcb89', '#f1d696'];
+interface GroundPalette {
+  grass: readonly string[];
+  dark: readonly string[];
+  sand: readonly string[];
+  water: readonly string[];
+}
+
+/** Ground colours per biome; every area stays bright (no dark/night areas). */
+const PALETTES: Record<Biome, GroundPalette> = {
+  home: {
+    grass: ['#5c9f39', '#6aae42', '#78bb4b', '#86c754'],
+    dark: ['#3f7d2e', '#478933', '#509439'],
+    sand: ['#dcb46e', '#e4c07c', '#ebcb89', '#f1d696'],
+    water: ['#1f9a92', '#25a69c', '#2db2a6'],
+  },
+  bamboo: {
+    grass: ['#7fb44a', '#8cc155', '#99cc60', '#a6d66c'],
+    dark: ['#5a8f35', '#64993c', '#6ea344'],
+    sand: ['#d8bc7a', '#e0c688', '#e8d096', '#efdaa4'],
+    water: ['#1f9a92', '#25a69c', '#2db2a6'],
+  },
+  swamp: {
+    grass: ['#4f8a4a', '#5a944f', '#649e55', '#6fa85c'],
+    dark: ['#356e3a', '#3d7841', '#458248'],
+    sand: ['#a89060', '#b39a6a', '#bda474', '#c8ae7e'],
+    water: ['#2f8a72', '#36947a', '#3e9e82'],
+  },
+  limestone: {
+    grass: ['#7f9f5a', '#8aa965', '#95b370', '#a0bd7a'],
+    dark: ['#5f7f45', '#67884c', '#709153'],
+    sand: ['#c9c4b4', '#d3cebf', '#ddd8ca', '#e6e2d5'],
+    water: ['#2a9aa8', '#30a4b2', '#38aebc'],
+  },
+  deepwild: {
+    grass: ['#3f8a35', '#47933b', '#509c41', '#59a548'],
+    dark: ['#2a6626', '#30702b', '#377a31'],
+    sand: ['#cfa864', '#d8b472', '#e0bf80', '#e8ca8e'],
+    water: ['#1f9a92', '#25a69c', '#2db2a6'],
+  },
+};
+
+// the active palette, set by buildTerrain before painting
+let GRASS = PALETTES.home.grass;
+let GRASS_DARK = PALETTES.home.dark;
+let SAND = PALETTES.home.sand;
+let WATER = PALETTES.home.water;
 const CANYON = ['#d6a35e', '#dfb06c', '#e7bd7a', '#eec98a'];
-const WATER = ['#1f9a92', '#25a69c', '#2db2a6'];
 const PLAZA_STONE = ['#cfc7ab', '#d8d0b6', '#e1dac2'];
 const EDGE_LINE = '#3f7a2c';
 
@@ -26,9 +68,11 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   const lights: StaticLight[] = [];
   const mb = createBuffer(MW * T, MH * T);
   const cb = createBuffer(MW * T, MH * T);
+  ({ grass: GRASS, dark: GRASS_DARK, sand: SAND, water: WATER } = PALETTES[map.biome]);
   paintGround(map, mb);
   paintDetails(map, mb, lights);
   paintTrees(map, mb, cb);
+  if (map.area !== 'home') return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
   drawHouse(mb, SMITH, 'smith');
   drawHouse(mb, INN, 'inn');
   drawFountain(mb);

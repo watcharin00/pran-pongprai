@@ -18,7 +18,8 @@ export type ArmorSlot = (typeof ARMOR_SLOTS)[number];
 export type MealId = keyof (typeof mealsJson)['meals'];
 export type SkillId = keyof (typeof skillsJson)['skills'];
 export type PartId = 'head' | 'tail';
-export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon';
+export type AreaId = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild';
+export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild';
 
 export type ItemBag = Partial<Record<MaterialId, number>>;
 
@@ -90,6 +91,8 @@ export interface MonsterDef {
   speed: number;
   size: number;
   aggroRadius: number;
+  /** which area this monster lives in (default home) */
+  area: AreaId;
   zone: 'forest' | 'canyon';
   /** only spawn this far (px) or more from the village centre; keeps bosses off the early route */
   spawnMinVillageDist: number;

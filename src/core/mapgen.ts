@@ -1,7 +1,7 @@
 // Tile map generation. Ported 1:1 from the prototype's gen() so the same seed
 // yields the same world (verified against reference/prototype.html in tests).
 import { TUNING } from '../data';
-import type { ZoneId } from '../data/types';
+import type { AreaId, ZoneId } from '../data/types';
 import { parkMiller, vnoise } from './rng';
 
 export const T = TUNING.world.tile;
@@ -64,7 +64,27 @@ export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
 export const CHIMNEY = { x: SMITH.x * T + SMITH.w * T - 13, y: SMITH.y * T - 12 } as const;
 
+export type Edge = 'n' | 's' | 'e' | 'w';
+/** Ground palette / decoration set used by the terrain painter. */
+export type Biome = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild';
+
+/** An opening in the map border that leads to another area. */
+export interface AreaExit {
+  edge: Edge;
+  /** first tile along the edge */
+  at: number;
+  width: number;
+  to: AreaId;
+  /** where the player stands after arriving through this exit (px) */
+  arrive: { x: number; y: number };
+}
+
 export interface WorldMap {
+  readonly area: AreaId;
+  /** zone name for everything outside the village / canyon / bridges */
+  readonly zone: ZoneId;
+  readonly biome: Biome;
+  readonly exits: readonly AreaExit[];
   readonly tiles: Uint8Array;
   /** river centre column per row */
   readonly riverX: Int16Array;
@@ -86,12 +106,12 @@ export function inVillagePx(px: number, py: number): boolean {
   return inVillageTile(Math.floor(px / T), Math.floor(py / T));
 }
 
-export function tileAt(map: WorldMap, x: number, y: number): number {
+export function tileAt(map: Pick<WorldMap, 'tiles'>, x: number, y: number): number {
   if (x < 0 || y < 0 || x >= MW || y >= MH) return Tile.WALL;
   return map.tiles[y * MW + x] ?? Tile.WALL;
 }
 
-export function walkable(map: WorldMap, x: number, y: number): boolean {
+export function walkable(map: Pick<WorldMap, 'tiles'>, x: number, y: number): boolean {
   return !BLOCKING.has(tileAt(map, x, y));
 }
 
@@ -104,6 +124,7 @@ export function walkablePx(map: WorldMap, px: number, py: number): boolean {
 }
 
 export function inCanyon(map: WorldMap, x: number, y: number): boolean {
+  if (map.area !== 'home') return false;
   const rx = map.riverX[y];
   return y >= 20 && rx !== undefined && x > rx + 1;
 }
@@ -111,6 +132,7 @@ export function inCanyon(map: WorldMap, x: number, y: number): boolean {
 export function zoneAtPx(map: WorldMap, px: number, py: number): ZoneId {
   const tx = Math.floor(px / T);
   const ty = Math.floor(py / T);
+  if (map.area !== 'home') return map.zone;
   if (inVillageTile(tx, ty)) return 'village';
   if (tileAt(map, tx, ty) === Tile.BRIDGE) return 'bridge';
   if (inCanyon(map, tx, ty)) return 'canyon';
@@ -197,7 +219,7 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
   }
   for (const [x, y] of [[5, 34], [24, 34], [24, 16], [5, 16]] as const) set(x, y, Tile.TREE);
 
-  const partial: Omit<WorldMap, 'reach' | 'forestCells' | 'canyonCells'> = { tiles, riverX: RX, bridgeEast: BE, bridgeNorth: BN };
+  const partial: Omit<WorldMap, 'reach' | 'forestCells' | 'canyonCells'> = { area: 'home', zone: 'forest', biome: 'home', exits: [], tiles, riverX: RX, bridgeEast: BE, bridgeNorth: BN };
   const reach = floodReach(partial as WorldMap, PLAZA.x, 29);
   const map: WorldMap = { ...partial, reach, forestCells: [], canyonCells: [] };
 
@@ -216,7 +238,7 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
 }
 
 /** 4-way flood fill from a tile; mirrors the prototype's DFS order. */
-function floodReach(map: WorldMap, sx: number, sy: number): Uint8Array {
+export function floodReach(map: Pick<WorldMap, 'tiles'>, sx: number, sy: number): Uint8Array {
   const reach = new Uint8Array(MW * MH);
   const s = sy * MW + sx;
   const stack = [s];

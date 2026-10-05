@@ -9,6 +9,8 @@ import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
 import { clearShot, fireShot } from './shots';
 import { castSkill, updateDash, updateWindup } from './skills';
+import { exitAt } from './areas';
+import { changeArea } from './travel';
 import type { GameState, Intent, MonsterState } from './state';
 
 const P = TUNING.player;
@@ -167,6 +169,8 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   if (p.dead) {
     p.deadT -= dt;
     if (p.deadT <= 0) {
+      // villagers carry the hunter home from any area
+      if (s.area !== 'home') changeArea(s, 'home', SPAWN);
       Object.assign(p, { dead: false, x: SPAWN.x, y: SPAWN.y, hp: p.maxHp, st: p.maxSt, roll: 0, hurtIF: 1 });
       s.events.emit('player:revived', { at: { x: p.x, y: p.y } });
     }
@@ -178,7 +182,7 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   p.maxSt = maxStaminaFor(s);
   if (p.st > p.maxSt) p.st = p.maxSt;
   if (p.stDelay <= 0) p.st = Math.min(p.maxSt, p.st + P.staminaRegen * staminaRegenMul(s) * dt);
-  p.inVillage = inVillagePx(p.x, p.y);
+  p.inVillage = s.area === 'home' && inVillagePx(p.x, p.y);
   if (p.inVillage && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + P.villageRegen * dt);
   const zone = zoneAtPx(s.map, p.x, p.y);
   if (zone !== p.zone) {
@@ -220,10 +224,15 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
 
   updateGathering(s, dt);
   // walking over a ripe plot harvests it
-  s.plots.forEach((pl, i) => {
-    if (isRipe(pl, s.now) && Math.hypot(pl.x - p.x, pl.y - p.y) < V.harvestRadius) harvest(s, i);
-  });
+  if (s.area === 'home') {
+    s.plots.forEach((pl, i) => {
+      if (isRipe(pl, s.now) && Math.hypot(pl.x - p.x, pl.y - p.y) < V.harvestRadius) harvest(s, i);
+    });
+  }
   if (p.moving) p.walkT += dt * 9;
+  // walking into a map-edge opening leads to the next area
+  const exit = exitAt(s.map, Math.floor(p.x / T), Math.floor(p.y / T));
+  if (exit) changeArea(s, exit.to);
 }
 
 /** Standing still on a herb/ore node for a moment collects it. */
