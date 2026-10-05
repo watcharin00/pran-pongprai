@@ -290,7 +290,7 @@ export interface Tuning {
     staminaDelay: number;
     walkSpeed: number;
     radius: number;
-    roll: { duration: number; speed: number; iframe: number; cooldown: number; staminaCost: number };
+    roll: { duration: number; speed: number; iframe: number; cooldown: number; staminaCost: number; buffer: number };
     hurt: { iframe: number; flash: number; knockback: number };
     potion: { heal: number; herbCost: number; startCount: number; cooldown: number };
     villageRegen: number;
@@ -317,6 +317,8 @@ export interface Tuning {
     monsterWanderSpeedMul: number;
     monsterWanderRadius: number;
     monsterDashSpeed: number;
+    /** every monster telegraph lasts this many times its JSON value (global dodge-difficulty knob) */
+    telegraphMul: number;
     monsterAggroAtkDelay: number;
     monsterSpawnMinPlayerDist: number;
     monsterSpawnMinSpacing: number;

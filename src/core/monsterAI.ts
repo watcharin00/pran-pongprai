@@ -95,8 +95,8 @@ export const isRearAttack = (a: AttackDef): boolean => a.shape === 'circle' && a
 export function startAttack(m: MonsterState, a: AttackDef, ux: number, uy: number): void {
   m.mode = 'tele';
   m.attack = a;
-  m.t = a.telegraph;
-  m.tt = a.telegraph;
+  m.t = a.telegraph * C.telegraphMul;
+  m.tt = m.t;
   m.turnT = 0;
   let shape: Shape;
   if (a.shape === 'circle' && isRearAttack(a)) {

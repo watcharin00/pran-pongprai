@@ -78,7 +78,14 @@ export function dodgeDirection(s: GameState, move: Vec2 | null): Vec2 {
 
 export function dodge(s: GameState, move: Vec2 | null): boolean {
   const p = s.player;
-  if (p.dead || p.roll > 0 || p.dash || p.dodgeCd > 0) return false;
+  if (p.dead) return false;
+  if (p.roll > 0 || p.dash || p.dodgeCd > 0) {
+    // pressed a little early: keep it and roll as soon as the current roll/dash ends
+    p.dodgeBuf = P.roll.buffer;
+    p.dodgeBufMove = move;
+    return false;
+  }
+  p.dodgeBuf = 0;
   p.cast = null; // rolling cancels a skill wind-up
   const cost = dodgeCost(s);
   if (p.st < cost) {
@@ -158,6 +165,13 @@ function tickTimers(s: GameState, dt: number): void {
   p.hurtIF -= dt;
   p.hurt -= dt;
   p.dodgeCd -= dt;
+  if (p.dodgeBuf > 0) {
+    p.dodgeBuf -= dt;
+    if (p.roll <= 0 && !p.dash && p.dodgeCd <= 0) {
+      p.dodgeBuf = 0;
+      dodge(s, p.dodgeBufMove);
+    }
+  }
   p.stDelay -= dt;
   p.potCd -= dt;
   p.spin -= dt;

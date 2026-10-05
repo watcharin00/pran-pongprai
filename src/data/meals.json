@@ -3,12 +3,12 @@
   "meals": {
     "stew":   { "recipe": { "yam": 2, "hide": 1 },                         "color": "#c98a4a", "effect": { "maxHpBonus": 30 } },
     "spicy":  { "recipe": { "pepper": 1, "yam": 1 },                       "color": "#e2412b", "effect": { "attackMul": 1.2 } },
-    "tea":    { "recipe": { "herb": 3 },                                   "color": "#7fc26a", "effect": { "staminaRegenMul": 1.6, "dodgeCost": 20 } },
+    "tea":    { "recipe": { "herb": 3 },                                   "color": "#7fc26a", "effect": { "staminaRegenMul": 1.6, "dodgeCost": 16 } },
     "tomyum": { "recipe": { "fowlmeat": 1, "lemongrass": 2, "pepper": 1 }, "color": "#f08a3c", "effect": { "defense": 15 } },
     "grill":  { "recipe": { "boarmeat": 1, "rice": 2 },                    "color": "#c8584a", "effect": { "maxHpBonus": 20, "attackMul": 1.1 } },
     "khaotommat": { "recipe": { "banana": 2, "rice": 1 },                    "color": "#9ac860", "effect": { "maxHpBonus": 15, "staminaRegenMul": 1.3 } },
     "kaengsom":   { "recipe": { "lotus": 2, "pepper": 1 },                     "color": "#f08a5a", "effect": { "defense": 10, "attackMul": 1.1 } },
-    "gingerfowl": { "recipe": { "fowlmeat": 1, "ginger": 2 },                 "color": "#e8c070", "effect": { "maxHpBonus": 10, "staminaRegenMul": 1.5, "dodgeCost": 22 } },
+    "gingerfowl": { "recipe": { "fowlmeat": 1, "ginger": 2 },                 "color": "#e8c070", "effect": { "maxHpBonus": 10, "staminaRegenMul": 1.5, "dodgeCost": 18 } },
     "deergrill":  { "recipe": { "deermeat": 2, "lemongrass": 1, "pepper": 1 },  "color": "#c86a5a", "effect": { "attackMul": 1.25 } }
   }
 }

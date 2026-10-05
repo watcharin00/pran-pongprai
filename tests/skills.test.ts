@@ -109,13 +109,36 @@ describe('weapon skill slots', () => {
 });
 
 describe('roll', () => {
-  it('costs stamina, grants 0.32s i-frames, and cannot be spammed', () => {
+  it('costs stamina, grants 0.42s i-frames, and cannot be spammed', () => {
     const { s } = arena();
     step(s, intent({ dodge: true, move: { x: 1, y: 0 } }), 1 / 60, s.now);
-    expect(s.player.st).toBeCloseTo(100 - 28, 0);
-    expect(s.player.rollIF).toBeGreaterThan(0.29);
+    expect(s.player.st).toBeCloseTo(100 - 22, 0);
+    expect(s.player.rollIF).toBeGreaterThan(0.39);
     step(s, intent({ dodge: true }), 1 / 60, s.now);
-    expect(s.player.st).toBeCloseTo(72, 0);
+    expect(s.player.st).toBeCloseTo(78, 0);
+  });
+
+  it('a roll pressed just before the cooldown ends is buffered and fires on its own', () => {
+    const { s } = arena();
+    let rolls = 0;
+    s.events.on('player:roll', () => rolls++);
+    step(s, intent({ dodge: true, move: { x: 1, y: 0 } }), 1 / 60, s.now);
+    run(s, 0.25);
+    step(s, intent({ dodge: true, move: { x: -1, y: 0 } }), 1 / 60, s.now);
+    expect(rolls).toBe(1);
+    run(s, 0.2);
+    expect(rolls).toBe(2);
+    expect(s.player.rdx).toBeLessThan(0);
+  });
+
+  it('a roll pressed far too early is dropped, not saved for later', () => {
+    const { s } = arena();
+    let rolls = 0;
+    s.events.on('player:roll', () => rolls++);
+    step(s, intent({ dodge: true, move: { x: 1, y: 0 } }), 1 / 60, s.now);
+    step(s, intent({ dodge: true }), 1 / 60, s.now);
+    run(s, 1);
+    expect(rolls).toBe(1);
   });
 
   it('with no stick input, rolls sideways out of a charge line', () => {

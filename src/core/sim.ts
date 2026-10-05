@@ -30,7 +30,7 @@ export function createPlayer(): PlayerState {
     x: SPAWN.x, y: SPAWN.y, hp: P.maxHp, maxHp: P.maxHp, st: P.maxStamina, maxSt: P.maxStamina, face: 1, fx: 1, fy: 0, weapon: 'bone',
     potions: P.potion.startCount, meal: null, path: [], repath: 0, lockId: null, gatherT: 0, gatherNode: null,
     cds: [0, 0, 0], cast: null, dash: null, spin: 0, atkCd: 0, swing: 0, swingAng: 0, roll: 0, rdx: 1, rdy: 0,
-    rollIF: 0, hurtIF: 0, hurt: 0, dodgeCd: 0, stDelay: 0, potCd: 0, dead: false, deadT: 0, moving: false, walkT: 0,
+    rollIF: 0, hurtIF: 0, hurt: 0, dodgeCd: 0, dodgeBuf: 0, dodgeBufMove: null, stDelay: 0, potCd: 0, dead: false, deadT: 0, moving: false, walkT: 0,
     inVillage: true, zone: null,
   };
 }

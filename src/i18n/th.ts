@@ -419,7 +419,7 @@ export const menu = {
     partHow: { head: 'ตีจากด้านหน้า', tail: 'อ้อมไปตีด้านหลัง' },
     attacks: 'ท่าโจมตี',
     shapes: { ring: 'วงรอบตัว', front: 'วงหน้าตัว', line: 'พุ่งเป็นเส้น' },
-    attackMeta: (shape: string, warn: number, dmg: number) => `${shape} · เตือน ${warn} วิ · ดาเมจ ${dmg}`,
+    attackMeta: (shape: string, warn: number, dmg: number) => `${shape} · เตือน ${+warn.toFixed(2)} วิ · ดาเมจ ${dmg}`,
     drops: 'ของที่ได้จากซาก',
     chance: (pct: number) => `${pct}%`,
     tip: 'เคล็ดลับ',

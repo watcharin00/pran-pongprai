@@ -45,8 +45,9 @@ describe('content data', () => {
     expect(weaponSkills('bone')).toEqual(['whirl', 'dash', 'slam']);
     expect([SKILLS.whirl.cooldown, SKILLS.dash.cooldown, SKILLS.slam.cooldown]).toEqual([6, 7, 11]);
     expect([CROPS.herb.growSeconds, CROPS.yam.growSeconds, CROPS.pepper.growSeconds]).toEqual([40, 75, 120]);
-    expect(MEALS.tea.effect).toEqual({ staminaRegenMul: 1.6, dodgeCost: 20 });
-    expect(TUNING.player.roll).toEqual({ duration: 0.26, speed: 170, iframe: 0.32, cooldown: 0.5, staminaCost: 28 });
+    expect(MEALS.tea.effect).toEqual({ staminaRegenMul: 1.6, dodgeCost: 16 });
+    expect(TUNING.player.roll).toEqual({ duration: 0.26, speed: 170, iframe: 0.42, cooldown: 0.35, staminaCost: 22, buffer: 0.2 });
+    expect(TUNING.combat.telegraphMul).toBe(1.2);
     expect(TUNING.world.seed).toBe(20261004);
   });
 

@@ -468,7 +468,7 @@ export class Sheet {
 
     const atk = def.attacks.map((a) => {
       const shape = a.shape === 'line' ? `${B.shapes.line} ${a.length}` : a.offset === 0 ? `${B.shapes.ring} r${a.radius}` : `${B.shapes.front} r${a.radius}`;
-      return `<li><b>${(t.attacks as Record<string, string>)[a.id] ?? a.id}</b> <span class="meta">${B.attackMeta(shape, a.telegraph, a.damage)}</span></li>`;
+      return `<li><b>${(t.attacks as Record<string, string>)[a.id] ?? a.id}</b> <span class="meta">${B.attackMeta(shape, a.telegraph * TUNING.combat.telegraphMul, a.damage)}</span></li>`;
     });
     h += `<h4>${B.attacks}</h4><ul class="blist">${atk.join('')}</ul>`;
 

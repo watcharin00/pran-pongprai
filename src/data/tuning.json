@@ -2,7 +2,7 @@
   "player": {
     "maxHp": 100, "maxStamina": 100, "staminaRegen": 24, "staminaDelay": 0.5,
     "walkSpeed": 80, "radius": 4,
-    "roll": { "duration": 0.26, "speed": 170, "iframe": 0.32, "cooldown": 0.5, "staminaCost": 28 },
+    "roll": { "duration": 0.26, "speed": 170, "iframe": 0.42, "cooldown": 0.35, "staminaCost": 22, "buffer": 0.2 },
     "hurt": { "iframe": 0.5, "flash": 0.2, "knockback": 10 },
     "potion": { "heal": 45, "herbCost": 2, "startCount": 2, "cooldown": 1 },
     "villageRegen": 25,
@@ -28,6 +28,7 @@
     "monsterWanderSpeedMul": 0.35,
     "monsterWanderRadius": 60,
     "monsterDashSpeed": 300,
+    "telegraphMul": 1.2,
     "monsterAggroAtkDelay": 0.9,
     "monsterSpawnMinPlayerDist": 150,
     "monsterSpawnMinSpacing": 60

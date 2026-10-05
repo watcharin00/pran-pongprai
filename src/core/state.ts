@@ -91,6 +91,9 @@ export interface PlayerState {
   hurtIF: number;
   hurt: number;
   dodgeCd: number;
+  /** a roll pressed during the previous roll/cooldown waits this long to fire */
+  dodgeBuf: number;
+  dodgeBufMove: Vec2 | null;
   stDelay: number;
   potCd: number;
   dead: boolean;
