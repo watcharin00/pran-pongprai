@@ -62,6 +62,7 @@ export function createGame(o: CreateOptions): GameState {
     useFert: false,
     autoOn: false,
     kills: {},
+    visited: new Set(['home']),
   };
   s.player.zone = zoneAtPx(map, s.player.x, s.player.y);
   if (o.save) applySave(s, o.save);

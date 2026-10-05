@@ -1,6 +1,7 @@
 // All player-facing Thai text. Keyed records are typed against the data ids,
 // so adding content to src/data without a Thai name is a compile error.
 import type {
+  AreaId,
   ArmorId,
   CropId,
   MaterialId,
@@ -152,6 +153,15 @@ export const meals = {
   grill: { name: 'ข้าวเหนียวหมูป่าย่าง', desc: 'พลังชีวิตสูงสุด +20 โจมตี +10%' },
 } satisfies Record<MealId, { name: string; desc: string }>;
 
+/** Area names for the world map (the home area holds the village, forest and canyon). */
+export const areas = {
+  home: 'หมู่บ้านพราน',
+  bamboo: 'ป่าไผ่',
+  swamp: 'บึงจระเข้',
+  limestone: 'ดอยหินปูน',
+  deepwild: 'ป่าลึกช้างป่า',
+} satisfies Record<AreaId, string>;
+
 export const zones = {
   village: 'หมู่บ้านพราน',
   forest: 'ป่าดงดิบ',
@@ -212,7 +222,7 @@ export const floats = {
 };
 
 export const menu = {
-  tabs: { bag: 'กระเป๋า', forge: 'ตีอาวุธ', kitchen: 'ครัว', farm: 'แปลงผัก', book: 'สมุดภาพ' },
+  tabs: { bag: 'กระเป๋า', forge: 'ตีอาวุธ', kitchen: 'ครัว', farm: 'แปลงผัก', book: 'สมุดภาพ', map: 'แผนที่' },
   inVillage: 'อยู่ในหมู่บ้าน ใช้งานได้',
   notInVillage: 'กลับหมู่บ้านก่อน จึงจะใช้เมนูนี้ได้',
   skills: 'สกิล',
@@ -265,6 +275,20 @@ export const menu = {
   potionDesc: (heal: number) => `ฟื้น HP ${heal} · ปรุงจากสมุนไพรที่โรงตีเหล็ก`,
   newGame: 'เริ่มเกมใหม่',
   confirmNewGame: 'กดอีกครั้งเพื่อยืนยัน',
+  // world map
+  map: {
+    here: (area: string) => `ตอนนี้อยู่ที่ ${area}`,
+    youAreHere: 'คุณอยู่ที่นี่',
+    exitTo: (area: string) => `ไป${area}`,
+    world: 'แผนที่โลก',
+    unvisited: 'ยังไม่เคยไป',
+    monsters: 'สัตว์ที่พบ',
+    noMonsters: 'ยังไม่พบสัตว์',
+    goHome: 'กลับหมู่บ้าน',
+    goHomeHelp: 'เดินทางด่วนกลับหมู่บ้าน ใช้ได้เมื่อไม่มีสัตว์ไล่ตามอยู่',
+    inFight: 'มีสัตว์ไล่ตามอยู่ หนีให้พ้นก่อนจึงจะกลับได้',
+    traveled: 'กลับถึงหมู่บ้านแล้ว',
+  },
   // bestiary
   book: {
     progress: (n: number, total: number) => `บันทึกแล้ว ${n}/${total} ชนิด`,

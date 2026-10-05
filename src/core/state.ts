@@ -231,4 +231,6 @@ export interface GameState {
   autoOn: boolean;
   /** successful hunts per monster kind (unlocks bestiary entries) */
   kills: Partial<Record<MonsterId, number>>;
+  /** areas the player has been to (shown on the world map) */
+  visited: Set<AreaId>;
 }

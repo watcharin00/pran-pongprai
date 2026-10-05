@@ -119,3 +119,29 @@ describe('travel', () => {
     for (const e of areaMap('home').exits) expect(e.at + e.width).toBeLessThanOrEqual(MW);
   });
 });
+
+describe('map tab rules', () => {
+  it('remembers visited areas and saves them', async () => {
+    const { parseSave, serialize } = await import('../src/core/save');
+    const s = createGame({ rngSeed: 5, now: NOW, noMonsters: true });
+    expect([...s.visited]).toEqual(['home']);
+    changeArea(s, 'bamboo', undefined, false);
+    changeArea(s, 'home', SPAWN, false);
+    const t = createGame({ rngSeed: 1, now: NOW, save: parseSave(serialize(s)), noMonsters: true });
+    expect([...t.visited].sort()).toEqual(['bamboo', 'home']);
+    expect(parseSave(JSON.stringify({ inv: {}, visited: ['moon', 'swamp'] }))?.visited.sort()).toEqual(['home', 'swamp']);
+  });
+
+  it('fast travel home works out of a fight and is refused while a monster chases you', async () => {
+    const { fastTravelHome } = await import('../src/core/travel');
+    const s = createGame({ rngSeed: 5, now: NOW });
+    expect(fastTravelHome(s)).toEqual({ ok: false, reason: 'atHome' });
+    changeArea(s, 'bamboo', undefined, false);
+    s.monsters.push({ aggro: true } as never); // only `aggro` is read by inFight()
+    expect(fastTravelHome(s)).toEqual({ ok: false, reason: 'inFight' });
+    s.monsters = [];
+    expect(fastTravelHome(s)).toEqual({ ok: true });
+    expect(s.area).toBe('home');
+    expect([s.player.x, s.player.y]).toEqual([SPAWN.x, SPAWN.y]);
+  });
+});

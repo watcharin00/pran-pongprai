@@ -30,6 +30,22 @@ export function createNodes(map: WorldMap): GatherNode[] {
   return nodes;
 }
 
+export type TravelResult = { ok: true } | { ok: false; reason: 'atHome' | 'inFight' | 'dead' };
+
+/** Map-tab fast travel back to the village; refused while a monster is chasing you. */
+export function fastTravelHome(s: GameState): TravelResult {
+  if (s.player.dead) return { ok: false, reason: 'dead' };
+  if (s.area === 'home') return { ok: false, reason: 'atHome' };
+  if (inFight(s)) return { ok: false, reason: 'inFight' };
+  changeArea(s, 'home', SPAWN);
+  return { ok: true };
+}
+
+/** A monster is hunting the player (fast travel is not an escape button). */
+export function inFight(s: GameState): boolean {
+  return s.monsters.some((m) => m.aggro);
+}
+
 /** Spawns every monster kind that lives in the current area. */
 export function populateArea(s: GameState): void {
   for (const k of MONSTER_IDS) {
@@ -46,6 +62,7 @@ export function changeArea(s: GameState, to: AreaId, at?: { x: number; y: number
   const from = s.area;
   const p = s.player;
   s.area = to;
+  s.visited.add(to);
   s.map = to === 'home' ? s.homeMap : areaMap(to);
   s.monsters = [];
   s.respawnQueue = [];
