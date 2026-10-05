@@ -100,6 +100,7 @@ export class Sheet {
         <div class="grab"></div>
         <div class="shead">
           <div class="tabs">${TABS.map((t) => `<button class="tab" type="button" data-tab="${t}">${th.menu.tabs[t]}</button>`).join('')}</div>
+          <button id="sheetSound" type="button"></button>
           <button id="sheetClose" type="button" aria-label="${th.hud.close}">${ICONS.close}</button>
         </div>
         <div id="sheetBody"></div>
@@ -117,6 +118,13 @@ export class Sheet {
       }),
     );
     $(overlay, '#sheetClose').addEventListener('click', () => this.close());
+    // sound on/off sits in the menu header so it is one tap away on every tab (not on the HUD)
+    $(overlay, '#sheetSound').addEventListener('click', () => {
+      const v = this.hooks.sound.get();
+      this.hooks.sound.set({ ...v, on: !v.on });
+      this.hooks.sfx('ui');
+      this.render();
+    });
     this.scrim.addEventListener('click', () => this.close());
     this.body.addEventListener('change', (e) => {
       const t = e.target as HTMLInputElement;
@@ -180,6 +188,13 @@ export class Sheet {
   render(): void {
     this.dirty = false;
     this.sheet.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === this.tab));
+    const on = this.hooks.sound.get().on;
+    const sb = $(this.sheet, '#sheetSound');
+    sb.innerHTML = on ? ICONS.soundOn : ICONS.soundOff;
+    sb.classList.toggle('off', !on);
+    sb.setAttribute('aria-pressed', String(on));
+    sb.setAttribute('aria-label', on ? th.hud.soundOn : th.hud.soundOff);
+    sb.title = on ? th.hud.soundOn : th.hud.soundOff;
     const s = this.s();
     const views: Record<Tab, (st: GameState) => string> = {
       bag: (st) => this.bag(st),

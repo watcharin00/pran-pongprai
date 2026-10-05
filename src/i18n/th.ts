@@ -286,6 +286,8 @@ export const hud = {
   auto: 'AUTO',
   menu: 'เมนู',
   close: 'ปิด',
+  soundOn: 'เสียง: เปิด (แตะเพื่อปิด)',
+  soundOff: 'เสียง: ปิด (แตะเพื่อเปิด)',
   drinkPotion: 'ดื่มยา',
   attack: 'โจมตี',
   dodge: 'กลิ้ง',
