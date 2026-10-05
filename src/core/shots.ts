@@ -23,6 +23,17 @@ export interface FireOptions {
   big?: boolean;
 }
 
+/** True when nothing blocks a shot from (x0, y0) to (x1, y1). */
+export function clearShot(s: GameState, x0: number, y0: number, x1: number, y1: number): boolean {
+  const d = Math.hypot(x1 - x0, y1 - y0);
+  const n = Math.ceil(d / SUBSTEP);
+  for (let i = 1; i < n; i++) {
+    const k = i / n;
+    if (!shotPassablePx(s.map, x0 + (x1 - x0) * k, y0 + (y1 - y0) * k)) return false;
+  }
+  return true;
+}
+
 /** Fires one shot from (x, y) along `dir` (need not be normalised). */
 export function fireShot(s: GameState, x: number, y: number, dir: Vec2, o: FireOptions): Shot {
   const d = Math.hypot(dir.x, dir.y) || 1;

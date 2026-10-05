@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { SKILLS, WEAPONS } from '../src/data';
 import type { WeaponId } from '../src/data/types';
 import { autoIntent, createAutoPilot } from '../src/core/autoPilot';
-import { fireShot } from '../src/core/shots';
+import { clearShot, fireShot } from '../src/core/shots';
+import { reachOf } from '../src/core/combat';
 import { weaponSkills } from '../src/core/skills';
 import { step } from '../src/core/sim';
-import { Tile, T } from '../src/core/mapgen';
+import { Tile, T, walkable } from '../src/core/mapgen';
 import { addMonster, game, intent, openSpot, run } from './helpers';
 
 function arena(weapon: WeaponId) {
@@ -79,7 +80,7 @@ describe('line strikes', () => {
 describe('projectiles', () => {
   it('a bow attacks from range with arrows that fly before landing', () => {
     const { s, spot } = arena('bamboobow');
-    const m = addMonster(s, 'dhole', spot.x + 70, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 55, spot.y);
     m.hp = 9999;
     step(s, intent({ attack: true }), 1 / 60, s.now);
     expect(s.shots.length).toBe(1);
@@ -93,7 +94,7 @@ describe('projectiles', () => {
 
   it('part targeting still follows where the player stands', () => {
     const { s, spot } = arena('bamboobow');
-    const m = addMonster(s, 'dhole', spot.x + 70, spot.y, -1); // facing the player
+    const m = addMonster(s, 'dhole', spot.x + 55, spot.y, -1); // facing the player
     m.hp = 9999;
     const parts: string[] = [];
     s.events.on('monster:hit', (e) => parts.push(e.part));
@@ -119,17 +120,49 @@ describe('projectiles', () => {
     expect(b.hp).toBeLessThan(9999);
   });
 
-  it('arrows stop at trees', () => {
+  it('arrows fly over trees but stop at houses', () => {
     const s = game();
-    const i = s.map.tiles.findIndex((t, k) => t === Tile.TREE && s.map.tiles[k - 1] !== Tile.TREE && s.map.tiles[k - 2] !== Tile.TREE);
+    const firstLeftEdge = (tile: number): [number, number] => {
+      const i = s.map.tiles.findIndex((t, k) => t === tile && k % 64 > 3 && [1, 2, 3].every((n) => s.map.tiles[k - n] !== Tile.HOUSE && s.map.tiles[k - n] !== tile && s.map.tiles[k - n] !== Tile.ROCK));
+      return [i % 64, Math.floor(i / 64)];
+    };
+    let blocked = 0;
+    s.events.on('shot:blocked', () => blocked++);
+    const [tx, ty] = firstLeftEdge(Tile.TREE);
+    fireShot(s, (tx - 2) * T + 8, ty * T + 8, { x: 1, y: 0 }, { speed: 300, range: 40, pierce: 0, mult: 1 });
+    run(s, 0.3);
+    expect(blocked).toBe(0);
+    const [hx, hy] = firstLeftEdge(Tile.HOUSE);
+    fireShot(s, (hx - 2) * T + 8, hy * T + 8, { x: 1, y: 0 }, { speed: 300, range: 80, pierce: 0, mult: 1 });
+    run(s, 0.3);
+    expect(blocked).toBe(1);
+  });
+
+  it('with a rock in the way, holding attack moves for a clear shot instead of hitting the rock', () => {
+    const s = game();
+    s.player.weapon = 'bamboobow';
+    // a lone rock with open ground two tiles either side
+    const i = s.map.tiles.findIndex((t, k) => {
+      const x = k % 64;
+      const y = Math.floor(k / 64);
+      return t === Tile.ROCK && x > 3 && x < 60 && [-2, -1, 1, 2].every((dx) => walkable(s.map, x + dx, y)) && walkable(s.map, x - 2, y - 1) && walkable(s.map, x - 2, y + 1);
+    });
+    expect(i).toBeGreaterThan(0);
     const tx = i % 64;
     const ty = Math.floor(i / 64);
-    fireShot(s, (tx - 2) * T + 8, ty * T + 8, { x: 1, y: 0 }, { speed: 300, range: 200, pierce: 0, mult: 1 });
-    let blocked = false;
-    s.events.on('shot:blocked', () => (blocked = true));
-    run(s, 0.3);
-    expect(blocked).toBe(true);
-    expect(s.shots.length).toBe(0);
+    const start = { x: (tx - 2) * T + 8, y: ty * T + 8 };
+    const m = addMonster(s, 'dhole', (tx + 2) * T + 8, ty * T + 8, -1);
+    m.hp = 9999;
+    Object.assign(m, { mode: 'stun', stunT: 999 });
+    Object.assign(s.player, start, { inVillage: false });
+    expect(Math.hypot(m.x - s.player.x, m.y - s.player.y)).toBeLessThanOrEqual(reachOf(s, m));
+    expect(clearShot(s, s.player.x, s.player.y, m.x, m.y)).toBe(false);
+    let blocked = 0;
+    s.events.on('shot:blocked', () => blocked++);
+    run(s, 3, () => intent({ attack: true, targetId: m.id }), () => m.hp < 9999);
+    expect(blocked).toBe(0);
+    expect(m.hp).toBeLessThan(9999);
+    expect(Math.hypot(s.player.x - start.x, s.player.y - start.y)).toBeGreaterThan(4);
   });
 
   it('kills a dhole with the bow by holding attack only', () => {
@@ -143,7 +176,7 @@ describe('projectiles', () => {
 
   it('AUTO with a bow shoots from range using its skills', () => {
     const { s, spot } = arena('bamboobow');
-    const m = addMonster(s, 'dhole', spot.x + 70, spot.y);
+    const m = addMonster(s, 'dhole', spot.x + 55, spot.y);
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual(slotOf('bamboobow', 'pin'));
     m.mode = 'tele';
     expect(autoIntent(s, createAutoPilot(), 1 / 60).skills).toEqual(slotOf('bamboobow', 'volley'));

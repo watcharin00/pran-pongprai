@@ -1,11 +1,12 @@
 // AUTO: walks and fights for the player by producing an ordinary Intent.
 // It never rolls: dodging attacks is always the player's job.
-import { SKILLS, TUNING } from '../data';
+import { SKILLS, TUNING, WEAPONS } from '../data';
 import type { SkillAutoRole } from '../data/types';
 import { chooseTarget, nearestMonster, reachOf } from './combat';
 import type { Vec2 } from './events';
 import { T } from './mapgen';
 import { findPath, type TilePath } from './pathfinding';
+import { clearShot } from './shots';
 import { grantsIframes, weaponSkills } from './skills';
 import { emptyIntent, type GameState, type Intent } from './state';
 
@@ -44,7 +45,8 @@ export function autoIntent(s: GameState, ap: AutoPilotState, dt: number): Intent
     intent.targetId = target.id;
     const d = Math.hypot(target.x - p.x, target.y - p.y);
     const slot = (role: SkillAutoRole): number => pickSkill(s, role);
-    if (d <= reachOf(s, target)) {
+    const clear = !WEAPONS[p.weapon].projectile || clearShot(s, p.x, p.y, target.x, target.y);
+    if (d <= reachOf(s, target) && clear) {
       if (!p.cast) {
         const burst = target.mode !== 'tele' ? slot('burst') : -1;
         const pick = burst >= 0 ? burst : slot('filler');

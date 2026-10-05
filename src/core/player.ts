@@ -7,7 +7,7 @@ import { harvest, isRipe } from './farm';
 import { give, dodgeCost, maxHpFor, maxStaminaFor, staminaRegenMul } from './inventory';
 import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
-import { fireShot } from './shots';
+import { clearShot, fireShot } from './shots';
 import { castSkill, updateDash, updateWindup } from './skills';
 import type { GameState, Intent, MonsterState } from './state';
 
@@ -207,7 +207,9 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   if (target) {
     p.lockId = target.id;
     const d = Math.hypot(target.x - p.x, target.y - p.y);
-    if (d <= reachOf(s, target)) {
+    // ranged weapons need a clear line; otherwise keep walking in until there is one
+    const canHit = d <= reachOf(s, target) && (!WEAPONS[p.weapon].projectile || clearShot(s, p.x, p.y, target.x, target.y));
+    if (canHit) {
       if (!mv) p.face = target.x >= p.x ? 1 : -1;
       if (p.atkCd <= 0) basicAttack(s, target);
     } else if (!mv) {

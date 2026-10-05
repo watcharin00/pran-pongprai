@@ -28,8 +28,12 @@ export const Tile = {
 export type TileId = (typeof Tile)[keyof typeof Tile];
 
 const BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.BUSH, Tile.WATER, Tile.HOUSE, Tile.ROCK, Tile.CLIFF, Tile.FOUNTAIN, Tile.FENCE]);
-/** Tiles that stop arrows: everything tall. Shots fly over water, bushes and fences. */
-const SHOT_BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.HOUSE, Tile.ROCK, Tile.CLIFF]);
+/**
+ * Tiles that stop arrows: buildings, rocks and cliffs. Shots fly over trees (the forest is
+ * dense enough that blocking on trees forced players to hunt for firing angles), water,
+ * bushes and fences.
+ */
+const SHOT_BLOCKING = new Set<number>([Tile.WALL, Tile.HOUSE, Tile.ROCK, Tile.CLIFF]);
 
 export interface Rect {
   x: number;
