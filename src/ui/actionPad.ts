@@ -63,9 +63,14 @@ export class ActionPad {
     return $(this.root, sel);
   }
 
-  /** Narrow phones (< 430px) shrink the arc to 84%, but no button below 44px. */
+  /**
+   * Narrow phones (< 430px) shrink the arc to 84%; short screens (phone landscape)
+   * shrink it with the height so the pad never covers half the view. No button below 44px.
+   */
   layout(): void {
-    const k = innerWidth < 430 ? 0.84 : 1;
+    const byWidth = innerWidth < 430 ? 0.84 : 1;
+    const byHeight = innerHeight < 520 ? Math.max(0.72, innerHeight / 500) : 1;
+    const k = Math.min(byWidth, byHeight);
     for (const slot of SLOTS) {
       const b = this.q(`#${slot.id}`);
       const r = slot.r * k;

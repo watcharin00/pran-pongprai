@@ -1,0 +1,9 @@
+{
+  "name": "พรานพงไพร",
+  "short_name": "พรานพงไพร",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#15202b",
+  "theme_color": "#15202b"
+}

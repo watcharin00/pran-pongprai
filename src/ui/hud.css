@@ -1,8 +1,23 @@
 /* HUD, joystick, action pad and menu sheet. Ported from reference/prototype.html. */
 /* top bar */
-.top{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 0;display:grid;grid-template-columns:auto 1fr auto auto;grid-template-areas:"hp boss btns menu";gap:8px 12px;align-items:start;pointer-events:none}
-/* narrow: AUTO beside HP, the menu icons on their own row, then the monster bar */
-@media (max-width:700px){.top{grid-template-columns:auto 1fr;grid-template-areas:"hp btns" "menu menu" "boss boss"}}
+.top{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 0;display:grid;grid-template-columns:auto 1fr auto auto;grid-template-areas:"hp boss btns menu" "hp toasts toasts toasts";gap:8px 12px;align-items:start;pointer-events:none}
+/* AUTO + menu icons: inline in the top row on wide screens */
+.rcol{display:contents}
+/* narrow: AUTO and the menu icons form a rail down the right edge, so nothing floats
+   over the middle of the map; HP, monster bar and toasts stack in the left column */
+@media (max-width:700px) and (min-height:501px){
+  .top{grid-template-columns:minmax(0,1fr) 44px;grid-template-areas:"hp ." "boss ." "toasts .";gap:6px 12px}
+  .rcol{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 12px);display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .top .mbtns{flex-direction:column;gap:6px}
+  .top #boss{width:100%}
+  .top #toasts{width:100%}
+}
+/* small phone landscape: a rail would run into the action pad, so AUTO + icons stay
+   one row at the top right, with the monster bar and toasts under it beside the HP column */
+@media (max-width:700px) and (max-height:500px){
+  .top{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"hp rcol" "hp boss" "hp toasts"}
+  .rcol{grid-area:rcol;justify-self:end;display:flex;gap:8px}
+}
 .hpbox{grid-area:hp;width:min(190px,46vw);display:flex;flex-direction:column;gap:4px;pointer-events:auto}
 .bar{position:relative;height:12px;background:rgba(10,12,20,.75);border:2px solid var(--ink);border-radius:3px;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.3)}
 .bar i{position:absolute;top:0;bottom:0;left:0;width:100%;background:linear-gradient(#ff8a7a,var(--hp) 50%,#b8382c);transition:width .12s linear}
@@ -33,7 +48,7 @@
 .bhead .tm{font:500 12px var(--pixel);color:var(--gold);white-space:nowrap}
 .bhead .tm.low{color:#ff7a6a}
 #boss .bar{height:8px}#boss .bar i{background:linear-gradient(#ffb070,#f08a3c 50%,#b05a1f)}
-#toasts{grid-column:1/-1;justify-self:center;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;width:min(420px,92vw)}
+#toasts{grid-area:toasts;justify-self:center;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;width:min(420px,92vw)}
 #toasts li{background:rgba(16,20,32,.78);padding:3px 12px;border-radius:999px;font-size:12.5px;text-align:center;animation:tin .22s ease-out;transition:opacity .5s}
 #toasts li.gold{color:#ffe08a}#toasts li.bad{color:#ffb4a8}#toasts li.out{opacity:0}
 @keyframes tin{from{transform:translateY(-6px);opacity:0}}

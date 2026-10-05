@@ -43,10 +43,12 @@ export class Hud {
           <div class="bhead"><b id="bName"></b><span class="parts" id="bParts"></span><span id="bTime" class="tm"></span></div>
           <div class="bar"><i id="bHp"></i></div>
         </div>
-        <div class="tbtns">
-          <button id="autoBtn" class="tb" type="button" aria-pressed="false"><span class="dot"></span>${th.hud.auto}</button>
+        <div class="rcol">
+          <div class="tbtns">
+            <button id="autoBtn" class="tb" type="button" aria-pressed="false"><span class="dot"></span>${th.hud.auto}</button>
+          </div>
+          <nav class="mbtns" aria-label="${th.hud.menu}">${TABS.map((t) => `<button class="tb mb" type="button" data-menu="${t}" aria-label="${th.menu.tabs[t]}" title="${th.menu.tabs[t]}">${ICONS[`tab_${t}`]}</button>`).join('')}</nav>
         </div>
-        <nav class="mbtns" aria-label="${th.hud.menu}">${TABS.map((t) => `<button class="tb mb" type="button" data-menu="${t}" aria-label="${th.menu.tabs[t]}" title="${th.menu.tabs[t]}">${ICONS[`tab_${t}`]}</button>`).join('')}</nav>
         <ul id="toasts"></ul>
       </div>
       <div id="zone"></div>
