@@ -13,6 +13,8 @@
     "tigercoat":      {"slot": "body", "defense": 15, "maxHp": 30, "stamina": 0, "color": "#d8782a", "recipe": {"tigerpelt": 3, "tigertail": 1}},
     "tigereyecharm":  {"slot": "charm", "defense": 6, "maxHp": 25, "stamina": 20, "color": "#9fe07a", "recipe": {"tigereye": 1, "tigerfang": 1}},
     "monkeyhood":     {"slot": "head", "defense": 6, "maxHp": 10, "stamina": 10, "color": "#9a6a42", "recipe": {"monkeyfur": 3, "herb": 1}},
-    "snakevest":      {"slot": "body", "defense": 10, "maxHp": 18, "stamina": 0, "color": "#4a6a3a", "recipe": {"snakeskin": 4, "venom": 1}}
+    "snakevest":      {"slot": "body", "defense": 10, "maxHp": 18, "stamina": 0, "color": "#4a6a3a", "recipe": {"snakeskin": 4, "venom": 1}},
+    "crochelm":       {"slot": "head", "defense": 14, "maxHp": 18, "stamina": 0, "color": "#3e5a3a", "recipe": {"crochide": 3, "crocfang": 1}},
+    "crocmail":       {"slot": "body", "defense": 18, "maxHp": 30, "stamina": 0, "color": "#344e30", "recipe": {"crochide": 4, "croctail": 1}}
   }
 }

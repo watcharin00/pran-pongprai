@@ -89,17 +89,26 @@ export function updateFacing(m: MonsterState, want: 1 | -1, dt: number, turnTime
   return want === m.dirX;
 }
 
+/** Rear attacks (tail whips) are circles with a negative offset: used on players standing behind. */
+export const isRearAttack = (a: AttackDef): boolean => a.shape === 'circle' && a.offset < 0;
+
 export function startAttack(m: MonsterState, a: AttackDef, ux: number, uy: number): void {
   m.mode = 'tele';
   m.attack = a;
   m.t = a.telegraph;
   m.tt = a.telegraph;
-  m.dirX = ux >= 0 ? 1 : -1;
   m.turnT = 0;
-  const shape: Shape =
-    a.shape === 'circle'
-      ? { kind: 'circle', cx: m.x + ux * a.offset, cy: m.y + uy * a.offset, r: a.radius }
-      : { kind: 'line', sx: m.x, sy: m.y, ux, uy, len: a.length, wd: a.width };
+  let shape: Shape;
+  if (a.shape === 'circle' && isRearAttack(a)) {
+    // keeps facing forward; the circle sits on the tail side
+    shape = { kind: 'circle', cx: m.x + m.dirX * a.offset, cy: m.y, r: a.radius };
+  } else {
+    m.dirX = ux >= 0 ? 1 : -1;
+    shape =
+      a.shape === 'circle'
+        ? { kind: 'circle', cx: m.x + ux * a.offset, cy: m.y + uy * a.offset, r: a.radius }
+        : { kind: 'line', sx: m.x, sy: m.y, ux, uy, len: a.length, wd: a.width };
+  }
   m.shape = shape;
 }
 
@@ -196,8 +205,10 @@ function think(s: GameState, m: MonsterState, dt: number): void {
           return;
         }
       } else m.leash = 0;
-      if (m.atkCd <= 0 && facing) {
-        const opts = def.attacks.filter((a) => d <= a.range && (a.minRange === undefined || d >= a.minRange));
+      // front attacks need the monster to face the player; rear attacks punish standing behind it
+      const behind = (p.x - m.x) * m.dirX < 0;
+      if (m.atkCd <= 0 && (facing || behind)) {
+        const opts = def.attacks.filter((a) => (isRearAttack(a) ? behind && !facing : facing) && d <= a.range && (a.minRange === undefined || d >= a.minRange));
         const a = pickWeighted(opts, s.rng.next());
         if (a) {
           startAttack(m, a, dx / d, dy / d);

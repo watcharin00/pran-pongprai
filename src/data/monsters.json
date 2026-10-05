@@ -140,5 +140,47 @@
       { "id": "spit",   "shape": "line", "length": 100, "width": 14, "telegraph": 0.9, "damage": 14, "range": 100, "minRange": 30, "dash": false, "weight": 2 },
       { "id": "hood",   "shape": "circle", "radius": 22, "offset": 0, "telegraph": 0.8, "damage": 12, "range": 20, "weight": 2 }
     ]
+  },
+  "monitor": {
+    "area": "swamp",
+    "hp": 260, "speed": 44, "size": 9, "aggroRadius": 58, "zone": "forest",
+    "huntTime": 110, "turnTime": 0.45, "recover": 0.8, "respawn": 16, "count": 3,
+    "rage": null,
+    "parts": {
+      "tail": { "hp": 60, "drop": { "lizardtail": 1 }, "offset": [-10, 1] }
+    },
+    "carve": [
+      { "item": "lizardhide", "min": 2, "max": 3 },
+      { "item": "fert",       "min": 1, "max": 1 }
+    ],
+    "bonus": { "seed_lotus": 0.5 },
+    "rare": {},
+    "attacks": [
+      { "id": "bite",     "shape": "circle", "radius": 14, "offset": 11,  "telegraph": 0.6, "damage": 14, "range": 22, "weight": 3 },
+      { "id": "tailwhip", "shape": "circle", "radius": 16, "offset": -12, "telegraph": 0.7, "damage": 16, "range": 26, "weight": 2 },
+      { "id": "lunge",    "shape": "line", "length": 70, "width": 14, "telegraph": 0.8, "damage": 18, "range": 70, "minRange": 26, "dash": true, "weight": 2 }
+    ]
+  },
+  "crocodile": {
+    "area": "swamp",
+    "hp": 820, "speed": 34, "size": 15, "aggroRadius": 60, "zone": "forest", "spawnMinVillageDist": 0,
+    "huntTime": 180, "turnTime": 0.9, "recover": 1.0, "respawn": 30, "count": 1,
+    "rage": { "below": 0.5, "speedMul": 1.15, "telegraphRate": 1.3, "damageMul": 1.15 },
+    "parts": {
+      "head": { "hp": 200, "drop": { "crocfang": 2 },  "offset": [14, -1] },
+      "tail": { "hp": 160, "drop": { "croctail": 1 },  "offset": [-15, 0] }
+    },
+    "carve": [
+      { "item": "crochide", "min": 3, "max": 4 },
+      { "item": "crocfang", "min": 0, "max": 1 },
+      { "item": "fert",     "min": 2, "max": 2 }
+    ],
+    "bonus": {},
+    "rare": { "crocgem": 0.25 },
+    "attacks": [
+      { "id": "chomp",     "shape": "circle", "radius": 20, "offset": 16,  "telegraph": 0.7, "damage": 28, "range": 30, "weight": 3 },
+      { "id": "tailsweep", "shape": "circle", "radius": 26, "offset": -16, "telegraph": 0.9, "damage": 24, "range": 34, "weight": 2 },
+      { "id": "deathroll", "shape": "line", "length": 90, "width": 22, "telegraph": 1.0, "damage": 34, "range": 90, "minRange": 36, "dash": true, "weight": 2 }
+    ]
   }
 }

@@ -170,3 +170,40 @@ describe('bamboo forest content', () => {
     expect(m.x).toBe(x0);
   });
 });
+
+describe('swamp content: rear attacks', () => {
+  it('a monitor whips its tail at a player standing behind it, without turning around', async () => {
+    const { addMonster, intent: mk } = await import('./helpers');
+    const s = createGame({ rngSeed: 3, now: NOW, noMonsters: true });
+    changeArea(s, 'swamp', undefined, false);
+    const [cx, cy] = s.map.forestCells[60] ?? [30, 23];
+    const m = addMonster(s, 'monitor', cx * T + 8, cy * T + 8, 1);
+    Object.assign(m, { mode: 'chase', aggro: true, huntT: 100, atkCd: 0 });
+    Object.assign(s.player, { x: m.x - 18, y: m.y, inVillage: false });
+    let picked = '';
+    s.events.on('monster:telegraph', (e) => (picked = e.attackId));
+    for (let i = 0; i < 5 && !picked; i++) step(s, mk(), 1 / 60, NOW);
+    expect(picked).toBe('tailwhip');
+    expect(m.dirX).toBe(1);
+    expect(m.shape?.kind === 'circle' && m.shape.cx < m.x).toBe(true);
+  });
+
+  it('never uses a rear attack on a player in front', async () => {
+    const { addMonster, intent: mk } = await import('./helpers');
+    const s = createGame({ rngSeed: 4, now: NOW, noMonsters: true });
+    changeArea(s, 'swamp', undefined, false);
+    const [cx, cy] = s.map.forestCells[60] ?? [30, 23];
+    const m = addMonster(s, 'monitor', cx * T + 8, cy * T + 8, 1);
+    Object.assign(m, { mode: 'chase', aggro: true, huntT: 100, atkCd: 0 });
+    Object.assign(s.player, { x: m.x + 18, y: m.y, inVillage: false });
+    const picked: string[] = [];
+    s.events.on('monster:telegraph', (e) => picked.push(e.attackId));
+    for (let i = 0; i < 400; i++) {
+      step(s, mk(), 1 / 60, NOW);
+      s.player.hp = 100;
+      Object.assign(s.player, { x: m.x + 18 * m.dirX, y: m.y });
+    }
+    expect(picked.length).toBeGreaterThan(0);
+    expect(picked).not.toContain('tailwhip');
+  });
+});

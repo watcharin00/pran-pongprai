@@ -126,7 +126,8 @@ function loadAttack(v: unknown, path: string): AttackDef {
       ...extra,
       shape,
       radius: num(a.radius, `${path}.radius`, 1),
-      offset: num(a.offset, `${path}.offset`, 0),
+      // negative = a rear attack (tail whip) centred behind the monster
+      offset: num(a.offset, `${path}.offset`, -100),
     };
   }
   return {

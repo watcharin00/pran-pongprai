@@ -108,7 +108,10 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
         const dn = !isWater(tx, ty + 1);
         const lf = !isWater(tx - 1, ty);
         const rt = !isWater(tx + 1, ty);
-        if (up && ly < 6) {
+        if (up && map.biome === 'swamp' && ly < 3) {
+          // muddy bank instead of a cliff face
+          c = ly === 0 ? EDGE_LINE : ly === 1 ? '#6a5a34' : '#4a6a4a';
+        } else if (up && map.biome !== 'swamp' && ly < 6) {
           // cliff face dropping into the water
           const above = tileAt(map, tx, ty - 1);
           c = ly === 0 ? (isGrassTile(above) ? EDGE_LINE : '#f3dca0') : ly === 5 ? '#5a3418' : (lx + (ly >> 1)) % 5 === 0 ? '#9a5a2a' : ly < 3 ? '#d4914a' : '#bf7a3a';
@@ -199,6 +202,20 @@ function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): vo
         if (t === Tile.GRASS && h2 < 0.5) {
           sp(mb, X + Math.floor(h * 15), Y + (Math.floor(h2 * 30) % 16), '#a8dc6a');
           sp(mb, X + Math.floor(h2 * 15), Y + Math.floor(h * 16), '#9ad460');
+        }
+      }
+      if (t === Tile.WATER && map.biome === 'swamp' && h < 0.35) {
+        // lotus pads, some with a pink flower
+        const x = X + 3 + Math.floor(h2 * 8);
+        const y = Y + 4 + Math.floor(hash(tx * 9, ty) * 7);
+        ell(mb, x, y, 3, 2, '#4f9a44');
+        ell(mb, x - 1, y - 0.5, 1.6, 1, '#7cc25a');
+        sp(mb, x + 2, y, '#2f6e36');
+        if (h < 0.12) {
+          sp(mb, x, y - 2, '#f2a0c0');
+          sp(mb, x - 1, y - 1, '#f2a0c0');
+          sp(mb, x + 1, y - 1, '#f2a0c0');
+          sp(mb, x, y - 1, '#ffe0ec');
         }
       }
       if (t === Tile.FLOWER) {

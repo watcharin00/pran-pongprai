@@ -37,6 +37,13 @@ export const materials = {
   snakeskin: 'หนังงูเห่า',
   venom: 'ต่อมพิษงูเห่า',
   banana: 'กล้วยน้ำว้า',
+  lizardhide: 'หนังตะกวด',
+  lizardtail: 'หางตะกวด',
+  crochide: 'หนังจระเข้',
+  crocfang: 'ฟันจระเข้',
+  croctail: 'หางจระเข้',
+  crocgem: 'หินท้องจระเข้',
+  lotus: 'ฝักบัว',
   yam: 'มันหวาน',
   pepper: 'พริกเพลิง',
   lemongrass: 'ตะไคร้',
@@ -47,6 +54,7 @@ export const materials = {
   seed_lemongrass: 'เหง้าตะไคร้',
   seed_rice: 'เมล็ดข้าวเหนียว',
   seed_banana: 'หน่อกล้วย',
+  seed_lotus: 'ไหลบัว',
   fert: 'ปุ๋ยซาก',
 } satisfies Record<MaterialId, string>;
 
@@ -89,6 +97,18 @@ export const monsters = {
     attacks: { strike: 'ฉก', spit: 'พ่นพิษ', hood: 'แผ่แม่เบี้ย' },
     tip: 'พ่นพิษเป็นเส้นยาวแต่ไม่พุ่งตาม ก้าวออกด้านข้างก็พ้น ตีแม่เบี้ยจากด้านหน้าเพื่อเอาต่อมพิษ',
   },
+  monitor: {
+    name: 'ตะกวด',
+    parts: { tail: 'หาง' },
+    attacks: { bite: 'งับ', tailwhip: 'ฟาดหาง', lunge: 'พุ่งงับ' },
+    tip: 'ยืนด้านหลังตอนมันยังหันไม่ทันจะโดนฟาดหาง ดูวงเตือนด้านหลังให้ดี แล้วกลิ้งออกก่อนตีต่อ',
+  },
+  crocodile: {
+    name: 'จระเข้',
+    parts: { head: 'ขากรรไกร', tail: 'หาง' },
+    attacks: { chomp: 'งับ', tailsweep: 'กวาดหาง', deathroll: 'ม้วนตัวพุ่ง' },
+    tip: 'หันตัวช้าที่สุดในบึง แต่กวาดหางไปด้านหลังเป็นวงใหญ่ ตีหางแล้วถอยเมื่อเห็นวงเตือน ม้วนตัวพุ่งไกลมาก',
+  },
   tiger: {
     name: 'เสือโคร่ง',
     parts: { head: 'เขี้ยว', tail: 'หาง' },
@@ -117,6 +137,8 @@ export const weapons = {
   tuskaxe: { name: 'ขวานเขี้ยวหมูป่า', desc: 'หนักและทำให้มึนเร็ว ท่าประจำพุ่งขวิด' },
   tigerspear: { name: 'หอกเขี้ยวเสือ', desc: 'หอกของพรานใหญ่ แทงทะลวงสองครั้ง' },
   stripeblade: { name: 'ดาบลายพาดกลอน', desc: 'ดาบใหญ่ที่แรงที่สุด ต้องมีตาเสือ' },
+  crocmaul: { name: 'กระบองหางจระเข้', desc: 'หนักมาก มึนเร็ว ท่าประจำหมุนกลิ้งรอบตัว' },
+  lizardbow: { name: 'ธนูหางตะกวด', desc: 'ธนูแรงและยิงไว ระยะไกลกว่าธนูไม้ไผ่' },
   cobrafang: { name: 'ดาบเขี้ยวงูเห่า', desc: 'ดาบเร็ว ท่าประจำฉกไกลเหมือนงู' },
 } satisfies Record<WeaponId, { name: string; desc: string }>;
 
@@ -134,6 +156,8 @@ export const armor = {
   tigercoat: { name: 'เสื้อหนังเสือ', desc: 'เบาแต่ทนทาน ลายพาดกลอนทั้งตัว' },
   monkeyhood: { name: 'หมวกขนลิง', desc: 'อุ่นและเบา เพิ่มความอึด' },
   snakevest: { name: 'เสื้อหนังงูเห่า', desc: 'ลื่นและเหนียว กันเขี้ยวได้ดี' },
+  crochelm: { name: 'หมวกหนังจระเข้', desc: 'แข็งเหมือนเกราะ ป้องกันสูง' },
+  crocmail: { name: 'เกราะหนังจระเข้', desc: 'เกราะหนักที่สุดจากบึง' },
   tigereyecharm: { name: 'เครื่องรางตาเสือ', desc: 'ตาเสือเรืองแสงสีเขียว เพิ่มทุกอย่าง' },
 } satisfies Record<ArmorId, { name: string; desc: string }>;
 
@@ -155,6 +179,7 @@ export const skills = {
   gore: { name: 'พุ่งขวิด', desc: 'พุ่งชนแบบหมูป่า อมตะช่วงสั้น สะสมความมึน (×2.6)' },
   tigerlunge: { name: 'แทงพยัคฆ์', desc: 'ง้างแล้วแทงยาวสองครั้ง ทำลายชิ้นส่วนแรง (×2.6 ×2)' },
   cobrastrike: { name: 'ฉกงูเห่า', desc: 'ง้างสั้นแล้วแทงไกลเป็นเส้น ทำลายชิ้นส่วนดี (×3.2)' },
+  deathroll: { name: 'หมุนกลิ้ง', desc: 'หมุนตัวรอบทิศแบบจระเข้ มึนเร็ว (×2.6)' },
   stripestorm: { name: 'พายุพาดกลอน', desc: 'หมุนฟันวงใหญ่ ทำลายชิ้นส่วนดี (×3)' },
 } satisfies Record<SkillId, { name: string; desc: string }>;
 
@@ -165,6 +190,7 @@ export const crops = {
   rice: { name: 'ข้าวเหนียว', source: 'ล่าหมูป่า' },
   pepper: { name: 'พริกเพลิง', source: 'ล่ากระทิงผาแดง' },
   banana: { name: 'กล้วยน้ำว้า', source: 'ล่าลิงกังในป่าไผ่' },
+  lotus: { name: 'บัวหลวง', source: 'ล่าตะกวดในบึงจระเข้' },
 } satisfies Record<CropId, { name: string; source: string }>;
 
 export const meals = {
@@ -173,6 +199,7 @@ export const meals = {
   tea: { name: 'ชาหญ้ายา', desc: 'ความอึดฟื้นเร็ว กลิ้งเปลืองน้อยลง' },
   tomyum: { name: 'ต้มยำไก่ป่า', desc: 'ป้องกัน +15' },
   grill: { name: 'ข้าวเหนียวหมูป่าย่าง', desc: 'พลังชีวิตสูงสุด +20 โจมตี +10%' },
+  kaengsom: { name: 'แกงส้มสายบัว', desc: 'ป้องกัน +10 โจมตี +10%' },
   khaotommat: { name: 'ข้าวต้มมัด', desc: 'พลังชีวิตสูงสุด +15 ความอึดฟื้นเร็วขึ้น' },
 } satisfies Record<MealId, { name: string; desc: string }>;
 

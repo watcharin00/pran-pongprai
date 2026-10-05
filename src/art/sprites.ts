@@ -276,7 +276,87 @@ function buildCobra(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   return finish(b);
 }
 
+/** Low sprawling legs for lizards: short, splayed, alternating. */
+function lizardLegs(b: PixelBuffer, f: number, xs: readonly Leg[], y: number, c: string, claw: string): void {
+  xs.forEach(([x, ph]) => {
+    const off = Math.round(Math.sin(((f + ph * 2) * Math.PI) / 2) * 1.4);
+    rect(b, x + off, y, 3, 2, c);
+    rect(b, x + off - 1, y + 2, 2, 1, claw);
+    rect(b, x + off + 2, y + 2, 2, 1, claw);
+  });
+}
+
+/** ตะกวด (water monitor): long dark olive lizard with yellow speckles. Tail part = tail. */
+function buildMonitor(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(33, 15);
+  const o = 1;
+  const B = '#5a5a3a';
+  const D = '#3e3e28';
+  const sway = Math.round(Math.sin((f * Math.PI) / 2));
+  if (!tb) {
+    for (let x = 0; x <= 10; x++) {
+      const y = 8 + Math.round(Math.sin(x * 0.5 + f) * 0.8 * (1 - x / 12)) - (x < 3 ? 0 : 0);
+      rect(b, x + o, y + o, 1, x < 4 ? 1 : 2, x < 3 ? D : B);
+    }
+  } else {
+    rect(b, 9 + o, 8 + o, 2, 2, B);
+  }
+  lizardLegs(b, f, [[11 + o, 0], [20 + o, 1]], 10 + o, D, '#c8b890');
+  ell(b, 16 + o, 8 + o, 7, 2.6, B);
+  ell(b, 16 + o, 9.5 + o, 5, 1, '#7a7a52');
+  for (let x = 11; x <= 21; x += 2) sp(b, x + o, 7 + o + (x % 4 === 1 ? 0 : 1), '#e8d070');
+  // neck + head, tongue flicks every other frame
+  rect(b, 22 + o, 6 + o + sway * 0, 4, 3, B);
+  ell(b, 27.5 + o, 7 + o, 3, 1.8, B);
+  sp(b, 27 + o, 6 + o, '#221a2a');
+  if (f % 2 === 0) {
+    sp(b, 30 + o, 7 + o, '#e0302a');
+    sp(b, 31 + o, 6 + o, '#e0302a');
+    sp(b, 31 + o, 8 + o, '#e0302a');
+  }
+  return finish(b);
+}
+
+/** จระเข้ (crocodile): long, dark green, ridged back, toothy jaws. Head = jaws, tail = tail. */
+function buildCrocodile(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(47, 19);
+  const o = 1;
+  const B = '#3e5a3a';
+  const D = '#2a4028';
+  const L = '#a8b880';
+  const len = tb ? 6 : 15;
+  for (let i = 0; i < len; i++) {
+    const x = 15 - i;
+    const h = Math.max(1, Math.round(3.5 - i * 0.22));
+    const y = 9 + Math.round(Math.sin(i * 0.45 + f * 0.8) * (i / 10));
+    rect(b, x + o, y - Math.floor(h / 2) + o, 1, h, i % 3 === 0 ? D : B);
+    if (i % 3 === 1) sp(b, x + o, y - Math.floor(h / 2) - 1 + o, D);
+  }
+  lizardLegs(b, f, [[16 + o, 0], [19 + o, 1], [28 + o, 0], [31 + o, 1]], 12 + o, D, '#c8c0a0');
+  ell(b, 24 + o, 9.5 + o, 10, 3.6, B);
+  ell(b, 24 + o, 11.5 + o, 7.5, 1.2, L);
+  // ridge scutes along the back
+  for (let x = 15; x <= 33; x += 2) sp(b, x + o, 5 + o + (x % 4 === 1 ? 0 : 1), D);
+  // head and long snout
+  ell(b, 36 + o, 9 + o, 3.4, 2.6, B);
+  rect(b, 37 + o, 8 + o, 8, 3, B);
+  rect(b, 37 + o, 10 + o, 8, 1, D);
+  sp(b, 36 + o, 7 + o, '#ffd84a');
+  sp(b, 44 + o, 8 + o, D);
+  if (!hb) {
+    for (let x = 38; x <= 44; x += 2) {
+      sp(b, x + o, 10 + o, '#f4eed4');
+      sp(b, x + 1 + o, 11 + o, '#f4eed4');
+    }
+  } else {
+    sp(b, 41 + o, 10 + o, '#8a6a5a');
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  monitor: (f, _hb, tb) => buildMonitor(f, tb),
+  crocodile: (f, hb, tb) => buildCrocodile(f, hb, tb),
   macaque: (f, _hb, tb) => buildMacaque(f, tb),
   cobra: (f, hb, tb) => buildCobra(f, hb, tb),
   junglefowl: (f, hb) => buildJunglefowl(f, hb),

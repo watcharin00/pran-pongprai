@@ -22,6 +22,13 @@
   "monkeyfur":       { "color": "#9a6a42", "category": "material", "icon": "pelt" },
   "snakeskin":       { "color": "#4a6a3a", "category": "material", "icon": "scale" },
   "venom":           { "color": "#a8e05a", "category": "material", "icon": "orb", "rarity": 1 },
+  "lizardhide":      { "color": "#6a6a4a", "category": "material", "icon": "scale" },
+  "lizardtail":      { "color": "#5a5a3a", "category": "material", "icon": "tail", "rarity": 1 },
+  "crochide":        { "color": "#3e5a3a", "category": "material", "icon": "scale" },
+  "crocfang":        { "color": "#f4eed4", "category": "material", "icon": "fang" },
+  "croctail":        { "color": "#3e5a3a", "category": "material", "icon": "tail", "rarity": 1 },
+  "crocgem":         { "color": "#7ad0ff", "category": "material", "icon": "orb", "rarity": 2 },
+  "lotus":           { "color": "#f2a0c0", "category": "material", "icon": "bulb" },
   "banana":          { "color": "#f0d860", "category": "material", "icon": "root" },
   "lemongrass":      { "color": "#9fd86a", "category": "material", "icon": "stalk" },
   "rice":            { "color": "#f0e6b0", "category": "material", "icon": "grain" },
@@ -31,5 +38,6 @@
   "seed_lemongrass": { "color": "#9fd86a", "category": "seed", "icon": "bulb" },
   "seed_rice":       { "color": "#e8d890", "category": "seed", "icon": "seed" },
   "seed_banana":     { "color": "#c8d860", "category": "seed", "icon": "bulb" },
+  "seed_lotus":      { "color": "#d890b0", "category": "seed", "icon": "seed" },
   "fert":            { "color": "#8a6b45", "category": "seed", "icon": "sack" }
 }
