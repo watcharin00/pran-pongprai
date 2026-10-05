@@ -228,6 +228,14 @@ function think(s: GameState, m: MonsterState, dt: number): void {
       if (sh.kind === 'circle') {
         if (Math.hypot(p.x - sh.cx, p.y - sh.cy) <= sh.r + 3) resolveMonsterHit(s, m, a);
         s.events.emit('monster:strike', { id: m.id, kind: m.kind, at: { x: sh.cx, y: sh.cy }, radius: sh.r });
+      } else {
+        // a line attack that stays put (spit, tail sweep): hits anything inside the strip
+        const rx = p.x - sh.sx;
+        const ry = p.y - sh.sy;
+        const along = rx * sh.ux + ry * sh.uy;
+        const across = Math.abs(rx * -sh.uy + ry * sh.ux);
+        if (along >= -3 && along <= sh.len + 3 && across <= sh.wd / 2 + 3) resolveMonsterHit(s, m, a);
+        s.events.emit('monster:strike', { id: m.id, kind: m.kind, at: { x: sh.sx + (sh.ux * sh.len) / 2, y: sh.sy + (sh.uy * sh.len) / 2 }, radius: sh.wd / 2 });
       }
       m.mode = 'recover';
       m.t = def.recover;

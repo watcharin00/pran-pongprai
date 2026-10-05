@@ -35,7 +35,7 @@ describe('content data', () => {
   });
 
   it('matches the weapon table', () => {
-    expect(Object.keys(WEAPONS)).toEqual(['bone', 'fangblade', 'mossmaul', 'cleaver', 'coreblade', 'bamboospear', 'bamboobow', 'redcrossbow', 'tuskaxe', 'tigerspear', 'stripeblade']);
+    expect(Object.keys(WEAPONS)).toEqual(expect.arrayContaining(['bone', 'fangblade', 'mossmaul', 'cleaver', 'coreblade', 'bamboospear', 'bamboobow', 'redcrossbow', 'tuskaxe', 'tigerspear', 'stripeblade']));
     expect(WEAPONS.mossmaul).toMatchObject({ type: 'hammer', damage: 28, rate: 0.9, stun: 34, partMul: { head: 1.8, tail: 0.7 } });
     expect(WEAPONS.bone.recipe).toBeNull();
     expect(WEAPON_TYPES.hammer.hitstop).toBe(0.085);

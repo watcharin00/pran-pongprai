@@ -145,3 +145,28 @@ describe('map tab rules', () => {
     expect([s.player.x, s.player.y]).toEqual([SPAWN.x, SPAWN.y]);
   });
 });
+
+describe('bamboo forest content', () => {
+  it('spawns its monsters only there', () => {
+    const s = createGame({ rngSeed: 9, now: NOW });
+    expect(s.monsters.some((m) => m.kind === 'macaque' || m.kind === 'cobra')).toBe(false);
+    changeArea(s, 'bamboo');
+    const kinds = new Set(s.monsters.map((m) => m.kind));
+    expect([...kinds].sort()).toEqual(['cobra', 'macaque']);
+  });
+
+  it("a cobra's spit hits along its line without the cobra moving", async () => {
+    const { addMonster, intent: mk } = await import('./helpers');
+    const s = createGame({ rngSeed: 9, now: NOW, noMonsters: true });
+    changeArea(s, 'bamboo', undefined, false);
+    const [cx, cy] = s.map.forestCells[40] ?? [30, 23];
+    const m = addMonster(s, 'cobra', cx * T + 8, cy * T + 8, 1);
+    Object.assign(s.player, { x: m.x + 60, y: m.y, inVillage: false });
+    const spit = { id: 'spit', shape: 'line', length: 100, width: 14, telegraph: 0.9, damage: 14, range: 100, minRange: 30, dash: false, weight: 2 } as const;
+    Object.assign(m, { mode: 'tele', t: 0.001, tt: 0.9, aggro: true, huntT: 120, attack: spit, shape: { kind: 'line', sx: m.x, sy: m.y, ux: 1, uy: 0, len: 100, wd: 14 } });
+    const x0 = m.x;
+    step(s, mk(), 1 / 60, NOW);
+    expect(s.player.hp).toBeLessThan(100);
+    expect(m.x).toBe(x0);
+  });
+});

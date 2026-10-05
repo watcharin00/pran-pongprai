@@ -212,7 +212,73 @@ function buildTiger(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   return finish(b);
 }
 
+/** ลิงกัง (pig-tailed macaque): brown, crouched, pink face, short curled tail. Tail part = tail. */
+function buildMacaque(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(21, 18);
+  const o = 1;
+  const B = '#9a6a42';
+  const D = '#6e4a2c';
+  if (!tb) {
+    ([[4, 9], [3, 8], [2, 7], [2, 6], [3, 5], [4, 5]] as const).forEach(([x, y]) => rect(b, x + o, y + o, 2, 1, D));
+  } else {
+    sp(b, 4 + o, 9 + o, D);
+  }
+  legs(b, f, [[6 + o, 0], [8 + o, 1], [12 + o, 0], [14 + o, 1]], 12 + o, 2, 3, B, D, '#3a2418');
+  ell(b, 10 + o, 9.5 + o, 5.2, 3.6, B);
+  ell(b, 9 + o, 8 + o, 3, 1.6, '#b08050');
+  // head with a pale pink face
+  ell(b, 15 + o, 6 + o, 3.2, 3, B);
+  ell(b, 16.5 + o, 6.5 + o, 1.8, 1.8, '#e8a890');
+  sp(b, 16 + o, 6 + o, '#221a2a');
+  sp(b, 17 + o, 7 + o, '#b06a5a');
+  sp(b, 14 + o, 3 + o, D);
+  // arms reaching forward
+  rect(b, 14 + o, 10 + o, 3, 1, D);
+  return finish(b);
+}
+
+/** งูเห่า (cobra): coiled olive body, raised hood with eye marks. Head = hood, tail = tail tip. */
+function buildCobra(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(25, 21);
+  const o = 1;
+  const B = '#4a6a3a';
+  const D = '#33502a';
+  const L = '#d8d0a0';
+  const sway = Math.round(Math.sin((f * Math.PI) / 2));
+  if (!tb) {
+    ([[1, 16], [2, 16], [3, 15], [4, 15], [5, 15]] as const).forEach(([x, y]) => sp(b, x + o, y + o, D));
+  }
+  // coils
+  ell(b, 10 + o, 15 + o, 6.5, 3, B);
+  ell(b, 10 + o, 13 + o, 5, 2.2, D);
+  ell(b, 10 + o, 12.2 + o, 3.6, 1.4, B);
+  for (let x = 5; x <= 15; x += 3) sp(b, x + o, 16 + o, L);
+  // neck rising
+  rect(b, 13 + o + sway, 6 + o, 3, 7, B);
+  rect(b, 14 + o + sway, 7 + o, 1, 6, L);
+  // hood
+  const hx = 14.5 + sway;
+  if (!hb) {
+    ell(b, hx + o, 6 + o, 4.4, 4, B);
+    ell(b, hx + o, 6.5 + o, 2.2, 2.6, L);
+    sp(b, hx - 2 + o, 5 + o, '#221a2a');
+    sp(b, hx + 2 + o, 5 + o, '#221a2a');
+  } else {
+    ell(b, hx + o, 6 + o, 2.4, 3, B);
+  }
+  // head + tongue
+  ell(b, hx + 1 + o, 2.5 + o, 2.2, 1.6, D);
+  sp(b, hx + 2 + o, 2 + o, '#ffd84a');
+  if (!hb) {
+    sp(b, hx + 4 + o, 3 + o, '#e0302a');
+    sp(b, hx + 5 + o, 2 + o, '#e0302a');
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  macaque: (f, _hb, tb) => buildMacaque(f, tb),
+  cobra: (f, hb, tb) => buildCobra(f, hb, tb),
   junglefowl: (f, hb) => buildJunglefowl(f, hb),
   dhole: (f, hb) => buildDhole(f, hb),
   boar: (f, hb, tb) => buildBoar(f, hb, tb),

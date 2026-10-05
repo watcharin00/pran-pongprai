@@ -33,6 +33,10 @@ export const materials = {
   tigerfang: 'เขี้ยวเสือ',
   tigertail: 'หางเสือ',
   tigereye: 'ตาเสือ',
+  monkeyfur: 'ขนลิงกัง',
+  snakeskin: 'หนังงูเห่า',
+  venom: 'ต่อมพิษงูเห่า',
+  banana: 'กล้วยน้ำว้า',
   yam: 'มันหวาน',
   pepper: 'พริกเพลิง',
   lemongrass: 'ตะไคร้',
@@ -42,6 +46,7 @@ export const materials = {
   seed_pepper: 'เมล็ดพริกเพลิง',
   seed_lemongrass: 'เหง้าตะไคร้',
   seed_rice: 'เมล็ดข้าวเหนียว',
+  seed_banana: 'หน่อกล้วย',
   fert: 'ปุ๋ยซาก',
 } satisfies Record<MaterialId, string>;
 
@@ -72,6 +77,18 @@ export const monsters = {
     attacks: { stomp: 'กระทืบ', flameRing: 'วงไฟรอบตัว', charge: 'พุ่งชน' },
     tip: 'หักเขาจากด้านหน้า ตัดหางเพลิงจากด้านหลัง วงไฟเตือนนานที่สุด ออกจากวงให้ทัน โกรธเมื่อเลือดเหลือครึ่ง',
   },
+  macaque: {
+    name: 'ลิงกัง',
+    parts: { tail: 'หาง' },
+    attacks: { scratch: 'ข่วน', leap: 'กระโดดใส่' },
+    tip: 'ไวและมาเป็นฝูง ไม่มีชิ้นส่วนหัว อ้อมไปด้านหลังเพื่อดึงหางเอาขน กระโดดใส่แล้วพักนาน ตีตอนนั้น',
+  },
+  cobra: {
+    name: 'งูเห่า',
+    parts: { head: 'แม่เบี้ย', tail: 'หาง' },
+    attacks: { strike: 'ฉก', spit: 'พ่นพิษ', hood: 'แผ่แม่เบี้ย' },
+    tip: 'พ่นพิษเป็นเส้นยาวแต่ไม่พุ่งตาม ก้าวออกด้านข้างก็พ้น ตีแม่เบี้ยจากด้านหน้าเพื่อเอาต่อมพิษ',
+  },
   tiger: {
     name: 'เสือโคร่ง',
     parts: { head: 'เขี้ยว', tail: 'หาง' },
@@ -100,6 +117,7 @@ export const weapons = {
   tuskaxe: { name: 'ขวานเขี้ยวหมูป่า', desc: 'หนักและทำให้มึนเร็ว ท่าประจำพุ่งขวิด' },
   tigerspear: { name: 'หอกเขี้ยวเสือ', desc: 'หอกของพรานใหญ่ แทงทะลวงสองครั้ง' },
   stripeblade: { name: 'ดาบลายพาดกลอน', desc: 'ดาบใหญ่ที่แรงที่สุด ต้องมีตาเสือ' },
+  cobrafang: { name: 'ดาบเขี้ยวงูเห่า', desc: 'ดาบเร็ว ท่าประจำฉกไกลเหมือนงู' },
 } satisfies Record<WeaponId, { name: string; desc: string }>;
 
 export const armor = {
@@ -114,6 +132,8 @@ export const armor = {
   emberamulet: { name: 'เครื่องรางแก่นเพลิง', desc: 'อุ่นอยู่ตลอดเวลา เพิ่มทุกอย่างเล็กน้อย' },
   tigerhood: { name: 'หมวกหนังเสือ', desc: 'หมวกของพรานผู้ล่าเสือได้' },
   tigercoat: { name: 'เสื้อหนังเสือ', desc: 'เบาแต่ทนทาน ลายพาดกลอนทั้งตัว' },
+  monkeyhood: { name: 'หมวกขนลิง', desc: 'อุ่นและเบา เพิ่มความอึด' },
+  snakevest: { name: 'เสื้อหนังงูเห่า', desc: 'ลื่นและเหนียว กันเขี้ยวได้ดี' },
   tigereyecharm: { name: 'เครื่องรางตาเสือ', desc: 'ตาเสือเรืองแสงสีเขียว เพิ่มทุกอย่าง' },
 } satisfies Record<ArmorId, { name: string; desc: string }>;
 
@@ -134,6 +154,7 @@ export const skills = {
   bolt: { name: 'ดอกทะลวง', desc: 'ลูกดอกแรงพุ่งทะลุทุกตัวในแนว (×4)' },
   gore: { name: 'พุ่งขวิด', desc: 'พุ่งชนแบบหมูป่า อมตะช่วงสั้น สะสมความมึน (×2.6)' },
   tigerlunge: { name: 'แทงพยัคฆ์', desc: 'ง้างแล้วแทงยาวสองครั้ง ทำลายชิ้นส่วนแรง (×2.6 ×2)' },
+  cobrastrike: { name: 'ฉกงูเห่า', desc: 'ง้างสั้นแล้วแทงไกลเป็นเส้น ทำลายชิ้นส่วนดี (×3.2)' },
   stripestorm: { name: 'พายุพาดกลอน', desc: 'หมุนฟันวงใหญ่ ทำลายชิ้นส่วนดี (×3)' },
 } satisfies Record<SkillId, { name: string; desc: string }>;
 
@@ -143,6 +164,7 @@ export const crops = {
   lemongrass: { name: 'ตะไคร้', source: 'ล่าไก่ป่า' },
   rice: { name: 'ข้าวเหนียว', source: 'ล่าหมูป่า' },
   pepper: { name: 'พริกเพลิง', source: 'ล่ากระทิงผาแดง' },
+  banana: { name: 'กล้วยน้ำว้า', source: 'ล่าลิงกังในป่าไผ่' },
 } satisfies Record<CropId, { name: string; source: string }>;
 
 export const meals = {
@@ -151,6 +173,7 @@ export const meals = {
   tea: { name: 'ชาหญ้ายา', desc: 'ความอึดฟื้นเร็ว กลิ้งเปลืองน้อยลง' },
   tomyum: { name: 'ต้มยำไก่ป่า', desc: 'ป้องกัน +15' },
   grill: { name: 'ข้าวเหนียวหมูป่าย่าง', desc: 'พลังชีวิตสูงสุด +20 โจมตี +10%' },
+  khaotommat: { name: 'ข้าวต้มมัด', desc: 'พลังชีวิตสูงสุด +15 ความอึดฟื้นเร็วขึ้น' },
 } satisfies Record<MealId, { name: string; desc: string }>;
 
 /** Area names for the world map (the home area holds the village, forest and canyon). */

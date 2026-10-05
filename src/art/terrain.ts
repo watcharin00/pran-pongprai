@@ -326,6 +326,10 @@ function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
       const t = tileAt(map, tx, ty);
       const isTree = t === Tile.TREE || (t === Tile.WALL && (tx + ty) % 2 === 0 && hash(tx, ty) < 0.8);
       if (!isTree) continue;
+      if (map.biome === 'bamboo') {
+        paintBamboo(mb, cb, tx, ty);
+        continue;
+      }
       const cx = tx * 16 + 8;
       const cy = ty * 16 - 3;
       const v = hash(tx * 3, ty * 5);
@@ -373,6 +377,40 @@ function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
           const ny = (dy + 0.5 - by) / r;
           const l = -(nx * 0.55 + ny * 0.85) + (hash(x, y) - 0.5) * 0.4;
           sp(cb, x, y, (l > 0.6 ? pal[3] : l > 0.12 ? pal[2] : l > -0.38 ? pal[1] : pal[0]) ?? '#347a3a');
+        }
+      }
+    }
+  }
+}
+
+/** A clump of bamboo: stalk bases on the ground layer, tall stalks and leaves on the canopy. */
+function paintBamboo(mb: PixelBuffer, cb: PixelBuffer, tx: number, ty: number): void {
+  const X = tx * 16;
+  const base = ty * 16 + 15;
+  ell(mb, X + 9, base - 1, 8, 2.6, '#000000', 0.2);
+  const n = 2 + Math.floor(hash(tx, ty) * 2);
+  for (let i = 0; i < n; i++) {
+    const x = X + 2 + Math.floor(hash(tx * 3 + i, ty) * 12);
+    const h = 24 + Math.floor(hash(tx, ty * 5 + i) * 12);
+    const lean = hash(tx + i, ty + 3) < 0.5 ? -1 : 1;
+    for (let k = 0; k < h; k++) {
+      const y = base - k;
+      const xx = x + Math.round((k / h) * lean * 2);
+      const layer = k < 8 ? mb : cb;
+      const node = k % 6 === 5;
+      // lit from the left: light, mid, shade, then a soft dark-green edge
+      sp(layer, xx - 1, y, '#2f5a24');
+      sp(layer, xx, y, node ? '#5a9a34' : '#c4e88a');
+      sp(layer, xx + 1, y, node ? '#4a8a2c' : '#94cc5a');
+      sp(layer, xx + 2, y, node ? '#3f7a2c' : '#6aa83a');
+      sp(layer, xx + 3, y, '#2f5a24');
+      // leaf sprays near the top
+      if (k > h * 0.55 && k % 5 === 2) {
+        const dir = (k + i) % 2 ? 1 : -1;
+        for (let j = 1; j <= 4; j++) {
+          const lx = dir > 0 ? xx + 3 + j : xx - 1 - j;
+          sp(cb, lx, y - Math.floor(j / 2), j < 3 ? '#7cc25a' : '#a6d66c');
+          sp(cb, lx, y - Math.floor(j / 2) + 1, '#4f9a44');
         }
       }
     }
