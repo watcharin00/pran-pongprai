@@ -28,7 +28,8 @@ describe('save', () => {
     expect(t.selCrop).toBe('yam');
     expect(t.autoOn).toBe(true);
     expect(t.plots[4]).toMatchObject({ crop: 'pepper', at: NOW - 5, dur: 120_000, fert: true });
-    expect(t.plots).toHaveLength(8);
+    // 8 vegetable plots + 6 paddy + 4 pond slots
+    expect(t.plots).toHaveLength(18);
   });
 
   it('migrates a v1 save from the old prototype', () => {

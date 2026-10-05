@@ -7,7 +7,7 @@ import type { AreaId, MaterialId, NpcId, PartId } from '../data/types';
 import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPilot';
 import { findMonster } from '../core/combat';
 import { isRipe, plant, plotProgress } from '../core/farm';
-import { ANVIL, BOARD, FARM, FARM_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { ANVIL, BOARD, FARM, FARM_CENTER, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { npcLine, npcNear } from '../core/npc';
 import { claimRequest, requestReady } from '../core/requests';
 import { loadFromStorage, serialize } from '../core/save';
@@ -763,7 +763,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const X = pl.tx * T;
       const Y = pl.ty * T;
       const stage = pr < 0.25 ? 0 : pr < 0.6 ? 1 : pr < 1 ? 2 : 3;
-      for (let i = 0; i < 3; i++) drawPlant(px, X + 4 + i * 4, Y + 12 - (i % 2), pl.crop, stage);
+      if (pl.bed === 'pond') drawPondSlot(px, X, Y, pl.crop, stage, time + pl.tx * 1.7);
+      else if (pl.crop === 'rice') for (let i = 0; i < 6; i++) drawRice(px, X + 3 + (i % 3) * 5, Y + 7 + Math.floor(i / 3) * 6, stage, time + i);
+      else for (let i = 0; i < 3; i++) drawPlant(px, X + 4 + i * 4, Y + 12 - (i % 2), pl.crop, stage);
       if (pr >= 1) {
         if (Math.floor(time * 4 + pl.tx) % 3 === 0) {
           px(X + 13, Y + 1, 0xfffbe0, 1, 3);
@@ -959,6 +961,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         const ripe = s.plots.filter((pl) => isRipe(pl, s.now)).length;
         t.label(this, ripe ? th.places.farmRipe(ripe) : th.places.farm, FARM_CENTER.x, (FARM.y0 - 1) * T - 4, ripe ? '#ffe08a' : '#ffe7a6');
       }
+      for (const [bed, at, name] of [['paddy', PADDY_CENTER, th.places.paddy], ['pond', POND_CENTER, th.places.pond]] as const) {
+        if (!near(at)) continue;
+        const ripe = s.plots.filter((pl) => pl.bed === bed && isRipe(pl, s.now)).length;
+        t.label(this, ripe ? th.places.bedRipe(name, ripe) : name, at.x, at.y - 30, ripe ? '#ffe08a' : '#ffe7a6');
+      }
     }
     if (s.area === 'home' && p.inVillage && !p.dead && !roleTalking('requests') && Math.hypot(BOARD.x * T + 8 - p.x, BOARD.y * T + 8 - p.y) < 90) {
       t.label(this, requestReady(s) ? th.places.boardReady : th.places.board, BOARD.x * T + 8, BOARD.y * T - 6, requestReady(s) ? '#ffe08a' : '#ffe7a6');
@@ -1022,3 +1029,57 @@ function drawPlant(px: Px, x: number, y: number, kind: string, st: number): void
   }
 }
 
+
+/** Rice tuft: seedlings, green tillers, tall green, then golden heads that nod in the wind. */
+function drawRice(px: Px, x: number, y: number, st: number, t: number): void {
+  if (st === 0) {
+    px(x, y, 0x7ad866);
+    px(x + 1, y - 1, 0x7ad866);
+    return;
+  }
+  const green = st < 3;
+  const h = st === 1 ? 3 : 5;
+  px(x, y - h + 1, green ? 0x4fa84a : 0xb8a040, 1, h);
+  px(x - 1, y - h + 2, green ? 0x6cc25a : 0xc8b050, 1, h - 1);
+  px(x + 1, y - h + 2, green ? 0x3f8a3a : 0xa89038, 1, h - 1);
+  if (st === 3) {
+    const sway = Math.sin(t * 1.6) > 0 ? 1 : 0;
+    px(x - 1 + sway, y - h - 1, 0xffd35c, 2, 1);
+    px(x + sway, y - h, 0xf0c040, 2, 1);
+  }
+}
+
+/** A pond slot: lotus (pads, bud, pink flower) or fish (ripples, then a fish jumping when ready). */
+function drawPondSlot(px: Px, X: number, Y: number, crop: string, st: number, t: number): void {
+  if (crop === 'lotus') {
+    px(X + 3, Y + 9, 0x2f7a3a, 5, 3);
+    px(X + 9, Y + 5, 0x2f7a3a, 4, 3);
+    px(X + 4, Y + 9, 0x4f9a44, 3, 1);
+    px(X + 10, Y + 5, 0x4f9a44, 2, 1);
+    if (st >= 1) px(X + 7, Y + 7, 0x3f8a3a, 1, 4);
+    if (st === 2) px(X + 6, Y + 5, 0xf2a0c0, 3, 2);
+    if (st === 3) {
+      px(X + 5, Y + 4, 0xf2a0c0, 5, 2);
+      px(X + 6, Y + 3, 0xffd0e0, 3, 1);
+      px(X + 7, Y + 5, 0xffd35c);
+    }
+    return;
+  }
+  // fish: expanding ripple rings, more of them as the fish grow
+  const rings = st + 1;
+  for (let i = 0; i < rings; i++) {
+    const k = (t * 0.7 + i / rings) % 1;
+    const r = 1 + k * 5;
+    const cx = X + 5 + ((i * 5) % 7);
+    const cy = Y + 6 + ((i * 3) % 5);
+    px(Math.round(cx - r), cy, 0xc8fff0, 1, 1, 1 - k);
+    px(Math.round(cx + r), cy, 0xc8fff0, 1, 1, 1 - k);
+    px(cx, Math.round(cy - r * 0.6), 0xc8fff0, 1, 1, 1 - k);
+  }
+  if (st >= 1) px(X + 6 + Math.round(Math.sin(t) * 3), Y + 9, 0x1a5a58, 4, 1);
+  if (st === 3 && Math.sin(t * 2.2) > 0.6) {
+    const hop = Math.round((Math.sin(t * 2.2) - 0.6) * 10);
+    px(X + 6, Y + 5 - hop, 0x9aaab8, 4, 2);
+    px(X + 10, Y + 4 - hop, 0x7a8a9a, 1, 3);
+  }
+}

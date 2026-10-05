@@ -3,7 +3,7 @@ import { TUNING, WEAPONS } from '../data';
 import { chooseTarget, findMonster, hitMonster, reachOf } from './combat';
 import type { Vec2 } from './events';
 import { moveBody } from './collision';
-import { harvest, isRipe } from './farm';
+import { harvest, isRipe, plotReach } from './farm';
 import { give, dodgeCost, maxHpFor, maxStaminaFor, staminaRegenMul } from './inventory';
 import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
@@ -16,7 +16,6 @@ import type { GameState, Intent, MonsterState } from './state';
 const P = TUNING.player;
 const C = TUNING.combat;
 const G = TUNING.gather;
-const V = TUNING.village;
 
 /** Edge-triggered inputs. Runs even during hitstop (dt = 0), like button presses in the prototype. */
 export function processActions(s: GameState, intent: Intent): void {
@@ -240,7 +239,7 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   // walking over a ripe plot harvests it
   if (s.area === 'home') {
     s.plots.forEach((pl, i) => {
-      if (isRipe(pl, s.now) && Math.hypot(pl.x - p.x, pl.y - p.y) < V.harvestRadius) harvest(s, i);
+      if (isRipe(pl, s.now) && Math.hypot(pl.x - p.x, pl.y - p.y) < plotReach(pl)) harvest(s, i);
     });
   }
   if (p.moving) p.walkT += dt * 9;

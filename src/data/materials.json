@@ -40,6 +40,7 @@
   "tailhair":        { "color": "#2a2a2a", "category": "material", "icon": "feather", "rarity": 1 },
   "forestspirit":    { "color": "#7cf0b0", "category": "material", "icon": "orb", "rarity": 2 },
   "ginger":          { "color": "#e8c070", "category": "material", "icon": "root" },
+  "fish":            { "color": "#7a8a9a", "category": "material", "icon": "fish" },
   "lotus":           { "color": "#f2a0c0", "category": "material", "icon": "bulb" },
   "banana":          { "color": "#f0d860", "category": "material", "icon": "root" },
   "lemongrass":      { "color": "#9fd86a", "category": "material", "icon": "stalk" },
@@ -52,5 +53,6 @@
   "seed_banana":     { "color": "#c8d860", "category": "seed", "icon": "bulb" },
   "seed_lotus":      { "color": "#d890b0", "category": "seed", "icon": "seed" },
   "seed_ginger":     { "color": "#c8a060", "category": "seed", "icon": "bulb" },
+  "fry":             { "color": "#9aaab8", "category": "seed", "icon": "fish" },
   "fert":            { "color": "#8a6b45", "category": "seed", "icon": "sack" }
 }

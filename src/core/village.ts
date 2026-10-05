@@ -1,6 +1,6 @@
 // What the attack button turns into when no monster is near.
 import { TUNING } from '../data';
-import { ANVIL, FARM_CENTER, POT } from './mapgen';
+import { ANVIL, FARM_CENTER, PADDY_CENTER, POND_CENTER, POT } from './mapgen';
 import type { NpcId } from '../data/types';
 import { npcNear } from './npc';
 import type { GameState } from './state';
@@ -24,8 +24,9 @@ export function contextAction(s: GameState): ContextAction | null {
   if (npc) return { kind: 'npc', npc: npc.id };
   if (near(ANVIL, V.stationRadius)) return { kind: 'forge' };
   if (near(POT, V.stationRadius)) return { kind: 'kitchen' };
-  const plot = s.plots.findIndex((q) => near(q, V.plotRadius));
+  // pond slots are water, so they are planted from the bank
+  const plot = s.plots.findIndex((q) => near(q, q.bed === 'pond' ? V.pondReach : V.plotRadius));
   if (plot >= 0 && !s.plots[plot]?.crop) return { kind: 'plant', plot };
-  if (near(FARM_CENTER, V.farmRadius)) return { kind: 'farm' };
+  if (near(FARM_CENTER, V.farmRadius) || near(PADDY_CENTER, V.farmRadius) || near(POND_CENTER, V.farmRadius)) return { kind: 'farm' };
   return null;
 }

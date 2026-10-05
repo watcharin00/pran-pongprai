@@ -1,6 +1,6 @@
 // Crops grow on wall-clock time, so they keep growing while the tab is closed.
-import { CROPS, CROPS_DATA } from '../data';
-import type { CropId, ItemBag } from '../data/types';
+import { CROPS, CROPS_DATA, TUNING } from '../data';
+import type { CropBed, CropId, ItemBag } from '../data/types';
 import { farmPlots } from './mapgen';
 import { give } from './inventory';
 import type { GameState, Plot } from './state';
@@ -23,10 +23,33 @@ export function isRipe(plot: Plot, now: number): boolean {
   return !!plot.crop && plotProgress(plot, now) >= 1;
 }
 
-/** Plants the selected seed. Uses fertiliser when `useFert` is on and some is left. */
-export function plant(s: GameState, index: number, crop: CropId = s.selCrop): boolean {
+export const cropsForBed = (bed: CropBed): CropId[] => (Object.keys(CROPS) as CropId[]).filter((c) => CROPS[c].bed === bed);
+
+/**
+ * What goes into a plot when the player just taps it: the selected crop if it grows there,
+ * otherwise the first crop for that bed that has seeds (rice in the paddy, lotus/fish in the pond).
+ */
+export function cropFor(s: GameState, bed: CropBed): CropId | null {
+  if (CROPS[s.selCrop].bed === bed) return s.selCrop;
+  const options = cropsForBed(bed);
+  return options.find((c) => s.inv[CROPS[c].seed] > 0) ?? options[0] ?? null;
+}
+
+/** How close the player must be to a plot to plant or auto-harvest (pond slots are water, reached from the bank). */
+export function plotReach(plot: Plot): number {
+  return plot.bed === 'pond' ? TUNING.village.pondReach : TUNING.village.harvestRadius;
+}
+
+/**
+ * Plants a crop (default: what fits this plot, see cropFor). Uses fertiliser when `useFert`
+ * is on and some is left. A crop never goes into the wrong bed.
+ */
+export function plant(s: GameState, index: number, crop?: CropId): boolean {
   const plot = s.plots[index];
   if (!plot || plot.crop) return false;
+  const chosen = crop ?? cropFor(s, plot.bed);
+  if (!chosen || CROPS[chosen].bed !== plot.bed) return false;
+  crop = chosen;
   const def = CROPS[crop];
   if (s.inv[def.seed] <= 0) {
     s.events.emit('farm:noSeed', { crop });
@@ -62,12 +85,14 @@ export function tapPlot(s: GameState, index: number): boolean {
   return harvest(s, index);
 }
 
-/** Plants the selected crop in every empty plot while seeds last. Returns how many. */
+/** Plants the selected crop in every empty plot of its bed while seeds last. Returns how many. */
 export function plantAll(s: GameState): number {
+  const def = CROPS[s.selCrop];
   let n = 0;
   for (let i = 0; i < s.plots.length; i++) {
-    if (s.plots[i]?.crop || s.inv[CROPS[s.selCrop].seed] <= 0) continue;
-    if (plant(s, i)) n++;
+    const pl = s.plots[i];
+    if (!pl || pl.crop || pl.bed !== def.bed || s.inv[def.seed] <= 0) continue;
+    if (plant(s, i, s.selCrop)) n++;
   }
   return n;
 }

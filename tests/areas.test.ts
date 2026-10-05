@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AREA_IDS, areaMap, areaSeed, buildAreaMap, exitAt } from '../src/core/areas';
 import { trailWaypoints } from '../src/core/trails';
 import { TUNING } from '../src/data';
-import { generateMap, inVillageTile, MH, MW, QUARTER, QUARTER_FENCE_Y, SPAWN, T, Tile, walkable, zoneAtPx } from '../src/core/mapgen';
+import { generateMap, inVillageTile, MH, MW, PADDY_AREA, POND_AREA, SALA_AREA, QUARTER, QUARTER_FENCE_Y, SPAWN, T, Tile, walkable, zoneAtPx } from '../src/core/mapgen';
 import { findPath } from '../src/core/pathfinding';
 import { createGame, step } from '../src/core/sim';
 import { hurtPlayer } from '../src/core/combat';
@@ -46,6 +46,8 @@ describe('area maps', () => {
       const y = Math.floor(i / MW);
       // the village expansion (rows QUARTER.y0..fence) is stamped on top of the prototype
       if (x >= QUARTER.x0 && x <= QUARTER.x1 && y >= QUARTER.y0 && y <= QUARTER_FENCE_Y) continue;
+      // ...and so are the rice paddy and the fish pond east of it
+      if ([PADDY_AREA, POND_AREA, SALA_AREA].some((A) => x >= A.x0 && x <= A.x1 && y >= A.y0 && y <= A.y1)) continue;
       if (now === Tile.SAND) exits++;
       else {
         expect(now, `tile ${i}`).toBe(Tile.GRASS);

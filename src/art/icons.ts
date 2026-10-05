@@ -141,6 +141,14 @@ const SHAPES: Record<IconShape, ShapeDrawer> = {
     ([[6, 9], [9, 8], [12, 9], [8, 11], [11, 11]] as const).forEach(([x, y]) => sp(b, x, y, tint(c, 0.5)));
     rect(b, 3, 12, 13, 2, '#6b4a2e');
   },
+  fish: (b, c) => {
+    ell(b, 8, 9, 5.5, 3, c);
+    ell(b, 7, 8, 3.5, 1.4, tint(c, 0.3));
+    ([[13, 9], [14, 7], [14, 11], [15, 6], [15, 12]] as const).forEach(([x, y]) => sp(b, x, y, tint(c, -0.25)));
+    rect(b, 13, 8, 2, 3, tint(c, -0.25));
+    sp(b, 5, 8, '#16202e');
+    rect(b, 7, 11, 4, 1, tint(c, -0.3));
+  },
   sack: (b, c) => {
     ell(b, 9, 11, 5.5, 4.5, c);
     rect(b, 7, 5, 4, 3, c);

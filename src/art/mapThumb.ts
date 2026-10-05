@@ -33,7 +33,8 @@ function woods(map: WorldMap, x: number, y: number): boolean {
 
 function tileColour(map: WorldMap, x: number, y: number, p: ThumbPalette): string {
   const t = tileAt(map, x, y);
-  if (t === Tile.WATER) return '#3cbcb0';
+  if (t === Tile.WATER || t === Tile.POND) return '#3cbcb0';
+  if (t === Tile.PADDY) return '#8ab070';
   if (t === Tile.BRIDGE) return '#b9773c';
   if (t === Tile.HOUSE) return '#e2763a';
   if (t === Tile.STONE || t === Tile.FOUNTAIN) return '#e6dfc8';

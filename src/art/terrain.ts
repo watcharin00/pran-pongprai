@@ -1,8 +1,8 @@
 // Paints the whole world once: ground (incl. buildings) and a separate canopy
 // layer that is drawn above entities so characters can walk "under" trees.
 import { hash, vnoise } from '../core/rng';
-import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
-import { drawAnvil, drawBoard, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, type StaticLight } from './buildings';
+import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, POND, POND_SLOTS, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
+import { drawAnvil, drawBoard, drawFountain, drawGranary, drawHouse, drawLamps, drawLilyPads, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
 interface GroundPalette {
@@ -79,6 +79,12 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   for (const h of HUTS) drawHouse(mb, h, 'hut');
   drawGranary(mb, GRANARY);
   drawBoard(mb, BOARD.x, BOARD.y);
+  drawScarecrow(mb, SCARECROW.x, SCARECROW.y);
+  drawSala(mb, SALA);
+  const slot = new Set(POND_SLOTS.map(([x, y]) => `${x},${y}`));
+  const freePond: [number, number][] = [];
+  for (let y: number = POND.y0; y <= POND.y1; y++) for (let x: number = POND.x0; x <= POND.x1; x++) if (!slot.has(`${x},${y}`) && (x + y) % 2 === 0) freePond.push([x, y]);
+  drawLilyPads(mb, freePond);
   drawFountain(mb);
   drawAnvil(mb);
   drawPot(mb);
@@ -145,6 +151,8 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
         else if (bot && ly > 12) c = ly === 15 ? '#3a1e0c' : lx % 8 === 0 ? '#5a2e14' : '#8a5530';
         else if (lx % 4 === 3) c = '#7a4420';
         else c = (tx * 4 + (lx >> 2)) % 2 ? '#d0924e' : '#c08242';
+      } else if (t === Tile.PADDY || t === Tile.POND) {
+        c = fieldPixel(map, t, tx, ty, lx, ly, px, py);
       } else if (t === Tile.SOIL) {
         c = '#8f5e34';
       } else {
@@ -443,4 +451,26 @@ function paintBamboo(mb: PixelBuffer, cb: PixelBuffer, tx: number, ty: number): 
       }
     }
   }
+}
+
+/**
+ * Paddy: shallow muddy water with a raised earth bund where it meets dry ground.
+ * Pond: deeper water inside a stone rim, with a few lily pads on the empty tiles.
+ */
+function fieldPixel(map: WorldMap, t: number, tx: number, ty: number, lx: number, ly: number, px: number, py: number): string {
+  const same = (dx: number, dy: number): boolean => tileAt(map, tx + dx, ty + dy) === t;
+  const edge = Math.min(same(-1, 0) ? 99 : lx, same(1, 0) ? 99 : 15 - lx, same(0, -1) ? 99 : ly, same(0, 1) ? 99 : 15 - ly);
+  if (t === Tile.PADDY) {
+    if (edge === 0) return '#5a4a28';
+    if (edge === 1) return ly < 8 && !same(0, -1) ? '#a88a54' : '#8a6e40';
+    // furrows between the tiles so the field reads as separate plots
+    if ((same(1, 0) && lx === 15) || (same(0, 1) && ly === 15)) return '#6e8a52';
+    if (Math.sin(px * 0.5 + py * 1.1 + vnoise(px, py, 8) * 5) > 0.92) return '#b8dcc0';
+    return pick(['#5e8a6a', '#668f6c', '#6f9870'], vnoise(px, py, 6) * 0.9 + hash(px, py) * 0.2);
+  }
+  if (edge === 0) return '#7d7562';
+  if (edge === 1) return ly < 8 && !same(0, -1) ? '#e1dac2' : '#bdb498';
+  if (edge === 2) return '#3fc3b2';
+  if (Math.sin(px * 0.35 + py * 0.9 + vnoise(px, py, 10) * 6) > 0.94) return '#6ad8c6';
+  return pick(['#1a8a84', '#1f9a92', '#25a69c'], vnoise(px, py, 12) * 0.9);
 }

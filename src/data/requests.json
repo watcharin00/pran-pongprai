@@ -1,9 +1,11 @@
 {
   "requests": [
     { "id": "fowl",       "unlockGoal": 0, "goal": { "type": "kill",     "monster": "junglefowl", "count": 3 }, "reward": { "items": { "ore": 2, "fert": 1 } } },
-    { "id": "herbs",      "unlockGoal": 0, "goal": { "type": "collect",  "item": "herb", "count": 5 },          "reward": { "items": { "seed_lemongrass": 1, "ore": 1 }, "potions": 1 } },
+    { "id": "herbs",      "unlockGoal": 0, "goal": { "type": "collect",  "item": "herb", "count": 5 },          "reward": { "items": { "seed_lemongrass": 1, "fry": 2, "ore": 1 }, "potions": 1 } },
     { "id": "dholehead",  "unlockGoal": 0, "goal": { "type": "break",    "monster": "dhole", "part": "head", "count": 1 }, "reward": { "items": { "ore": 3 } } },
     { "id": "boars",      "unlockGoal": 1, "goal": { "type": "kill",     "monster": "boar", "count": 2 },       "reward": { "items": { "ore": 3, "seed_rice": 1 } } },
+    { "id": "fishes",     "unlockGoal": 1, "goal": { "type": "collect",  "item": "fish", "count": 4 },          "reward": { "items": { "ore": 3, "fert": 1, "seed_lotus": 1 } } },
+    { "id": "ricecrop",   "unlockGoal": 1, "goal": { "type": "collect",  "item": "rice", "count": 5 },          "reward": { "items": { "ore": 3, "fert": 2 } } },
     { "id": "dholeclean", "unlockGoal": 1, "goal": { "type": "flawless", "monster": "dhole", "count": 1 },      "reward": { "items": { "ore": 2 }, "potions": 1 } },
     { "id": "gaurtail",   "unlockGoal": 1, "goal": { "type": "break",    "monster": "gaur", "part": "tail", "count": 1 }, "reward": { "items": { "ore": 4, "fert": 2 } } },
     { "id": "boarclean",  "unlockGoal": 2, "goal": { "type": "flawless", "monster": "boar", "count": 1 },       "reward": { "items": { "ore": 4 } } },

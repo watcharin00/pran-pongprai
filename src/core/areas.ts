@@ -3,7 +3,7 @@
 // generated from its own seed. Pure and deterministic: no Math.random.
 import type { AreaId, ZoneId } from '../data/types';
 import { TUNING } from '../data';
-import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampVillageQuarter, T, Tile, VILLAGE, walkable, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
+import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampEastFields, stampVillageQuarter, T, Tile, VILLAGE, walkable, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
 import { parkMiller, vnoise } from './rng';
 import { openTrails } from './trails';
 
@@ -113,6 +113,8 @@ function homeArea(): WorldMap {
   }
   // the village's south quarter (elder, huts, granary) sits where the prototype had forest edge
   stampVillageQuarter(tiles);
+  // rice paddy and fish pond on the river side of the village
+  stampEastFields(tiles);
   const partial = { ...base, tiles };
   const reach = floodReach(partial, PLAZA.x, 29);
   // monsters keep spawning 3+ tiles outside the (now larger) village, only on reachable open ground

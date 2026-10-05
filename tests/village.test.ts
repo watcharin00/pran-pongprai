@@ -148,7 +148,7 @@ describe('hunt requests', () => {
 
   it('flawless only counts if that monster never hit the player', () => {
     const s = homeGame();
-    for (const id of ['fowl', 'herbs', 'dholehead', 'boars']) s.requests.done.add(id);
+    for (const id of ['fowl', 'herbs', 'dholehead', 'boars', 'fishes', 'ricecrop']) s.requests.done.add(id);
     s.owned.add('fangblade'); // unlockGoal 1
     expect(currentRequest(s)?.id).toBe('dholeclean');
     const hit = addMonster(s, 'dhole', 600, 200);

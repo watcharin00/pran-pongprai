@@ -7,7 +7,7 @@
     "potion": { "heal": 45, "herbCost": 2, "startCount": 2, "cooldown": 1 },
     "villageRegen": 25,
     "knockoutTime": 2.6,
-    "startInventory": { "seed_herb": 3, "seed_yam": 2, "fert": 1 }
+    "startInventory": { "seed_herb": 3, "seed_yam": 2, "fry": 1, "fert": 1 }
   },
   "combat": {
     "attackHoldRange": 110,
@@ -54,6 +54,7 @@
     "plotRadius": 11,
     "farmRadius": 48,
     "harvestRadius": 10,
+    "pondReach": 22,
     "npcTalkRadius": 22,
     "npcBubbleRadius": 56,
     "npcSpeed": 16,

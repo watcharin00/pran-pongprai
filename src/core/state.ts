@@ -1,6 +1,6 @@
 // Plain-data game state. Everything the simulation needs lives here so that a
 // server could own it and clients could render it.
-import type { AreaId, ArmorId, ArmorSlot, AttackDef, CropId, MaterialId, MealId, MonsterId, NpcId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
+import type { AreaId, ArmorId, ArmorSlot, AttackDef, CropBed, CropId, MaterialId, MealId, MonsterId, NpcId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 import type { EventBus, Vec2 } from './events';
 import type { WorldMap } from './mapgen';
 import type { TilePath } from './pathfinding';
@@ -180,6 +180,8 @@ export interface Plot {
   /** grow duration in ms */
   dur: number;
   fert: boolean;
+  /** soil, paddy or pond: which crops it takes */
+  bed: CropBed;
 }
 
 /** A player projectile in flight (arrow, bolt). */

@@ -1,7 +1,7 @@
 // Tile map generation. Ported 1:1 from the prototype's gen() so the same seed
 // yields the same world (verified against reference/prototype.html in tests).
 import { TUNING } from '../data';
-import type { AreaId, ZoneId } from '../data/types';
+import type { AreaId, CropBed, ZoneId } from '../data/types';
 import { parkMiller, vnoise } from './rng';
 
 export const T = TUNING.world.tile;
@@ -24,10 +24,14 @@ export const Tile = {
   FLOWER: 12,
   FOUNTAIN: 13,
   FENCE: 14,
+  /** flooded rice field: walkable (you wade in to plant/harvest) */
+  PADDY: 15,
+  /** fish pond: solid like water, but arrows fly over it */
+  POND: 16,
 } as const;
 export type TileId = (typeof Tile)[keyof typeof Tile];
 
-const BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.BUSH, Tile.WATER, Tile.HOUSE, Tile.ROCK, Tile.CLIFF, Tile.FOUNTAIN, Tile.FENCE]);
+const BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.BUSH, Tile.WATER, Tile.HOUSE, Tile.ROCK, Tile.CLIFF, Tile.FOUNTAIN, Tile.FENCE, Tile.POND]);
 /**
  * Tiles that stop arrows: buildings, rocks and cliffs. Shots fly over trees (the forest is
  * dense enough that blocking on trees forced players to hunt for firing angles), water,
@@ -50,7 +54,7 @@ export interface Rect {
 const GEN_VILLAGE = { x0: 4, y0: 15, x1: 25, y1: 35 } as const;
 const inGenVillage = (x: number, y: number): boolean => x >= GEN_VILLAGE.x0 && x <= GEN_VILLAGE.x1 && y >= GEN_VILLAGE.y0 && y <= GEN_VILLAGE.y1;
 /** Village bounds for gameplay (HP regen, menus, monster leash): the prototype village plus the south quarter. */
-export const VILLAGE = { x0: 4, y0: 15, x1: 25, y1: 41 } as const;
+export const VILLAGE = { x0: 4, y0: 15, x1: 30, y1: 41 } as const;
 /** Plaza / fountain centre (a tile corner). */
 export const PLAZA = { x: 15, y: 27 } as const;
 export const SMITH: Rect = { x: 6, y: 18, w: 5, h: 4 };
@@ -90,6 +94,45 @@ export const QUARTER_LAMPS: readonly (readonly [number, number])[] = [
   [16, 37],
 ];
 const QUARTER_FLOWERS: readonly (readonly [number, number])[] = [[5, 41], [9, 41], [11, 41], [17, 41], [23, 40], [24, 41]];
+
+// --- East fields: rice paddy and fish pond between the village and the river ---
+/** Cleared ground around the paddy (bunds) and the paddy itself (3x2 plots). */
+export const PADDY_AREA = { x0: 26, y0: 15, x1: 31, y1: 19 } as const;
+export const PADDY = { x0: 27, y0: 16, x1: 29, y1: 17 } as const;
+/** Scarecrow on the paddy's east bund (painted, not solid). */
+export const SCARECROW = { x: 30, y: 16 } as const;
+/** Cleared bank around the pond and the pond water itself. */
+export const POND_AREA = { x0: 25, y0: 28, x1: 30, y1: 34 } as const;
+/** Open ground south of the sala so tree canopies do not hide it. */
+export const SALA_AREA = { x0: 26, y0: 35, x1: 31, y1: 37 } as const;
+export const POND = { x0: 26, y0: 30, x1: 29, y1: 32 } as const;
+/** Pond tiles that hold something (lotus or fish): along the top and bottom edges, reachable from the bank. */
+export const POND_SLOTS: readonly (readonly [number, number])[] = [
+  [26, 30],
+  [28, 30],
+  [27, 32],
+  [29, 32],
+];
+
+/** Small open pavilion (ศาลา) on the pond bank. */
+export const SALA: Rect = { x: 29, y: 33, w: 2, h: 2 };
+
+export const PADDY_CENTER = { x: ((PADDY.x0 + PADDY.x1 + 1) * T) / 2, y: ((PADDY.y0 + PADDY.y1 + 1) * T) / 2 } as const;
+export const POND_CENTER = { x: ((POND.x0 + POND.x1 + 1) * T) / 2, y: ((POND.y0 + POND.y1 + 1) * T) / 2 } as const;
+
+/** Stamps the paddy and the pond onto a home-map tile array (after generation). */
+export function stampEastFields(tiles: Uint8Array): void {
+  const set = (x: number, y: number, t: number): void => {
+    tiles[y * MW + x] = t;
+  };
+  const isWater = (x: number, y: number): boolean => tiles[y * MW + x] === Tile.WATER || tiles[y * MW + x] === Tile.BRIDGE;
+  for (const A of [PADDY_AREA, POND_AREA, SALA_AREA]) {
+    for (let y: number = A.y0; y <= A.y1; y++) for (let x: number = A.x0; x <= A.x1; x++) if (!isWater(x, y) && tiles[y * MW + x] !== Tile.SAND) set(x, y, Tile.GRASS);
+  }
+  for (let y: number = PADDY.y0; y <= PADDY.y1; y++) for (let x: number = PADDY.x0; x <= PADDY.x1; x++) set(x, y, Tile.PADDY);
+  for (let y: number = POND.y0; y <= POND.y1; y++) for (let x: number = POND.x0; x <= POND.x1; x++) set(x, y, Tile.POND);
+  for (let y = SALA.y; y < SALA.y + SALA.h; y++) for (let x = SALA.x; x < SALA.x + SALA.w; x++) set(x, y, Tile.HOUSE);
+}
 
 /** Stamps the south quarter onto a home-map tile array (after generation, so the prototype parity holds). */
 export function stampVillageQuarter(tiles: Uint8Array): void {
@@ -307,10 +350,17 @@ export interface PlotSpot {
   ty: number;
   x: number;
   y: number;
+  bed: CropBed;
 }
 
 export function farmPlots(): PlotSpot[] {
   const out: PlotSpot[] = [];
-  for (let y = FARM.y0; y <= FARM.y1; y++) for (let x = FARM.x0; x <= FARM.x1; x++) out.push({ tx: x, ty: y, x: x * T + 8, y: y * T + 8 });
+  const add = (x: number, y: number, bed: CropBed): void => {
+    out.push({ tx: x, ty: y, x: x * T + 8, y: y * T + 8, bed });
+  };
+  // soil first, so plot indices of older saves (8 soil plots) stay the same
+  for (let y = FARM.y0; y <= FARM.y1; y++) for (let x = FARM.x0; x <= FARM.x1; x++) add(x, y, 'soil');
+  for (let y: number = PADDY.y0; y <= PADDY.y1; y++) for (let x: number = PADDY.x0; x <= PADDY.x1; x++) add(x, y, 'paddy');
+  for (const [x, y] of POND_SLOTS) add(x, y, 'pond');
   return out;
 }

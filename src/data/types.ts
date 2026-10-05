@@ -26,7 +26,7 @@ export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon' | 'bamboo' | 'sw
 export type ItemBag = Partial<Record<MaterialId, number>>;
 
 /** Procedural icon shape drawn by art/icons.ts; `color` tints it. */
-export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack', 'feather', 'meat', 'stalk', 'grain'] as const;
+export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack', 'feather', 'meat', 'stalk', 'grain', 'fish'] as const;
 export type IconShape = (typeof ICON_SHAPES)[number];
 
 export interface MaterialDef {
@@ -256,7 +256,11 @@ export interface CropDef {
   /** chance to get one seed back on harvest */
   seedBack: number;
   color: string;
+  /** where it grows: farm soil (default), the rice paddy, or the fish pond */
+  bed: CropBed;
 }
+
+export type CropBed = 'soil' | 'paddy' | 'pond';
 
 export interface CropsData {
   /** grow time multiplier when fertilised */
@@ -351,6 +355,8 @@ export interface Tuning {
     plotRadius: number;
     farmRadius: number;
     harvestRadius: number;
+    /** pond slots are water: reach them from the bank within this many px */
+    pondReach: number;
     /** close enough for the context button to talk to an NPC */
     npcTalkRadius: number;
     /** close enough for an NPC's speech bubble to show */

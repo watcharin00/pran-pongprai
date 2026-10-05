@@ -5,7 +5,7 @@ import { ARMOR_SLOTS, type AreaId, type ArmorId, type CropId, type ItemBag, type
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS } from '../core/areas';
-import { ELDER_HOUSE, FARM_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
+import { ELDER_HOUSE, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
 import { allRequestsDone, currentRequest } from '../core/requests';
 import { requestText, rewardText } from './talk';
 import { fastTravelHome, inFight } from '../core/travel';
@@ -399,11 +399,23 @@ export class Sheet {
     h += `<h3 class="sec">${th.menu.seedToPlant}</h3><div class="seeds">${(Object.keys(CROPS) as CropId[])
       .map((id) => `<button type="button" data-seed="${id}" class="${s.selCrop === id ? 'on' : ''}">${img(materialIconUrl(CROPS[id].seed), 'ico sm')}${th.crops[id].name} <b>${s.inv[CROPS[id].seed]}</b></button>`)
       .join('')}</div>`;
-    h += `<p class="note">${th.menu.growInfo(th.crops[s.selCrop].name, fmtTime(sel.growSeconds), th.crops[s.selCrop].source)}</p>`;
+    h += `<p class="note">${th.menu.growInfo(th.crops[s.selCrop].name, fmtTime(sel.growSeconds), th.crops[s.selCrop].source)} · ${th.menu.growsIn(th.menu.beds[sel.bed])}</p>`;
     h += `<label class="chk"><input type="checkbox" id="useFert" ${s.useFert ? 'checked' : ''}> ${th.menu.useFert(s.inv.fert)}</label>`;
     h += `<div class="row"><span class="note">${th.menu.plantAllHelp}</span><button type="button" class="btn" data-plantall="1" ${iv ? '' : 'disabled'}>${th.menu.plantAll}</button></div>`;
-    h += `<div class="plotgrid">${s.plots
-      .map((pl, i) => {
+    // one grid per bed: vegetable plots, rice paddy, fish pond
+    for (const bed of ['soil', 'paddy', 'pond'] as const) {
+      const idx = s.plots.map((pl, i) => [pl, i] as const).filter(([pl]) => pl.bed === bed);
+      if (!idx.length) continue;
+      h += `<h3 class="sec">${th.menu.beds[bed]}</h3>`;
+      h += this.plotGrid(s, idx);
+    }
+    return h;
+  }
+
+  private plotGrid(s: GameState, plots: readonly (readonly [GameState['plots'][number], number])[]): string {
+    const iv = s.player.inVillage;
+    return `<div class="plotgrid">${plots
+      .map(([pl, i]) => {
         if (!pl.crop) return `<button type="button" class="plot" data-plot="${i}" ${iv ? '' : 'disabled'}>${th.menu.plotEmpty}<span class="meta">${th.menu.plotTapToPlant}</span></button>`;
         const pr = plotProgress(pl, s.now);
         const ripe = pr >= 1;
@@ -411,7 +423,6 @@ export class Sheet {
         return `<button type="button" class="plot${ripe ? ' ripe' : ''}" data-plot="${i}" ${iv ? '' : 'disabled'}>${th.crops[pl.crop].name}<span class="meta">${ripe ? th.menu.plotRipe : left}</span><span class="pbar"><i style="width:${pr * 100}%;background:${CROPS[pl.crop].color}"></i></span></button>`;
       })
       .join('')}</div>`;
-    return h;
   }
 
   /** Map tab: the current area with the player and its exits, then the world grid. */
@@ -446,6 +457,8 @@ export class Sheet {
             [{ x: (INN.x + INN.w / 2) * T, y: (INN.y + 1) * T }, th.menu.map.kitchen],
             [FARM_CENTER, th.menu.map.farm],
             [{ x: (ELDER_HOUSE.x + ELDER_HOUSE.w / 2) * T, y: (ELDER_HOUSE.y + 1) * T }, th.menu.map.elder],
+            [PADDY_CENTER, th.menu.map.paddy],
+            [POND_CENTER, th.menu.map.pond],
           ]
             .map(([o, name]) => `<span class="mplace" style="left:${pct((o as { x: number }).x, W)};top:${pct((o as { y: number }).y, H)}">${name as string}</span>`)
             .join('')

@@ -51,6 +51,7 @@ export const materials = {
   bearfang: 'เขี้ยวหมีควาย',
   bearclaw: 'เล็บหมีควาย',
   ginger: 'ขิง',
+  fish: 'ปลาช่อน',
   deerantler: 'เขาเก้ง',
   deermeat: 'เนื้อเก้ง',
   elephanthide: 'หนังช้างป่า',
@@ -69,6 +70,7 @@ export const materials = {
   seed_banana: 'หน่อกล้วย',
   seed_lotus: 'ไหลบัว',
   seed_ginger: 'เหง้าขิง',
+  fry: 'ลูกปลาช่อน',
   fert: 'ปุ๋ยซาก',
 } satisfies Record<MaterialId, string>;
 
@@ -243,6 +245,7 @@ export const crops = {
   banana: { name: 'กล้วยน้ำว้า', source: 'ล่าลิงกังในป่าไผ่' },
   lotus: { name: 'บัวหลวง', source: 'ล่าตะกวดในบึงจระเข้' },
   ginger: { name: 'ขิง', source: 'ล่าเลียงผาบนดอยหินปูน' },
+  fish: { name: 'ปลาช่อน', source: 'ล่าตะกวด งานจากผู้ใหญ่บ้าน หรือได้คืนตอนจับปลา' },
 } satisfies Record<CropId, { name: string; source: string }>;
 
 export const meals = {
@@ -254,6 +257,8 @@ export const meals = {
   deergrill: { name: 'เนื้อเก้งย่างตะไคร้', desc: 'พลังโจมตี +25%' },
   gingerfowl: { name: 'ไก่ผัดขิง', desc: 'พลังชีวิตสูงสุด +10 ความอึดฟื้นเร็ว กลิ้งเปลืองน้อยลง' },
   kaengsom: { name: 'แกงส้มสายบัว', desc: 'ป้องกัน +10 โจมตี +10%' },
+  plaphao: { name: 'ปลาช่อนเผาเกลือ', desc: 'HP สูงสุด +15 ป้องกัน +8' },
+  hormok: { name: 'ห่อหมกปลาช่อน', desc: 'โจมตี +15% ความอึดฟื้นเร็วขึ้น' },
   khaotommat: { name: 'ข้าวต้มมัด', desc: 'พลังชีวิตสูงสุด +15 ความอึดฟื้นเร็วขึ้น' },
 } satisfies Record<MealId, { name: string; desc: string }>;
 
@@ -315,6 +320,9 @@ export const places = {
   kitchen: 'โรงครัว',
   farm: 'แปลงผัก',
   farmRipe: (n: number) => `แปลงผัก · พร้อมเก็บ ${n}`,
+  paddy: 'นาข้าว',
+  pond: 'บ่อปลา',
+  bedRipe: (name: string, n: number) => `${name} · พร้อมเก็บ ${n}`,
   board: 'ป้ายงานล่า',
   boardReady: 'ป้ายงานล่า · งานเสร็จ',
 };
@@ -395,6 +403,8 @@ export const menu = {
     kitchen: 'ครัว',
     farm: 'แปลงผัก',
     elder: 'ผู้ใหญ่บ้าน',
+    paddy: 'นาข้าว',
+    pond: 'บ่อปลา',
     legendMonster: 'สัตว์',
     legendBoss: 'บอส',
     legendPath: 'ทางเดิน',
@@ -454,8 +464,10 @@ export const menu = {
   seedToPlant: 'เมล็ดที่จะปลูก',
   growInfo: (crop: string, time: string, source: string) => `${crop} โตใน ${time} · หาเมล็ดจากการ${source}`,
   useFert: (have: number) => `ใส่ปุ๋ยซาก โตเร็วขึ้น 2 เท่า (มี ${have})`,
-  plantAllHelp: 'ปลูกทุกแปลงที่ว่างในครั้งเดียว',
+  plantAllHelp: 'ปลูกเมล็ดที่เลือกลงทุกช่องว่างที่ปลูกได้',
   plantAll: 'ปลูกทั้งหมด',
+  beds: { soil: 'แปลงผัก', paddy: 'นาข้าว', pond: 'บ่อปลา' },
+  growsIn: (bed: string) => `ปลูกที่${bed}`,
   plotEmpty: 'ว่าง',
   plotTapToPlant: 'แตะเพื่อปลูก',
   plotRipe: 'พร้อมเก็บ',

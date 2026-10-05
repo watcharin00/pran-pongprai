@@ -241,3 +241,78 @@ export function drawLamps(b: PixelBuffer, map: WorldMap, lights: StaticLight[]):
     lights.push({ x: x + 1, y: y - 9, r: 16, c: '255,220,140', ga: 0.14 });
   }
 }
+
+/** Straw scarecrow on a cross of sticks, wearing a faded farmer hat. */
+export function drawScarecrow(b: PixelBuffer, tx: number, ty: number): void {
+  const X = tx * T + 8;
+  const Y = ty * T;
+  ell(b, X + 1, Y + 15, 4, 1.2, '#000000', 0.22);
+  rect(b, X, Y + 4, 2, 12, '#6a4020');
+  rect(b, X - 6, Y + 7, 14, 2, '#7a4a24');
+  rect(b, X - 4, Y + 6, 10, 5, '#c84a3a');
+  rect(b, X - 4, Y + 6, 10, 1, '#e86a5a');
+  for (const sx of [X - 7, X + 8]) {
+    sp(b, sx, Y + 7, '#e8c070');
+    sp(b, sx, Y + 9, '#e8c070');
+  }
+  ell(b, X + 1, Y + 3, 3, 2.6, '#e8c878');
+  sp(b, X, Y + 3, '#3a2a1a');
+  sp(b, X + 2, Y + 3, '#3a2a1a');
+  rect(b, X - 4, Y, 10, 1, '#b8903c');
+  rect(b, X - 1, Y - 2, 5, 2, '#d8a850');
+}
+
+/** Open Thai pavilion: four posts, a raised plank floor and a steep two-tier gabled roof. */
+export function drawSala(b: PixelBuffer, H: Rect): void {
+  const X = H.x * T;
+  const Y = H.y * T;
+  const W = H.w * T;
+  const Hh = H.h * T;
+  const cx = X + W / 2;
+  ell(b, cx + 2, Y + Hh - 2, W / 2 + 2, 3, '#000000', 0.22);
+  // raised plank floor with a dark front edge
+  for (let y = Y + Hh - 8; y < Y + Hh - 4; y++) for (let x = X + 1; x < X + W - 1; x++) sp(b, x, y, (x - X) % 5 === 0 ? '#8a5530' : y === Y + Hh - 8 ? '#e0b070' : '#b07848');
+  rect(b, X + 1, Y + Hh - 4, W - 2, 2, '#5a3418');
+  // posts, open between them so it reads as a pavilion, not a house
+  for (const px of [X + 3, X + W - 5]) {
+    rect(b, px, Y + 9, 2, Hh - 15, '#6a4020');
+    rect(b, px, Y + 9, 1, Hh - 15, '#9a6a3a');
+  }
+  rect(b, X + 3, Y + 11, W - 6, 1, '#5a3418');
+  // gabled roof: each row narrower towards the ridge, lower tier wider than the upper
+  const tier = (base: number, rows: number, half: number): void => {
+    for (let r = 0; r < rows; r++) {
+      const y = base - r;
+      const w = Math.round(half - r * (half / (rows + 2)));
+      for (let x = Math.round(cx - w); x < Math.round(cx + w); x++) {
+        const edge = x === Math.round(cx - w) || x === Math.round(cx + w) - 1 || r === 0 || r === rows - 1;
+        sp(b, x, y, edge ? '#4a1e0e' : x < cx ? (r % 2 ? '#e2683a' : '#c84a24') : r % 2 ? '#b84020' : '#a83a1a');
+      }
+    }
+  };
+  tier(Y + 11, 7, W / 2 + 4);
+  tier(Y + 4, 6, W / 2 - 2);
+  // gold finials (ช่อฟ้า) at the gable ends and ridge
+  sp(b, Math.round(cx - W / 2 - 4), Y + 10, '#d8a050');
+  sp(b, Math.round(cx - W / 2 - 5), Y + 9, '#d8a050');
+  sp(b, Math.round(cx + W / 2 + 3), Y + 10, '#d8a050');
+  sp(b, Math.round(cx + W / 2 + 4), Y + 9, '#d8a050');
+  rect(b, Math.round(cx) - 1, Y - 3, 2, 2, '#d8a050');
+}
+
+/** Lily pads on pond tiles that are not planted slots. */
+export function drawLilyPads(b: PixelBuffer, tiles: readonly (readonly [number, number])[]): void {
+  for (const [tx, ty] of tiles) {
+    const X = tx * T;
+    const Y = ty * T;
+    const pads: readonly [number, number, number][] = [
+      [4 + hash(tx, ty) * 4, 5 + hash(ty, tx) * 3, 2.6],
+      [10 + hash(tx + 3, ty) * 3, 10 + hash(tx, ty + 5) * 2, 2.2],
+    ];
+    for (const [px, py, r] of pads) {
+      ell(b, X + px, Y + py, r, r * 0.75, '#2f7a3a');
+      ell(b, X + px - 0.5, Y + py - 0.5, r - 0.8, r * 0.75 - 0.8, '#4f9a44');
+      sp(b, X + px, Y + py, '#1f5a2a');
+    }
+  }
+}

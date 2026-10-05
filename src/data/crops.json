@@ -4,10 +4,11 @@
     "herb":       { "seed": "seed_herb",       "growSeconds": 40,  "yield": { "item": "herb",       "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#5fc26a" },
     "yam":        { "seed": "seed_yam",        "growSeconds": 75,  "yield": { "item": "yam",        "min": 2, "max": 3 }, "seedBack": 0.6, "color": "#e0a050" },
     "lemongrass": { "seed": "seed_lemongrass", "growSeconds": 50,  "yield": { "item": "lemongrass", "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#9fd86a" },
-    "rice":       { "seed": "seed_rice",       "growSeconds": 90,  "yield": { "item": "rice",       "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f0e6b0" },
+    "rice":       { "seed": "seed_rice",       "growSeconds": 90,  "yield": { "item": "rice",       "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f0e6b0", "bed": "paddy" },
     "pepper":     { "seed": "seed_pepper",     "growSeconds": 120, "yield": { "item": "pepper",     "min": 1, "max": 2 }, "seedBack": 0.4, "color": "#ff4a2e" },
     "banana":     { "seed": "seed_banana",     "growSeconds": 100, "yield": { "item": "banana",     "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f0d860" },
-    "lotus":      { "seed": "seed_lotus",      "growSeconds": 110, "yield": { "item": "lotus",      "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f2a0c0" },
+    "lotus":      { "seed": "seed_lotus",      "growSeconds": 110, "yield": { "item": "lotus",      "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#f2a0c0", "bed": "pond" },
+    "fish":       { "seed": "fry",             "growSeconds": 100, "yield": { "item": "fish",       "min": 2, "max": 3 }, "seedBack": 0.6, "color": "#7a8a9a", "bed": "pond" },
     "ginger":     { "seed": "seed_ginger",     "growSeconds": 80,  "yield": { "item": "ginger",     "min": 2, "max": 3 }, "seedBack": 0.5, "color": "#e8c070" }
   }
 }
