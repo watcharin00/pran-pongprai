@@ -230,6 +230,9 @@ export const menu = {
   unequip: 'ถอด',
   wear: 'สวมใส่',
   craftArmor: 'ตีชุดเกราะ',
+  upgrade: (lv: number) => `อัปเกรดเป็น +${lv}`,
+  maxLevel: 'อัปเกรดสูงสุดแล้ว',
+  upgradeHint: (max: number) => `อัปเกรดได้ถึง +${max} ขั้นสุดท้ายต้องใช้วัสดุหายาก`,
   bagEmpty: 'ยังไม่มีของในหมวดนี้',
   bagHelp: 'แตะไอเท็มเพื่อดูว่าได้มาจากไหนและใช้ทำอะไร',
   have: (n: number) => `มี ${n}`,
@@ -248,6 +251,7 @@ export const menu = {
   },
   use: {
     weapon: (w: string) => `ตี${w}`,
+    upgrade: (w: string) => `อัปเกรด${w}`,
     meal: (m: string) => m,
     potion: 'ปรุงยาฟื้นพลัง',
     plant: (crop: string) => `ปลูก${crop}`,
@@ -349,6 +353,7 @@ export const log = {
   herbSeedBonus: 'ได้เมล็ดหญ้ายาติดมาด้วย',
   plantedMany: (crop: string, n: number) => `ปลูก${crop} ${n} แปลง`,
   crafted: (weapon: string) => `ตี${weapon}สำเร็จ`,
+  upgraded: (weapon: string) => `อัปเกรดเป็น ${weapon} สำเร็จ`,
   equipped: (weapon: string) => `เปลี่ยนมาใช้${weapon}`,
   armorOn: (piece: string) => `สวม${piece}`,
   armorOff: (piece: string) => `ถอด${piece}`,
@@ -357,3 +362,6 @@ export const log = {
   ate: (meal: string, desc: string) => `กิน${meal} ${desc}`,
   mealExpired: (meal: string) => `ฤทธิ์${meal}หมดแล้ว`,
 };
+
+/** Weapon name with its upgrade level, e.g. "ดาบกระดูก +2". */
+export const weaponName = (id: WeaponId, level: number): string => (level > 0 ? `${weapons[id].name} +${level}` : weapons[id].name);

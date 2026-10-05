@@ -233,6 +233,10 @@ export function loadWeapons(v: unknown, materials: readonly string[], skills: re
       color: color(w.color, `${p}.color`),
       signature: oneOf(w.signature, `${p}.signature`, skills) as SkillId,
       recipe,
+      upgrade: {
+        per: itemBag(obj(w.upgrade, `${p}.upgrade`).per, `${p}.upgrade.per`, materials),
+        final: itemBag(obj(w.upgrade, `${p}.upgrade`).final, `${p}.upgrade.final`, materials),
+      },
     };
     const shot = optional(w, 'projectile', (x) => {
       const so = obj(x, `${p}.projectile`);
@@ -243,7 +247,12 @@ export function loadWeapons(v: unknown, materials: readonly string[], skills: re
     if (w.look !== undefined) def.look = oneOf(w.look, `${p}.look`, ['crossbow'] as const);
   }
   if (starters !== 1) throw new DataError('weapons.weapons', `expected exactly one starter (recipe: null), got ${starters}`);
-  return { types, weapons } as WeaponsData;
+  const u = obj(o.upgrade, 'weapons.upgrade');
+  const maxLevel = num(u.maxLevel, 'weapons.upgrade.maxLevel', 0, 20);
+  const damageMul = arr(u.damageMul, 'weapons.upgrade.damageMul').map((x, i) => num(x, `weapons.upgrade.damageMul[${i}]`, 0));
+  if (damageMul.length !== maxLevel + 1) throw new DataError('weapons.upgrade.damageMul', `expected ${maxLevel + 1} entries (+0..+${maxLevel})`);
+  const upgrade = { maxLevel, damageMul, orePerLevel: num(u.orePerLevel, 'weapons.upgrade.orePerLevel', 0) };
+  return { upgrade, types, weapons } as WeaponsData;
 }
 
 function skillPair(v: unknown, path: string, skills: readonly string[]): [SkillId, SkillId] {

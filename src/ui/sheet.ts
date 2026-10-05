@@ -1,10 +1,10 @@
 // The single menu: bottom sheet on phones, side drawer on wide screens.
 // The game pauses while it is open.
-import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS } from '../data';
+import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import { ARMOR_SLOTS, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
-import { activeMeal, attackMul, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
+import { activeMeal, attackMul, upgradeCost, upgradeWeapon, weaponLevel, weaponPower, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
 import type { GameState } from '../core/state';
 import { armorIconUrl, armorSlotIconUrl, materialIconUrl, mealIconUrl, monsterIconUrl, monsterPortrait, playerIconUrl, potionIconUrl, weaponIconUrl } from '../art/icons';
 import * as th from '../i18n/th';
@@ -24,7 +24,8 @@ interface BagItem {
   key: ItemKey;
   icon: string;
   name: string;
-  count: number | null;
+  /** corner badge: stack count, or `+N` for an upgraded weapon */
+  count: number | string | null;
   rarity: 0 | 1 | 2;
   equipped: boolean;
 }
@@ -181,7 +182,7 @@ export class Sheet {
       return `<button type="button" class="slot${this.sel === key ? ' sel' : ''}" data-item="${key}" aria-label="${th.armor[id].name}">${img(armorIconUrl(id))}<span>${M.slots[k]}</span></button>`;
     });
     let h = `<div class="eqp"><div class="slots">${wslot}${head}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${body}${charm}</div></div>`;
-    const atk = Math.round(WEAPONS[p.weapon].damage * attackMul(s));
+    const atk = Math.round(weaponPower(s, p.weapon) * attackMul(s));
     const def = defenseOf(s);
     h += `<div class="stats"><div><span>${M.stats.attack}</span><b>${atk}</b></div><div title="${M.reduction(Math.round(damageReduction(s) * 100))}"><span>${M.stats.defense}</span><b>${def}</b></div><div><span>${M.stats.hp}</span><b>${p.maxHp}</b></div><div><span>${M.stats.stamina}</span><b>${p.maxSt}</b></div></div>`;
 
@@ -211,7 +212,7 @@ export class Sheet {
   private bagItems(s: GameState): BagItem[] {
     const out: BagItem[] = [];
     for (const id of Object.keys(WEAPONS) as WeaponId[]) {
-      if (s.owned.has(id)) out.push({ key: `w:${id}`, icon: weaponIconUrl(id), name: th.weapons[id].name, count: null, rarity: 0, equipped: s.player.weapon === id });
+      if (s.owned.has(id)) out.push({ key: `w:${id}`, icon: weaponIconUrl(id), name: th.weaponName(id, weaponLevel(s, id)), count: weaponLevel(s, id) ? `+${weaponLevel(s, id)}` : null, rarity: 0, equipped: s.player.weapon === id });
     }
     for (const id of ARMOR_IDS) {
       if (s.ownedArmor.has(id)) out.push({ key: `a:${id}`, icon: armorIconUrl(id), name: th.armor[id].name, count: null, rarity: 0, equipped: s.armor[ARMOR[id].slot] === id });
@@ -244,7 +245,7 @@ export class Sheet {
         s.player.weapon === id
           ? `<button type="button" class="btn" disabled>${M.equipped}</button>`
           : `<button type="button" class="btn" data-equip="${id}" ${s.player.inVillage ? '' : 'disabled'}>${M.equip}</button>`;
-      return `<div class="detail">${img(weaponIconUrl(id), 'ico lg')}<div><b>${th.weapons[id].name}</b><p class="meta">${M.weaponStats(th.weaponTypes[w.type], w.damage, speed)} · ${th.weapons[id].desc}</p>${btn}</div></div>`;
+      return `<div class="detail">${img(weaponIconUrl(id), 'ico lg')}<div><b>${th.weaponName(id, weaponLevel(s, id))}</b><p class="meta">${M.weaponStats(th.weaponTypes[w.type], Math.round(weaponPower(s, id)), speed)} · ${th.weapons[id].desc}</p>${btn}</div></div>`;
     }
     if (key.startsWith('a:')) {
       const id = key.slice(2) as ArmorId;
@@ -264,7 +265,7 @@ export class Sheet {
   private forge(s: GameState): string {
     const p = s.player;
     const iv = p.inVillage;
-    let h = `${this.villageNote(s)}<h3 class="sec">${th.menu.weaponsTitle}</h3><div class="recipes">`;
+    let h = `${this.villageNote(s)}<h3 class="sec">${th.menu.weaponsTitle}</h3><p class="note">${th.menu.upgradeHint(WEAPONS_DATA.upgrade.maxLevel)}</p><div class="recipes">`;
     for (const [k, w] of Object.entries(WEAPONS) as [WeaponId, (typeof WEAPONS)[WeaponId]][]) {
       const own = s.owned.has(k);
       const eq = p.weapon === k;
@@ -273,7 +274,15 @@ export class Sheet {
       else if (own) btn = `<button type="button" data-equip="${k}" ${iv ? '' : 'disabled'}>${th.menu.equip}</button>`;
       else btn = `<button type="button" class="primary" data-craft="${k}" ${iv && w.recipe && canAfford(s.inv, w.recipe) ? '' : 'disabled'}>${th.menu.craft}</button>`;
       const speed = w.rate < 0.5 ? th.menu.speed.fast : w.rate < 0.8 ? th.menu.speed.mid : th.menu.speed.slow;
-      h += `<div class="rc${eq ? ' eq' : ''}"><h3>${img(weaponIconUrl(k))}${th.weapons[k].name}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], w.damage, speed, th.weapons[k].desc)}</div>${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}${btn}</div>`;
+      let up = '';
+      if (own) {
+        const cost = upgradeCost(s, k);
+        const lv = weaponLevel(s, k);
+        up = cost
+          ? `<div class="req">${this.req(s, cost)}</div><button type="button" class="primary" data-upgrade="${k}" ${iv && canAfford(s.inv, cost) ? '' : 'disabled'}>${th.menu.upgrade(lv + 1)}</button>`
+          : `<p class="note ok">${th.menu.maxLevel}</p>`;
+      }
+      h += `<div class="rc${eq ? ' eq' : ''}"><h3>${img(weaponIconUrl(k))}${th.weaponName(k, weaponLevel(s, k))}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], Math.round(weaponPower(s, k)), speed, th.weapons[k].desc)}</div>${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}<div class="rcbtns">${btn}</div>${up}</div>`;
     }
     h += `</div><h3 class="sec">${th.menu.armorTitle}</h3><div class="recipes">`;
     for (const id of ARMOR_IDS) {
@@ -436,7 +445,13 @@ export class Sheet {
       }
     } else if (d.equip) {
       const id = d.equip as WeaponId;
-      if (equipWeapon(s, id).ok) this.hud.toast(th.log.equipped(th.weapons[id].name));
+      if (equipWeapon(s, id).ok) this.hud.toast(th.log.equipped(th.weaponName(id, weaponLevel(s, id))));
+    } else if (d.upgrade) {
+      const id = d.upgrade as WeaponId;
+      if (upgradeWeapon(s, id).ok) {
+        this.hud.toast(th.log.upgraded(th.weaponName(id, weaponLevel(s, id))), 'gold');
+        this.hooks.crafted();
+      }
     } else if (d.armorcraft) {
       const id = d.armorcraft as ArmorId;
       if (craftArmor(s, id).ok) {
@@ -476,6 +491,7 @@ function sourceText(x: ItemSource): string {
 function useText(x: ItemUse): string {
   const U = th.menu.use;
   if (x.kind === 'weapon') return `${img(weaponIconUrl(x.weapon), 'ico sm')}${U.weapon(th.weapons[x.weapon].name)}`;
+  if (x.kind === 'upgrade') return `${img(weaponIconUrl(x.weapon), 'ico sm')}${U.upgrade(th.weapons[x.weapon].name)}`;
   if (x.kind === 'meal') return `${img(mealIconUrl(x.meal), 'ico sm')}${U.meal(th.meals[x.meal].name)}`;
   if (x.kind === 'potion') return `${img(potionIconUrl(), 'ico sm')}${U.potion}`;
   if (x.kind === 'plant') return U.plant(th.crops[x.crop].name);

@@ -2,7 +2,7 @@
 import { MONSTERS, TUNING, WEAPONS } from '../data';
 import type { AttackDef, ItemBag, MaterialId, PartId } from '../data/types';
 import type { Vec2 } from './events';
-import { attackMul, damageReduction, give } from './inventory';
+import { attackMul, damageReduction, give, weaponPower } from './inventory';
 import { moveBody } from './collision';
 import { MONSTER_FRAME_COUNT, type GameState, type MonsterState } from './state';
 
@@ -83,7 +83,7 @@ export function hitMonster(s: GameState, m: MonsterState, mult: number, o: HitOp
   const w = WEAPONS[s.player.weapon];
   const def = MONSTERS[m.kind];
   const part = partFor(m, s.player.x);
-  const dmg = Math.round(w.damage * mult * s.rng.range(C.damageJitter.min, C.damageJitter.max) * attackMul(s));
+  const dmg = Math.round(weaponPower(s, s.player.weapon) * mult * s.rng.range(C.damageJitter.min, C.damageJitter.max) * attackMul(s));
   let gold = false;
   let big = !!o.big;
   let tip = false;

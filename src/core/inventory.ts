@@ -1,5 +1,5 @@
 // Materials, crafting, potions and meals.
-import { ARMOR, MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS } from '../data';
+import { ARMOR, MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import { ARMOR_SLOTS, type ArmorId, type ItemBag, type MealEffect, type MealId, type WeaponId } from '../data/types';
 import type { GameState, Inventory } from './state';
 
@@ -86,7 +86,43 @@ export function refreshStats(s: GameState): void {
 
 // ----- village actions (all require being in the village) -----
 
-export type ActionResult = { ok: true } | { ok: false; reason: 'notInVillage' | 'cannotAfford' | 'alreadyOwned' | 'notOwned' | 'alreadyActive' };
+export type ActionResult = { ok: true } | { ok: false; reason: 'notInVillage' | 'cannotAfford' | 'alreadyOwned' | 'notOwned' | 'alreadyActive' | 'maxLevel' };
+
+// ----- weapon upgrades -----
+
+const UP = WEAPONS_DATA.upgrade;
+
+export function weaponLevel(s: GameState, id: WeaponId): number {
+  return s.weaponLevels[id] ?? 0;
+}
+
+/** Base damage of a weapon at its current upgrade level (before meals and skill multipliers). */
+export function weaponPower(s: GameState, id: WeaponId): number {
+  return WEAPONS[id].damage * (UP.damageMul[weaponLevel(s, id)] ?? 1);
+}
+
+/** Materials to go from the current level to the next, or null at max level. */
+export function upgradeCost(s: GameState, id: WeaponId): ItemBag | null {
+  const next = weaponLevel(s, id) + 1;
+  if (next > UP.maxLevel) return null;
+  const { per, final } = WEAPONS[id].upgrade;
+  const cost: ItemBag = {};
+  for (const [k, n] of Object.entries(per)) cost[k as keyof Inventory] = (n ?? 0) * next;
+  if (UP.orePerLevel > 0) cost.ore = (cost.ore ?? 0) + UP.orePerLevel * next;
+  if (next === UP.maxLevel) for (const [k, n] of Object.entries(final)) cost[k as keyof Inventory] = (cost[k as keyof Inventory] ?? 0) + (n ?? 0);
+  return cost;
+}
+
+export function upgradeWeapon(s: GameState, id: WeaponId): ActionResult {
+  if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };
+  if (!s.owned.has(id)) return { ok: false, reason: 'notOwned' };
+  const cost = upgradeCost(s, id);
+  if (!cost) return { ok: false, reason: 'maxLevel' };
+  if (!canAfford(s.inv, cost)) return { ok: false, reason: 'cannotAfford' };
+  spend(s.inv, cost);
+  s.weaponLevels[id] = weaponLevel(s, id) + 1;
+  return { ok: true };
+}
 
 export function craftWeapon(s: GameState, id: WeaponId): ActionResult {
   if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };

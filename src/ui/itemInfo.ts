@@ -13,6 +13,7 @@ export type ItemSource =
 
 export type ItemUse =
   | { kind: 'weapon'; weapon: WeaponId }
+  | { kind: 'upgrade'; weapon: WeaponId }
   | { kind: 'meal'; meal: MealId }
   | { kind: 'potion' }
   | { kind: 'plant'; crop: CropId }
@@ -43,6 +44,10 @@ export function itemSources(id: MaterialId): ItemSource[] {
 export function itemUses(id: MaterialId): ItemUse[] {
   const out: ItemUse[] = [];
   for (const weapon of Object.keys(WEAPONS) as WeaponId[]) if ((WEAPONS[weapon].recipe?.[id] ?? 0) > 0) out.push({ kind: 'weapon', weapon });
+  for (const weapon of Object.keys(WEAPONS) as WeaponId[]) {
+    const { per, final } = WEAPONS[weapon].upgrade;
+    if ((per[id] ?? 0) > 0 || (final[id] ?? 0) > 0) out.push({ kind: 'upgrade', weapon });
+  }
   for (const meal of Object.keys(MEALS) as MealId[]) if ((MEALS[meal].recipe[id] ?? 0) > 0) out.push({ kind: 'meal', meal });
   if (id === 'herb') out.push({ kind: 'potion' });
   for (const crop of Object.keys(CROPS) as CropId[]) if (CROPS[crop].seed === id) out.push({ kind: 'plant', crop });

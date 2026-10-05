@@ -129,6 +129,8 @@ export interface WeaponDef {
   /** skill slot 3, unique to this weapon */
   signature: SkillId;
   recipe: ItemBag | null;
+  /** upgrade to +n costs `per` × n plus ore; the last level also needs `final` */
+  upgrade: { per: ItemBag; final: ItemBag };
   /** ranged weapons: basic attacks fire a projectile instead of striking */
   projectile?: ShotDef;
   /** alternative art for the same weapon type */
@@ -143,7 +145,16 @@ export interface ShotDef {
   pierce: number;
 }
 
+export interface UpgradeRules {
+  maxLevel: number;
+  /** damage multiplier per level, index 0 = +0 */
+  damageMul: number[];
+  /** iron ore per level step (× target level) */
+  orePerLevel: number;
+}
+
 export interface WeaponsData {
+  upgrade: UpgradeRules;
   types: Record<WeaponType, WeaponTypeDef>;
   weapons: Record<WeaponId, WeaponDef>;
 }

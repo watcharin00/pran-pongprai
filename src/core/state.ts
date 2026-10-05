@@ -217,6 +217,8 @@ export interface GameState {
   plots: Plot[];
   inv: Inventory;
   owned: Set<WeaponId>;
+  /** upgrade level per weapon (+0 when missing) */
+  weaponLevels: Partial<Record<WeaponId, number>>;
   ownedArmor: Set<ArmorId>;
   /** equipped armor per slot */
   armor: Record<ArmorSlot, ArmorId | null>;
