@@ -156,6 +156,7 @@ export function rollCarve(s: GameState, m: MonsterState): { drops: ItemBag; rare
 export function killMonster(s: GameState, m: MonsterState): void {
   const { drops, rare } = rollCarve(s, m);
   give(s, drops);
+  s.kills[m.kind] = (s.kills[m.kind] ?? 0) + 1;
   removeMonster(s, m);
   s.events.emit('monster:killed', {
     id: m.id,

@@ -183,3 +183,28 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 @media (max-width:380px){.dcols{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
 /* short screens (phone landscape): compact equipment panel so the grid stays visible */
 @media (max-height:500px){.eqp{padding:6px}.hero{min-height:84px}.portrait{width:40px}.slot{width:50px;height:50px;font-size:9.5px}.slot .ico,.slot.empty i{width:28px;height:28px}.eqp .slots{gap:6px}}
+
+/* five tabs must fit a 390px phone without hiding one off-screen */
+@media (max-width:430px){.tab{padding:10px 7px 8px;font-size:13px}}
+
+/* bestiary */
+.mport{image-rendering:pixelated;height:auto;flex:none;display:block}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.bcard{min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;padding:8px 4px;background:linear-gradient(180deg,#2c3a55,#202a3e);border:2px solid var(--line2);border-radius:10px;font:500 12.5px var(--display);color:var(--cream)}
+.bcard .mport{max-width:100%}
+.bcard.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,209,102,.25)}
+.locked .mport{filter:brightness(0);opacity:.45}
+.bcard.locked span{color:var(--muted)}
+.bentry{background:var(--card);border:2px solid var(--line2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.bentry.locked{flex-direction:row;align-items:center;gap:14px}
+.bentry b{font:500 16px var(--display)}
+.bentry h4{margin:4px 0 0;font:500 13px var(--display);color:var(--gold)}
+.bhead{display:flex;align-items:center;gap:14px;padding:6px;background:radial-gradient(ellipse at 30% 80%,rgba(255,209,102,.16),transparent 70%);border-radius:10px}
+.bhead .meta,.bentry .meta{margin:2px 0 0}
+.bentry .stats{grid-template-columns:repeat(3,1fr)}
+.stats b.txt{font:500 15px var(--display)}
+.blist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.blist b{font:500 13.5px var(--display)}
+.blist .req{margin-top:3px}
+.chipi{display:inline-flex;align-items:center;font-size:11.5px;border:1px solid var(--line2);border-radius:4px;padding:1px 6px 1px 3px;background:#1a2030}
+.chipi.rare{border-color:#7a5fb0;color:var(--rare)}

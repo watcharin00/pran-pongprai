@@ -76,6 +76,7 @@ export function createGame(o: CreateOptions): GameState {
     selCrop: 'herb',
     useFert: false,
     autoOn: false,
+    kills: {},
   };
   s.player.zone = zoneAtPx(map, s.player.x, s.player.y);
   if (o.save) applySave(s, o.save);

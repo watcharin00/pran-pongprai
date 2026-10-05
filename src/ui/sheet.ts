@@ -1,12 +1,12 @@
 // The single menu: bottom sheet on phones, side drawer on wide screens.
 // The game pauses while it is open.
-import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, SKILLS, TUNING, WEAPONS } from '../data';
-import { ARMOR_SLOTS, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type WeaponId } from '../data/types';
+import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS } from '../data';
+import { ARMOR_SLOTS, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { activeMeal, attackMul, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
 import type { GameState } from '../core/state';
-import { armorIconUrl, armorSlotIconUrl, materialIconUrl, mealIconUrl, monsterIconUrl, playerIconUrl, potionIconUrl, weaponIconUrl } from '../art/icons';
+import { armorIconUrl, armorSlotIconUrl, materialIconUrl, mealIconUrl, monsterIconUrl, monsterPortrait, playerIconUrl, potionIconUrl, weaponIconUrl } from '../art/icons';
 import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
 import type { Hud } from './hud';
@@ -31,8 +31,11 @@ interface BagItem {
 
 const img = (src: string, cls = 'ico'): string => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
 
-export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm';
-const TABS: Tab[] = ['bag', 'forge', 'kitchen', 'farm'];
+export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm' | 'book';
+const TABS: Tab[] = ['bag', 'forge', 'kitchen', 'farm', 'book'];
+
+/** Integer pixel scale that makes a portrait roughly `target` px wide. */
+const portraitScale = (w: number, target: number): number => Math.max(2, Math.min(5, Math.floor(target / w)));
 
 export interface SheetHooks {
   /** something changed that should be saved */
@@ -53,6 +56,7 @@ export class Sheet {
   private resetArm = 0;
   private filter: BagFilter = 'all';
   private sel: ItemKey | null = null;
+  private bookSel: MonsterId | null = null;
   private dirty = false;
   private refreshT = 0;
 
@@ -138,7 +142,14 @@ export class Sheet {
     this.dirty = false;
     this.sheet.querySelectorAll<HTMLElement>('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === this.tab));
     const s = this.s();
-    const html = this.tab === 'bag' ? this.bag(s) : this.tab === 'forge' ? this.forge(s) : this.tab === 'kitchen' ? this.kitchen(s) : this.farm(s);
+    const views: Record<Tab, (st: GameState) => string> = {
+      bag: (st) => this.bag(st),
+      forge: (st) => this.forge(st),
+      kitchen: (st) => this.kitchen(st),
+      farm: (st) => this.farm(st),
+      book: (st) => this.book(st),
+    };
+    const html = views[this.tab](s);
     this.body.innerHTML = html;
   }
 
@@ -318,6 +329,62 @@ export class Sheet {
     return h;
   }
 
+  /** Bestiary: portrait grid, then the selected entry. Entries unlock on the first successful hunt. */
+  private book(s: GameState): string {
+    const B = th.menu.book;
+    const known = MONSTER_IDS.filter((k) => (s.kills[k] ?? 0) > 0);
+    if (!this.bookSel) this.bookSel = known[0] ?? MONSTER_IDS[0] ?? null;
+    let h = `<div class="row"><h3 class="sec">${B.progress(known.length, MONSTER_IDS.length)}</h3></div><p class="note">${B.help}</p>`;
+    h += `<div class="bgrid">${MONSTER_IDS.map((k) => {
+      const p = monsterPortrait(k);
+      const sc = portraitScale(p.w, 64);
+      const seen = (s.kills[k] ?? 0) > 0;
+      return `<button type="button" class="bcard${seen ? '' : ' locked'}${this.bookSel === k ? ' sel' : ''}" data-mon="${k}"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><span>${seen ? th.monsters[k].name : B.unknown}</span></button>`;
+    }).join('')}</div>`;
+    if (this.bookSel) h += this.bookEntry(s, this.bookSel);
+    return h;
+  }
+
+  private bookEntry(s: GameState, k: MonsterId): string {
+    const B = th.menu.book;
+    const def = MONSTERS[k];
+    const t = th.monsters[k];
+    const where = def.spawnEastOfRiver ? B.deepForest : th.zones[def.zone];
+    const p = monsterPortrait(k);
+    const sc = portraitScale(p.w, 140);
+    const kills = s.kills[k] ?? 0;
+    if (!kills) {
+      return `<div class="bentry locked"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><div><b>${B.unknown}</b><p class="meta">${B.lockedHint(where)}</p></div></div>`;
+    }
+    const size = def.size >= 12 ? B.sizes.large : def.size >= 9 ? B.sizes.medium : B.sizes.small;
+    const bag = (b: ItemBag): string =>
+      Object.entries(b)
+        .map(([m, n]) => `<span class="chipi">${img(materialIconUrl(m as MaterialId), 'ico sm')}${th.materials[m as MaterialId]} ×${n}</span>`)
+        .join('');
+    let h = `<div class="bentry"><div class="bhead"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><div><b>${t.name}</b><p class="meta">${B.hunted(kills)} · ${B.where} ${where}</p></div></div>`;
+    h += `<div class="stats"><div><span>${B.hp}</span><b>${def.hp}</b></div><div><span>${B.size}</span><b class="txt">${size}</b></div><div><span>${B.huntTime}</span><b>${fmtTime(def.huntTime)}</b></div></div>`;
+    if (def.rage) h += `<p class="note warn">${B.rage}</p>`;
+
+    const parts = (Object.entries(def.parts) as [PartId, NonNullable<(typeof def.parts)[PartId]>][]).map(
+      ([part, pd]) => `<li><b>${(t.parts as Partial<Record<PartId, string>>)[part] ?? part}</b> <span class="meta">HP ${pd.hp} · ${B.partHow[part]}</span><div class="req">${bag(pd.drop)}</div></li>`,
+    );
+    h += `<h4>${B.parts}</h4><ul class="blist">${parts.join('')}</ul>`;
+
+    const atk = def.attacks.map((a) => {
+      const shape = a.shape === 'line' ? `${B.shapes.line} ${a.length}` : a.offset === 0 ? `${B.shapes.ring} r${a.radius}` : `${B.shapes.front} r${a.radius}`;
+      return `<li><b>${(t.attacks as Record<string, string>)[a.id] ?? a.id}</b> <span class="meta">${B.attackMeta(shape, a.telegraph, a.damage)}</span></li>`;
+    });
+    h += `<h4>${B.attacks}</h4><ul class="blist">${atk.join('')}</ul>`;
+
+    const drops = def.carve.map((c) => `<span class="chipi">${img(materialIconUrl(c.item), 'ico sm')}${th.materials[c.item]} ${c.min === c.max ? `×${c.max}` : `${c.min}–${c.max}`}</span>`);
+    for (const [m, ch] of [...Object.entries(def.bonus), ...Object.entries(def.rare)]) {
+      drops.push(`<span class="chipi${m in def.rare ? ' rare' : ''}">${img(materialIconUrl(m as MaterialId), 'ico sm')}${th.materials[m as MaterialId]} ${B.chance(Math.round((ch ?? 0) * 100))}</span>`);
+    }
+    h += `<h4>${B.drops}</h4><div class="req">${drops.join('')}</div>`;
+    h += `<div class="goalbox"><b>${B.tip}</b><p>${t.tip}</p></div></div>`;
+    return h;
+  }
+
   private onClick(e: Event): void {
     const b = (e.target as HTMLElement).closest('button');
     if (!b || b.disabled) return;
@@ -333,6 +400,11 @@ export class Sheet {
         return;
       }
       this.hooks.reset();
+      return;
+    }
+    if (d.mon) {
+      this.bookSel = d.mon as MonsterId;
+      this.render();
       return;
     }
     if (d.filter) {

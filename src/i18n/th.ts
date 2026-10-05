@@ -51,28 +51,33 @@ export const monsters = {
     name: 'ไก่ป่า',
     parts: { head: 'หงอน' },
     attacks: { peck: 'จิก', flutter: 'บินกระพือ' },
+    tip: 'ตัวเล็กแต่ไว ตีหงอนจากด้านหน้าเพื่อเอาขนไก่ ระวังบินกระพือพุ่งเข้าหา',
   },
   dhole: {
     name: 'หมาใน',
     parts: { head: 'หัว' },
     attacks: { bite: 'กัด', pounce: 'กระโจน' },
+    tip: 'มาเป็นฝูง ตีหัวจากด้านหน้าให้แตกเพื่อเอาเขี้ยว เห็นย่อตัวแล้วกลิ้งออกด้านข้างก่อนกระโจน',
   },
   boar: {
     name: 'หมูป่า',
     parts: { head: 'เขี้ยว', tail: 'แผงขน' },
     attacks: { gore: 'ขวิด', charge: 'พุ่งชน' },
+    tip: 'หันตัวช้า อ้อมไปด้านหลังตีแผงขนได้ง่าย พุ่งชนยาวมาก กลิ้งออกด้านข้างอย่ากลิ้งถอยหลัง',
   },
   gaur: {
     name: 'กระทิงผาแดง',
     parts: { head: 'เขา', tail: 'หาง' },
     attacks: { stomp: 'กระทืบ', flameRing: 'วงไฟรอบตัว', charge: 'พุ่งชน' },
+    tip: 'หักเขาจากด้านหน้า ตัดหางเพลิงจากด้านหลัง วงไฟเตือนนานที่สุด ออกจากวงให้ทัน โกรธเมื่อเลือดเหลือครึ่ง',
   },
   tiger: {
     name: 'เสือโคร่ง',
     parts: { head: 'เขี้ยว', tail: 'หาง' },
     attacks: { claw: 'ตะปบ', pounce: 'กระโจน', roar: 'คำราม' },
+    tip: 'เจ้าป่าตัวจริง กระโจนไกลและคำรามเป็นวงกว้าง กินต้มยำไก่ป่าและใส่เกราะก่อนไป ตาเสือดรอป 25%',
   },
-} satisfies Record<MonsterId, { name: string; parts: Partial<Record<PartId, string>>; attacks: Record<string, string> }>;
+} satisfies Record<MonsterId, { name: string; parts: Partial<Record<PartId, string>>; attacks: Record<string, string>; tip: string }>;
 
 export const weaponTypes = {
   sword: 'ดาบ',
@@ -203,7 +208,7 @@ export const floats = {
 };
 
 export const menu = {
-  tabs: { bag: 'กระเป๋า', forge: 'ตีอาวุธ', kitchen: 'ครัว', farm: 'แปลงผัก' },
+  tabs: { bag: 'กระเป๋า', forge: 'ตีอาวุธ', kitchen: 'ครัว', farm: 'แปลงผัก', book: 'สมุดภาพ' },
   inVillage: 'อยู่ในหมู่บ้าน ใช้งานได้',
   notInVillage: 'กลับหมู่บ้านก่อน จึงจะใช้เมนูนี้ได้',
   skills: 'สกิล',
@@ -252,6 +257,29 @@ export const menu = {
   potionDesc: (heal: number) => `ฟื้น HP ${heal} · ปรุงจากสมุนไพรที่โรงตีเหล็ก`,
   newGame: 'เริ่มเกมใหม่',
   confirmNewGame: 'กดอีกครั้งเพื่อยืนยัน',
+  // bestiary
+  book: {
+    progress: (n: number, total: number) => `บันทึกแล้ว ${n}/${total} ชนิด`,
+    help: 'ล่าสำเร็จครั้งแรกเพื่อปลดล็อกข้อมูล แตะรูปเพื่อดูรายละเอียด',
+    unknown: '???',
+    lockedHint: (where: string) => `ยังไม่เคยล่า · พบได้ที่${where}`,
+    hunted: (n: number) => `ล่าแล้ว ${n} ตัว`,
+    where: 'พบที่',
+    deepForest: 'ป่าลึกฝั่งตะวันออกของแม่น้ำ',
+    hp: 'พลังชีวิต',
+    huntTime: 'เวลาล่า',
+    size: 'ขนาด',
+    sizes: { small: 'เล็ก', medium: 'กลาง', large: 'ใหญ่' },
+    rage: 'โกรธเมื่อเลือดเหลือครึ่ง',
+    parts: 'ชิ้นส่วน',
+    partHow: { head: 'ตีจากด้านหน้า', tail: 'อ้อมไปตีด้านหลัง' },
+    attacks: 'ท่าโจมตี',
+    shapes: { ring: 'วงรอบตัว', front: 'วงหน้าตัว', line: 'พุ่งเป็นเส้น' },
+    attackMeta: (shape: string, warn: number, dmg: number) => `${shape} · เตือน ${warn} วิ · ดาเมจ ${dmg}`,
+    drops: 'ของที่ได้จากซาก',
+    chance: (pct: number) => `${pct}%`,
+    tip: 'เคล็ดลับ',
+  },
   // forge
   equipped: 'กำลังใช้',
   equip: 'เปลี่ยนมาใช้',

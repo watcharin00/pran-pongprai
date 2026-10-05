@@ -223,4 +223,6 @@ export interface GameState {
   selCrop: CropId;
   useFert: boolean;
   autoOn: boolean;
+  /** successful hunts per monster kind (unlocks bestiary entries) */
+  kills: Partial<Record<MonsterId, number>>;
 }

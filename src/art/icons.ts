@@ -297,7 +297,20 @@ export function potionIconUrl(): string {
 
 /** Monster portrait: idle frame of the world sprite. */
 export function monsterIconUrl(kind: MonsterId): string {
-  return cached(`mon:${kind}`, () => MONSTER_SPRITES[kind](0, false, false));
+  return monsterPortrait(kind).url;
+}
+
+const portraits = new Map<MonsterId, { url: string; w: number; h: number }>();
+
+/** Idle frame of a monster sprite with its pixel size, for integer-scaled display. */
+export function monsterPortrait(kind: MonsterId): { url: string; w: number; h: number } {
+  let p = portraits.get(kind);
+  if (!p) {
+    const c = MONSTER_SPRITES[kind](0, false, false);
+    p = { url: c.toDataURL(), w: c.width, h: c.height };
+    portraits.set(kind, p);
+  }
+  return p;
 }
 
 export function playerIconUrl(): string {

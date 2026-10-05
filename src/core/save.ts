@@ -1,6 +1,6 @@
 // Save format + migration. Storage access (localStorage) lives outside core.
-import { ARMOR, CROPS, MATERIALS, MEALS, WEAPONS } from '../data';
-import { ARMOR_SLOTS, type ArmorId, type ArmorSlot, type CropId, type MaterialId, type MealId, type WeaponId } from '../data/types';
+import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, WEAPONS } from '../data';
+import { ARMOR_SLOTS, type ArmorId, type ArmorSlot, type CropId, type MaterialId, type MealId, type MonsterId, type WeaponId } from '../data/types';
 import { refreshStats, startingInventory } from './inventory';
 import type { GameState, Inventory, Meal } from './state';
 
@@ -24,6 +24,7 @@ export interface SaveData {
   meal: Meal | null;
   selCrop: CropId;
   autoOn: boolean;
+  kills: Partial<Record<MonsterId, number>>;
   plots: SavedPlot[];
 }
 
@@ -39,6 +40,7 @@ export function snapshot(s: GameState): SaveData {
     meal: s.player.meal ? { ...s.player.meal } : null,
     selCrop: s.selCrop,
     autoOn: s.autoOn,
+    kills: { ...s.kills },
     plots: s.plots.map((p) => ({ crop: p.crop, at: p.at, dur: p.dur, fert: p.fert })),
   };
 }
@@ -85,6 +87,9 @@ export function parseSave(raw: string | null): SaveData | null {
     }
   }
 
+  const kills: Partial<Record<MonsterId, number>> = {};
+  if (isObj(d.kills)) for (const [k, v] of Object.entries(d.kills)) if (k in MONSTERS && isNum(v) && v > 0) kills[k as MonsterId] = Math.floor(v);
+
   let meal: Meal | null = null;
   if (isObj(d.meal) && typeof d.meal.id === 'string' && d.meal.id in MEALS && isNum(d.meal.until)) meal = { id: d.meal.id as MealId, until: d.meal.until };
 
@@ -107,6 +112,7 @@ export function parseSave(raw: string | null): SaveData | null {
     meal,
     selCrop: typeof d.selCrop === 'string' && d.selCrop in CROPS ? (d.selCrop as CropId) : 'herb',
     autoOn: d.autoOn === true,
+    kills,
     plots,
   };
 }
@@ -126,6 +132,7 @@ export function applySave(s: GameState, d: SaveData): void {
   s.player.meal = d.meal;
   s.selCrop = d.selCrop;
   s.autoOn = d.autoOn;
+  s.kills = { ...d.kills };
   d.plots.forEach((sp, i) => {
     const plot = s.plots[i];
     if (plot) Object.assign(plot, sp);
