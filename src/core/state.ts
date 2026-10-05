@@ -63,7 +63,19 @@ export interface PlayerState {
 
   cds: [number, number, number];
   /** skill wind-up in progress (cancelled by rolling or getting hit) */
-  cast: { skill: SkillId; t: number; total: number; tx: number; ty: number } | null;
+  cast: {
+    skill: SkillId;
+    t: number;
+    total: number;
+    /** area skills land between the player and (tx, ty) */
+    tx: number;
+    ty: number;
+    /** line skills strike along (ux, uy) */
+    ux: number;
+    uy: number;
+    /** strikes left, including the pending one */
+    hits: number;
+  } | null;
   /** skill lunge in progress */
   dash: { skill: SkillId; t: number; dx: number; dy: number; hit: Set<number> } | null;
   spin: number;
@@ -164,6 +176,27 @@ export interface Plot {
   fert: boolean;
 }
 
+/** A player projectile in flight (arrow, bolt). */
+export interface Shot {
+  id: number;
+  x: number;
+  y: number;
+  /** unit direction */
+  dx: number;
+  dy: number;
+  speed: number;
+  /** distance left before it drops */
+  left: number;
+  /** monsters it can still pass through after the next hit */
+  pierce: number;
+  mult: number;
+  stun: number;
+  partMul: number;
+  big: boolean;
+  /** monsters already hit (each shot hits a monster once) */
+  hit: Set<number>;
+}
+
 export type Inventory = Record<MaterialId, number>;
 
 export interface GameState {
@@ -177,6 +210,7 @@ export interface GameState {
   nextId: number;
   player: PlayerState;
   monsters: MonsterState[];
+  shots: Shot[];
   respawnQueue: { kind: MonsterId; t: number }[];
   nodes: GatherNode[];
   plots: Plot[];

@@ -429,11 +429,16 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     ev.on('skill:impact', (e) => {
       const def = SKILLS[e.skill];
+      bump(def.hitstop, def.shake);
+      if (e.line) {
+        fx.slash(e.line.from.x, e.line.from.y, e.line.ux, e.line.uy, e.line.len, e.line.wd);
+        return;
+      }
       fx.shock(e.at.x, e.at.y, e.radius);
       fx.burst(e.at.x, e.at.y, '#e8d0a0', 18, 110, 'dust');
-      bump(def.hitstop, def.shake);
       vibrate(30);
     });
+    ev.on('shot:blocked', (e) => fx.burst(e.at.x, e.at.y - 4, '#e8d8b0', 4, 40, 'dust'));
     ev.on('crop:planted', (e) => {
       float(e.at.x, e.at.y - 10, th.floats.planted(th.crops[e.crop].name), CROPS[e.crop].color);
       fx.burst(e.at.x, e.at.y + 3, '#a8754a', 6, 40, 'dust');
@@ -558,7 +563,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.drawTelegraphs(time);
     this.drawEntities(time);
     this.drawOverlays(time);
-    this.effects.draw(time, s.player);
+    this.effects.draw(time, s.player, s.shots);
     this.drawClouds();
     this.drawGlows(time);
     this.drawText(time);

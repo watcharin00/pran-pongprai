@@ -230,6 +230,13 @@ export function loadWeapons(v: unknown, materials: readonly string[], skills: re
       signature: oneOf(w.signature, `${p}.signature`, skills) as SkillId,
       recipe,
     };
+    const shot = optional(w, 'projectile', (x) => {
+      const so = obj(x, `${p}.projectile`);
+      return { speed: num(so.speed, `${p}.projectile.speed`, 1), range: num(so.range, `${p}.projectile.range`, 1), pierce: num(so.pierce, `${p}.projectile.pierce`, 0) };
+    });
+    const def = weapons[k] as WeaponDef;
+    if (shot) def.projectile = shot;
+    if (w.look !== undefined) def.look = oneOf(w.look, `${p}.look`, ['crossbow'] as const);
   }
   if (starters !== 1) throw new DataError('weapons.weapons', `expected exactly one starter (recipe: null), got ${starters}`);
   return { types, weapons } as WeaponsData;
@@ -241,7 +248,7 @@ function skillPair(v: unknown, path: string, skills: readonly string[]): [SkillI
   return [oneOf(a[0], `${path}[0]`, skills) as SkillId, oneOf(a[1], `${path}[1]`, skills) as SkillId];
 }
 
-const SKILL_KINDS = ['radial', 'dash', 'windupArea'] as const;
+const SKILL_KINDS = ['radial', 'dash', 'windupArea', 'windupLine', 'projectile'] as const;
 const AUTO_ROLES = ['burst', 'filler', 'gapClose', 'never'] as const;
 
 export function loadSkills(v: unknown): SkillsData {
@@ -266,7 +273,16 @@ export function loadSkills(v: unknown): SkillsData {
       out[k] = { ...base, kind, speed: n('speed'), duration: n('duration'), iframe: n('iframe'), hitRadius: n('hitRadius'), hitRadiusSizeMul: n('hitRadiusSizeMul') };
       // pillar 2: AUTO must never get i-frames out of a skill except to close distance
       if (base.auto !== 'gapClose' && base.auto !== 'never') throw new DataError(`${p}.auto`, 'skills with i-frames must be gapClose or never');
-    } else out[k] = { ...base, kind, radius: n('radius'), windup: n('windup', 0.01), fxRadius: n('fxRadius') };
+    } else if (kind === 'windupArea') out[k] = { ...base, kind, radius: n('radius'), windup: n('windup', 0.01), fxRadius: n('fxRadius') };
+    else if (kind === 'windupLine') {
+      const hits = optional(d, 'hits', (x) => num(x, `${p}.hits`, 1, 10)) ?? 1;
+      if (!Number.isInteger(hits)) throw new DataError(`${p}.hits`, 'expected a whole number');
+      out[k] = { ...base, kind, windup: n('windup', 0.01), length: n('length', 1), width: n('width', 1), hits, interval: optional(d, 'interval', (x) => num(x, `${p}.interval`, 0.01)) ?? 0.12 };
+    } else {
+      const count = n('count', 1);
+      if (!Number.isInteger(count)) throw new DataError(`${p}.count`, 'expected a whole number');
+      out[k] = { ...base, kind, count, spread: num(d.spread, `${p}.spread`, 0, 180), speed: n('speed', 1), range: n('range', 1), pierce: n('pierce') };
+    }
   }
   if (Object.keys(out).length === 0) throw new DataError('skills.skills', 'needs at least one skill');
   return out as SkillsData;

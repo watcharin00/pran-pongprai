@@ -121,6 +121,18 @@ export interface WeaponDef {
   /** skill slot 3, unique to this weapon */
   signature: SkillId;
   recipe: ItemBag | null;
+  /** ranged weapons: basic attacks fire a projectile instead of striking */
+  projectile?: ShotDef;
+  /** alternative art for the same weapon type */
+  look?: 'crossbow';
+}
+
+export interface ShotDef {
+  speed: number;
+  /** max travel distance in px */
+  range: number;
+  /** extra monsters each shot passes through */
+  pierce: number;
 }
 
 export interface WeaponsData {
@@ -177,7 +189,28 @@ export interface WindupAreaSkillDef extends SkillBase {
   fxRadius: number;
 }
 
-export type SkillDef = RadialSkillDef | DashSkillDef | WindupAreaSkillDef;
+/** Wind-up, then a strike along the aim direction. `hits` > 1 repeats it every `interval`. */
+export interface WindupLineSkillDef extends SkillBase {
+  kind: 'windupLine';
+  windup: number;
+  length: number;
+  width: number;
+  hits: number;
+  interval: number;
+}
+
+/** Fires `count` projectiles fanned across `spread` degrees toward the target / stick / facing. */
+export interface ProjectileSkillDef extends SkillBase {
+  kind: 'projectile';
+  count: number;
+  spread: number;
+  speed: number;
+  range: number;
+  /** extra monsters each shot passes through */
+  pierce: number;
+}
+
+export type SkillDef = RadialSkillDef | DashSkillDef | WindupAreaSkillDef | WindupLineSkillDef | ProjectileSkillDef;
 export type SkillKind = SkillDef['kind'];
 export type SkillsData = Record<SkillId, SkillDef>;
 

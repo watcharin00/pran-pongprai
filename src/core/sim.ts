@@ -6,6 +6,7 @@ import { startingInventory } from './inventory';
 import { generateMap, SPAWN, T, zoneAtPx, type WorldMap } from './mapgen';
 import { spawnMonster, updateMonster } from './monsterAI';
 import { processActions, updatePlayer } from './player';
+import { updateShots } from './shots';
 import { parkMiller, Rng } from './rng';
 import { applySave, type SaveData } from './save';
 import type { GameState, GatherNode, Intent, PlayerState } from './state';
@@ -64,6 +65,7 @@ export function createGame(o: CreateOptions): GameState {
     nextId: 1,
     player: createPlayer(),
     monsters: [],
+    shots: [],
     respawnQueue: [],
     nodes: createNodes(map),
     plots: createPlots(),
@@ -106,6 +108,7 @@ export function step(s: GameState, intent: Intent, dt: number, now: number): voi
   }
 
   updatePlayer(s, intent, dt);
+  updateShots(s, dt);
   for (const m of s.monsters.slice()) updateMonster(s, m, dt);
 
   for (const q of s.respawnQueue) q.t -= dt;

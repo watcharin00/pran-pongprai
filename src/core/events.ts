@@ -40,7 +40,10 @@ export interface GameEvents {
   'player:knockedOut': Record<string, never>;
   'player:revived': { at: Vec2 };
   'skill:cast': { skill: SkillId; at: Vec2 };
-  'skill:impact': { skill: SkillId; at: Vec2; radius: number };
+  /** `line` is set for strikes along a direction (thrust, cleave) */
+  'skill:impact': { skill: SkillId; at: Vec2; radius: number; line?: { ux: number; uy: number; len: number; wd: number; from: Vec2 } };
+  /** a projectile hit a tree, rock or wall */
+  'shot:blocked': { at: Vec2 };
   'crop:planted': { plot: number; crop: CropId; at: Vec2 };
   'crop:harvested': { plot: number; crop: CropId; at: Vec2; drops: Drops };
   'farm:noSeed': { crop: CropId };

@@ -1,6 +1,6 @@
 // Renders the player from PlayerState: body, weapon (idle/swing/spin/slam/dash), swing arc, dash ghosts.
 import Phaser from 'phaser';
-import { TUNING } from '../data';
+import { SKILLS, TUNING, WEAPONS } from '../data';
 import type { GameState } from '../core/state';
 import { TEX } from '../scenes/textures';
 
@@ -86,9 +86,17 @@ export class PlayerView {
     }
     wpn.setOrigin(1 / ww, Math.floor(wh / 2) / wh).setDepth(depth + 0.01);
     if (p.spin > 0) wpn.setPosition(Math.round(hx), Math.round(hy)).setRotation(time * 30);
-    else if (p.cast) wpn.setPosition(Math.round(hx), Math.round(hy - 4)).setRotation(-Math.PI / 2 - 0.4 * p.face);
+    else if (p.cast && SKILLS[p.cast.skill].kind === 'windupLine') {
+      // drawn back during the wind-up, then jabbed forward on each strike
+      const back = p.cast.t > 0 && p.cast.hits > 0 ? (p.cast.t / p.cast.total) * 5 : 0;
+      wpn.setPosition(Math.round(hx - p.cast.ux * back), Math.round(hy - p.cast.uy * back)).setRotation(Math.atan2(p.cast.uy, p.cast.ux));
+    } else if (p.cast) wpn.setPosition(Math.round(hx), Math.round(hy - 4)).setRotation(-Math.PI / 2 - 0.4 * p.face);
     else if (p.dash) wpn.setPosition(Math.round(hx), Math.round(hy)).setRotation(Math.atan2(p.dash.dy, p.dash.dx));
-    else if (p.swing > 0) {
+    else if (p.swing > 0 && WEAPONS[p.weapon].projectile) {
+      // ranged: hold the bow toward the shot, no swing arc
+      const k = 1 - p.swing / 0.2;
+      wpn.setOrigin(0.5, 0.5).setPosition(Math.round(hx + Math.cos(p.swingAng) * (4 - k * 2)), Math.round(hy + Math.sin(p.swingAng) * (4 - k * 2))).setRotation(p.swingAng);
+    } else if (p.swing > 0) {
       const k = 1 - p.swing / 0.2;
       const dir = Math.cos(p.swingAng) >= 0 ? 1 : -1;
       const a0 = p.swingAng - 1.4 * dir;

@@ -19,7 +19,21 @@ interface Particle {
   ph: number;
 }
 
-type Fx = { kind: 'ring'; x: number; y: number; r: number; t: number } | { kind: 'shock'; x: number; y: number; r: number; t: number } | { kind: 'whirl'; t: number };
+type Fx =
+  | { kind: 'ring'; x: number; y: number; r: number; t: number }
+  | { kind: 'shock'; x: number; y: number; r: number; t: number }
+  | { kind: 'whirl'; t: number }
+  | { kind: 'slash'; x: number; y: number; ux: number; uy: number; len: number; wd: number; t: number };
+
+/** Anything drawn as an arrow in flight. */
+export interface ShotView {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+}
+
+const SLASH_TIME = 0.18;
 
 export const MAX_PARTICLES = 450;
 const rr = (a: number, b: number): number => a + Math.random() * (b - a);
@@ -68,6 +82,11 @@ export class Effects {
 
   whirl(): void {
     this.fx.push({ kind: 'whirl', t: 0.3 });
+  }
+
+  /** Straight strike (thrust, cleave) from (x, y) along (ux, uy). */
+  slash(x: number, y: number, ux: number, uy: number, len: number, wd: number): void {
+    this.fx.push({ kind: 'slash', x, y, ux, uy, len, wd, t: SLASH_TIME });
   }
 
   healGlow(x: number, y: number): void {
@@ -144,7 +163,7 @@ export class Effects {
     this.fx = this.fx.filter((f) => f.t > 0);
   }
 
-  draw(time: number, player: Vec2): void {
+  draw(time: number, player: Vec2, shots: readonly ShotView[] = []): void {
     const g = this.gFx;
     const ga = this.gFxAdd;
     g.clear();
@@ -158,6 +177,12 @@ export class Effects {
         const rx = f.r * k + 4;
         g.lineStyle(3, 0xfff0c8, Math.min(1, f.t * 2.5));
         g.strokeEllipse(f.x, f.y, rx * 2, rx * 0.55 * 2);
+      } else if (f.kind === 'slash') {
+        const k = 1 - f.t / SLASH_TIME;
+        const reach = f.len * Math.min(1, k * 2.2);
+        const w = Math.max(1, Math.min(f.wd * 0.5, 6) * (1 - k));
+        ga.lineStyle(w, 0xfff4d0, Math.min(1, f.t * 8));
+        ga.lineBetween(f.x + f.ux * 6, f.y + f.uy * 6, f.x + f.ux * reach, f.y + f.uy * reach);
       } else {
         const k = 1 - f.t / 0.3;
         ga.lineStyle(3, 0xc8f0ff, Math.min(1, f.t * 2.5));
@@ -171,6 +196,14 @@ export class Effects {
     const a = this.gAdd;
     n.clear();
     a.clear();
+    for (const sh of shots) {
+      // shaft, fletching and a bright tip
+      const x = Math.round(sh.x);
+      const y = Math.round(sh.y) - 4;
+      n.lineStyle(1, 0x8a6a3a, 1).lineBetween(x - sh.dx * 8, y - sh.dy * 8, x, y);
+      n.fillStyle(0xf4eed4, 1).fillRect(Math.round(x - sh.dx * 8), Math.round(y - sh.dy * 8), 1, 1);
+      n.fillStyle(0xdfe6ee, 1).fillRect(Math.round(x + sh.dx), Math.round(y + sh.dy), 2, 1);
+    }
     for (const q of this.parts) {
       const alpha = Math.min(1, (q.t / (q.max || 0.5)) * 1.5);
       if (q.kind === 'fly') {

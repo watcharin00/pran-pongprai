@@ -7,6 +7,7 @@ import { harvest, isRipe } from './farm';
 import { give, dodgeCost, maxHpFor, staminaRegenMul } from './inventory';
 import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
+import { fireShot } from './shots';
 import { castSkill, updateDash, updateWindup } from './skills';
 import type { GameState, Intent, MonsterState } from './state';
 
@@ -143,7 +144,8 @@ function basicAttack(s: GameState, m: MonsterState): void {
   p.swingAng = Math.atan2(m.y - p.y, m.x - p.x);
   p.face = m.x >= p.x ? 1 : -1;
   s.events.emit('player:attack', { weapon: p.weapon, at: { x: p.x, y: p.y } });
-  hitMonster(s, m, 1);
+  if (w.projectile) fireShot(s, p.x, p.y, { x: m.x - p.x, y: m.y - p.y }, { ...w.projectile, mult: 1 });
+  else hitMonster(s, m, 1);
 }
 
 function tickTimers(s: GameState, dt: number): void {

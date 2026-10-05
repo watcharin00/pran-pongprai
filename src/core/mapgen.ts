@@ -28,6 +28,8 @@ export const Tile = {
 export type TileId = (typeof Tile)[keyof typeof Tile];
 
 const BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.BUSH, Tile.WATER, Tile.HOUSE, Tile.ROCK, Tile.CLIFF, Tile.FOUNTAIN, Tile.FENCE]);
+/** Tiles that stop arrows: everything tall. Shots fly over water, bushes and fences. */
+const SHOT_BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.HOUSE, Tile.ROCK, Tile.CLIFF]);
 
 export interface Rect {
   x: number;
@@ -87,6 +89,10 @@ export function tileAt(map: WorldMap, x: number, y: number): number {
 
 export function walkable(map: WorldMap, x: number, y: number): boolean {
   return !BLOCKING.has(tileAt(map, x, y));
+}
+
+export function shotPassablePx(map: WorldMap, px: number, py: number): boolean {
+  return !SHOT_BLOCKING.has(tileAt(map, Math.floor(px / T), Math.floor(py / T)));
 }
 
 export function walkablePx(map: WorldMap, px: number, py: number): boolean {

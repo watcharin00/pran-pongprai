@@ -124,6 +124,31 @@ const SHAPES: Record<IconShape, ShapeDrawer> = {
 function drawWeapon(w: WeaponDef): PixelBuffer {
   const b = createBuffer(ICON_SIZE, ICON_SIZE);
   const c = w.color;
+  if (w.type === 'spear') {
+    line(b, 2, 15, 12, 5, '#8a6a3a');
+    line(b, 3, 15, 13, 5, '#6b4a2e');
+    line(b, 11, 7, 14, 4, '#c9a24a');
+    thick(b, 13, 4, 15, 2, c, 2);
+    sp(b, 13, 3, tint(c, 0.45));
+    return b;
+  }
+  if (w.type === 'bow' && w.look === 'crossbow') {
+    thick(b, 3, 14, 11, 6, '#6b4a2e', 2);
+    line(b, 6, 4, 14, 12, c);
+    line(b, 7, 4, 15, 12, c);
+    line(b, 6, 4, 9, 9, '#f4eed4');
+    line(b, 9, 9, 14, 12, '#f4eed4');
+    line(b, 11, 6, 15, 2, '#dfe6ee');
+    return b;
+  }
+  if (w.type === 'bow') {
+    ([[4, 2], [6, 2], [8, 3], [10, 4], [12, 6], [13, 8], [14, 10], [15, 12], [15, 14]] as const).forEach(([x, y]) => rect(b, x, y, 2, 2, c));
+    line(b, 4, 3, 15, 14, '#f4eed4');
+    line(b, 6, 11, 12, 5, '#8a6a3a');
+    sp(b, 12, 4, '#dfe6ee');
+    sp(b, 13, 5, '#dfe6ee');
+    return b;
+  }
   if (w.type === 'hammer') {
     thick(b, 3, 15, 10, 8, '#6b4a2e', 2);
     // head, drawn as a square block across the shaft end

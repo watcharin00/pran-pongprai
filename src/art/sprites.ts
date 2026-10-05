@@ -1,7 +1,7 @@
 // Character, monster, weapon and pickup sprites.
 import type { MonsterId, WeaponDef } from '../data/types';
 import { hash } from '../core/rng';
-import { createBuffer, ell, finish, fromRows, rect, sp } from './pixelBuffer';
+import { createBuffer, ell, finish, fromRows, line, rect, sp } from './pixelBuffer';
 
 // ---------- player ----------
 const PLAYER_PAL: Record<string, string> = {
@@ -126,6 +126,40 @@ export const MONSTER_FRAMES = 4;
 
 // ---------- weapons ----------
 export function buildWeapon(w: WeaponDef): HTMLCanvasElement {
+  if (w.type === 'spear') {
+    // long shaft, leaf-shaped tip; origin is the left end
+    const b = createBuffer(25, 5);
+    rect(b, 1, 2, 17, 1, '#8a6a3a');
+    rect(b, 1, 2, 17, 1, '#b08a50', 0.5);
+    sp(b, 6, 2, '#6b4a2e');
+    sp(b, 12, 2, '#6b4a2e');
+    rect(b, 18, 1, 1, 3, '#c9a24a');
+    rect(b, 19, 1, 4, 3, w.color);
+    sp(b, 23, 2, w.color);
+    rect(b, 19, 1, 4, 1, '#ffffff', 0.5);
+    return finish(b, false);
+  }
+  if (w.type === 'bow' && w.look === 'crossbow') {
+    // stock pointing right with the bow limbs across the front
+    const b = createBuffer(16, 13);
+    rect(b, 1, 6, 11, 2, '#6b4a2e');
+    rect(b, 1, 6, 11, 1, '#9a7048');
+    line(b, 11, 1, 13, 6, w.color);
+    line(b, 13, 7, 11, 11, w.color);
+    sp(b, 13, 6, w.color);
+    line(b, 11, 1, 9, 6, '#f4eed4');
+    line(b, 9, 7, 11, 11, '#f4eed4');
+    rect(b, 12, 6, 3, 1, '#dfe6ee');
+    return finish(b, false);
+  }
+  if (w.type === 'bow') {
+    // limbs bow out to the right (the firing direction); string on the left
+    const b = createBuffer(10, 19);
+    ([[3, 1], [4, 2], [5, 3], [6, 4], [6, 5], [7, 6], [7, 7], [7, 8], [7, 9], [7, 10], [7, 11], [7, 12], [6, 13], [6, 14], [5, 15], [4, 16], [3, 17]] as const).forEach(([x, y]) => sp(b, x, y, w.color));
+    rect(b, 7, 8, 1, 3, '#6b4a2e');
+    line(b, 3, 2, 3, 16, '#f4eed4');
+    return finish(b, false);
+  }
   if (w.type === 'hammer') {
     const b = createBuffer(15, 9);
     rect(b, 1, 4, 8, 2, '#6b4a2e');

@@ -48,6 +48,8 @@ export const weaponTypes = {
   sword: 'ดาบ',
   hammer: 'ค้อน',
   greatsword: 'ดาบใหญ่',
+  spear: 'หอก',
+  bow: 'ธนู',
 } satisfies Record<WeaponType, string>;
 
 export const weapons = {
@@ -56,12 +58,26 @@ export const weapons = {
   mossmaul: { name: 'ค้อนหินมอสส์', desc: 'ตีหัวซ้ำจนมอนมึน' },
   cleaver: { name: 'ดาบใหญ่ถ่านเพลิง', desc: 'ต้องหักเขาและตัดหางซินเดอร์ฮอร์น' },
   coreblade: { name: 'ดาบแก่นเพลิง', desc: 'ต้องใช้วัสดุหายาก' },
+  bamboospear: { name: 'หอกไม้ไผ่', desc: 'ระยะยาวกว่าดาบ แทงต่อเนื่อง' },
+  bamboobow: { name: 'ธนูไม้ไผ่', desc: 'ยิงจากระยะไกล แต่ทำลายชิ้นส่วนช้า' },
+  redcrossbow: { name: 'หน้าไม้ผาแดง', desc: 'ยิงช้าแต่แรง ลูกดอกทะลุได้ 1 ตัว' },
 } satisfies Record<WeaponId, { name: string; desc: string }>;
 
 export const skills = {
   whirl: { name: 'หมุนฟัน', desc: 'ฟันรอบตัว โดนทุกตัวที่อยู่ใกล้ (×1.5)' },
   dash: { name: 'พุ่งแทง', desc: 'พุ่งทะลุไปข้างหน้า อมตะระหว่างพุ่ง (×2)' },
   slam: { name: 'ทุบพื้น', desc: 'ง้างแล้วทุบแรง ทำให้มึนเร็ว ทำลายชิ้นส่วนดี (×3.2)' },
+  crosscut: { name: 'ฟันไขว้', desc: 'ฟันไขว้สองครั้งตรงหน้า ทำลายชิ้นส่วนดี (×1.7 ×2)' },
+  sweep: { name: 'เหวี่ยงค้อน', desc: 'เหวี่ยงรอบตัววงกว้าง สะสมความมึน (×1.8)' },
+  quake: { name: 'ทุบสะท้าน', desc: 'ง้างนานแล้วทุบให้พื้นสะเทือน มึนเร็วมาก (×2.8)' },
+  cleave: { name: 'ฟันผ่าหนัก', desc: 'ง้างแล้วฟันลงตรงหน้า ทำลายชิ้นส่วนแรง (×3)' },
+  coreburst: { name: 'ระเบิดเพลิง', desc: 'ง้างแล้วระเบิดเปลวไฟวงใหญ่ (×4.2)' },
+  thrust: { name: 'แทงสามที', desc: 'แทงเป็นเส้นตรงสามครั้งติด (×1.1 ×3)' },
+  pierce: { name: 'แทงทะลวง', desc: 'ง้างแล้วแทงยาวทะลุทุกตัวในแนว (×3.4)' },
+  volley: { name: 'ยิงกระจาย', desc: 'ยิงลูกศรสามดอกเป็นรูปพัด (×1.2 ต่อดอก)' },
+  pin: { name: 'ยิงตรึง', desc: 'ยิงแรงหนึ่งดอก สะสมความมึน (×2.6)' },
+  piercer: { name: 'ศรเจาะ', desc: 'ลูกศรทะลุได้ 3 ตัว ทำลายชิ้นส่วนดี (×2.4)' },
+  bolt: { name: 'ดอกทะลวง', desc: 'ลูกดอกแรงพุ่งทะลุทุกตัวในแนว (×4)' },
 } satisfies Record<SkillId, { name: string; desc: string }>;
 
 export const crops = {

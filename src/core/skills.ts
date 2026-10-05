@@ -1,10 +1,11 @@
 // Skills. Slots 1-2 come from the weapon type, slot 3 is the weapon's signature.
 // Each skill is one of a few data-driven kinds; damage scales off weapon power.
 import { MONSTERS, SKILLS, TUNING, WEAPONS, WEAPON_TYPES } from '../data';
-import type { DashSkillDef, SkillDef, SkillId, WeaponId, WindupAreaSkillDef } from '../data/types';
+import type { DashSkillDef, SkillDef, SkillId, WeaponId, WindupAreaSkillDef, WindupLineSkillDef } from '../data/types';
 import { chooseTarget, hitMonster } from './combat';
 import type { Vec2 } from './events';
 import { moveBody } from './collision';
+import { fireFan } from './shots';
 import type { GameState, MonsterState } from './state';
 
 export type SkillSlots = readonly [SkillId, SkillId, SkillId];
@@ -32,6 +33,28 @@ export function grantsIframes(def: SkillDef): boolean {
 
 function hitWith(s: GameState, m: MonsterState, def: SkillDef, big = false): void {
   hitMonster(s, m, def.multiplier, { stun: def.stun, partMul: def.partMul, big });
+}
+
+/** Aim for line strikes and shots: the target, else the stick, else where the player faces. */
+function aimAt(s: GameState, target: MonsterState | null, move: Vec2 | null): Vec2 {
+  const p = s.player;
+  let x: number;
+  let y: number;
+  if (target) ({ x, y } = { x: target.x - p.x, y: target.y - p.y });
+  else if (move) ({ x, y } = move);
+  else ({ x, y } = { x: p.fx || p.face, y: p.fy || 0 });
+  const d = Math.hypot(x, y) || 1;
+  return { x: x / d, y: y / d };
+}
+
+/** Is monster `m` inside the strip of length `len` and width `wd` starting at `from` along (ux, uy)? */
+export function inLine(m: MonsterState, from: Vec2, ux: number, uy: number, len: number, wd: number): boolean {
+  const size = MONSTERS[m.kind].size;
+  const rx = m.x - from.x;
+  const ry = m.y - from.y;
+  const along = rx * ux + ry * uy;
+  const across = Math.abs(rx * -uy + ry * ux);
+  return along > -size * 0.5 && along < len + size * 0.5 && across < wd / 2 + size * 0.5;
 }
 
 /** Starts the skill in slot `i` (0-2). `move` is the current steering input, used to aim lunges. */
@@ -69,9 +92,28 @@ export function castSkill(s: GameState, i: number, move: Vec2 | null): boolean {
       break;
     }
     case 'windupArea':
-      p.cast = { skill: id, t: def.windup, total: def.windup, tx: target ? target.x : p.x + p.face * 18, ty: target ? target.y : p.y };
-      if (target) p.face = target.x >= p.x ? 1 : -1;
+    case 'windupLine': {
+      const aim = aimAt(s, target, move);
+      const hits = def.kind === 'windupLine' ? def.hits : 1;
+      p.cast = { skill: id, t: def.windup, total: def.windup, tx: target ? target.x : p.x + p.face * 18, ty: target ? target.y : p.y, ux: aim.x, uy: aim.y, hits };
+      if (Math.abs(aim.x) > 0.1) p.face = aim.x > 0 ? 1 : -1;
       break;
+    }
+    case 'projectile': {
+      const aim = aimAt(s, target, move);
+      p.swing = 0.2;
+      p.swingAng = Math.atan2(aim.y, aim.x);
+      if (Math.abs(aim.x) > 0.1) p.face = aim.x > 0 ? 1 : -1;
+      fireFan(s, p.x, p.y, aim, def.count, def.spread, {
+        speed: def.speed,
+        range: def.range,
+        pierce: def.pierce,
+        mult: def.multiplier,
+        stun: def.stun,
+        partMul: def.partMul,
+      });
+      break;
+    }
   }
   return true;
 }
@@ -84,14 +126,32 @@ export function updateWindup(s: GameState, dt: number): boolean {
   if (p.cast.t > 0) return true;
   const c = p.cast;
   p.cast = null;
-  const def = SKILLS[c.skill] as WindupAreaSkillDef;
+  const def = SKILLS[c.skill];
+  if (def.kind === 'windupLine') {
+    strikeLine(s, c.skill, def, c.ux, c.uy);
+    if (c.hits > 1) p.cast = { ...c, hits: c.hits - 1, t: def.interval, total: def.interval };
+    return true;
+  }
+  const area = def as WindupAreaSkillDef;
   const x = (c.tx + p.x) / 2;
   const y = (c.ty + p.y) / 2;
-  s.events.emit('skill:impact', { skill: c.skill, at: { x, y }, radius: def.fxRadius });
+  s.events.emit('skill:impact', { skill: c.skill, at: { x, y }, radius: area.fxRadius });
   for (const m of s.monsters.slice()) {
-    if (Math.hypot(m.x - x, m.y - y) < def.radius + MONSTERS[m.kind].size) hitWith(s, m, def, true);
+    if (Math.hypot(m.x - x, m.y - y) < area.radius + MONSTERS[m.kind].size) hitWith(s, m, area, true);
   }
   return true;
+}
+
+function strikeLine(s: GameState, id: SkillId, def: WindupLineSkillDef, ux: number, uy: number): void {
+  const p = s.player;
+  const from = { x: p.x, y: p.y };
+  s.events.emit('skill:impact', {
+    skill: id,
+    at: { x: p.x + (ux * def.length) / 2, y: p.y + (uy * def.length) / 2 },
+    radius: def.length / 2,
+    line: { ux, uy, len: def.length, wd: def.width, from },
+  });
+  for (const m of s.monsters.slice()) if (inLine(m, from, ux, uy, def.length, def.width)) hitWith(s, m, def, def.hits === 1);
 }
 
 /** Advances a lunge. Each monster can be hit once per lunge. Returns true while lunging. */

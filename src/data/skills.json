@@ -1,7 +1,23 @@
 {
   "skills": {
-    "whirl": { "kind": "radial", "auto": "filler", "cooldown": 6, "multiplier": 1.5, "radius": 32, "duration": 0.32, "hitstop": 0.06, "shake": 0.1 },
-    "dash":  { "kind": "dash", "auto": "gapClose", "cooldown": 7, "multiplier": 2, "speed": 330, "duration": 0.22, "iframe": 0.3, "hitRadius": 8, "hitRadiusSizeMul": 0.7, "hitstop": 0.05, "shake": 0 },
-    "slam":  { "kind": "windupArea", "auto": "burst", "cooldown": 11, "multiplier": 3.2, "radius": 26, "windup": 0.3, "stun": 45, "partMul": 1.25, "fxRadius": 40, "hitstop": 0.16, "shake": 0.3 }
+    "whirl":     { "kind": "radial",     "auto": "filler",   "cooldown": 6,  "multiplier": 1.5, "radius": 32, "duration": 0.32, "hitstop": 0.06, "shake": 0.1 },
+    "dash":      { "kind": "dash",       "auto": "gapClose", "cooldown": 7,  "multiplier": 2,   "speed": 330, "duration": 0.22, "iframe": 0.3, "hitRadius": 8, "hitRadiusSizeMul": 0.7, "hitstop": 0.05, "shake": 0 },
+    "slam":      { "kind": "windupArea", "auto": "burst",    "cooldown": 11, "multiplier": 3.2, "radius": 26, "windup": 0.3, "stun": 45, "partMul": 1.25, "fxRadius": 40, "hitstop": 0.16, "shake": 0.3 },
+
+    "crosscut":  { "kind": "windupLine", "auto": "burst",    "cooldown": 8,  "multiplier": 1.7, "windup": 0.15, "length": 30, "width": 26, "hits": 2, "interval": 0.14, "partMul": 1.2, "hitstop": 0.06, "shake": 0.1 },
+
+    "sweep":     { "kind": "radial",     "auto": "filler",   "cooldown": 7,  "multiplier": 1.8, "radius": 40, "duration": 0.4, "stun": 25, "hitstop": 0.1, "shake": 0.15 },
+    "quake":     { "kind": "windupArea", "auto": "burst",    "cooldown": 14, "multiplier": 2.8, "radius": 34, "windup": 0.45, "stun": 70, "partMul": 1.1, "fxRadius": 52, "hitstop": 0.18, "shake": 0.35 },
+
+    "cleave":    { "kind": "windupLine", "auto": "burst",    "cooldown": 8,  "multiplier": 3,   "windup": 0.4, "length": 40, "width": 30, "stun": 10, "partMul": 1.4, "hitstop": 0.14, "shake": 0.25 },
+    "coreburst": { "kind": "windupArea", "auto": "burst",    "cooldown": 14, "multiplier": 4.2, "radius": 40, "windup": 0.5, "stun": 20, "partMul": 1.3, "fxRadius": 56, "hitstop": 0.18, "shake": 0.35 },
+
+    "thrust":    { "kind": "windupLine", "auto": "filler",   "cooldown": 5,  "multiplier": 1.1, "windup": 0.12, "length": 44, "width": 14, "hits": 3, "interval": 0.12, "hitstop": 0.03, "shake": 0.04 },
+    "pierce":    { "kind": "windupLine", "auto": "burst",    "cooldown": 10, "multiplier": 3.4, "windup": 0.35, "length": 70, "width": 16, "stun": 20, "partMul": 1.3, "hitstop": 0.12, "shake": 0.2 },
+
+    "volley":    { "kind": "projectile", "auto": "filler",   "cooldown": 6,  "multiplier": 1.2, "count": 3, "spread": 28, "speed": 300, "range": 130, "pierce": 0, "hitstop": 0.03, "shake": 0.04 },
+    "pin":       { "kind": "projectile", "auto": "burst",    "cooldown": 9,  "multiplier": 2.6, "count": 1, "spread": 0,  "speed": 340, "range": 150, "pierce": 0, "stun": 35, "partMul": 1.2, "hitstop": 0.08, "shake": 0.1 },
+    "piercer":   { "kind": "projectile", "auto": "burst",    "cooldown": 11, "multiplier": 2.4, "count": 1, "spread": 0,  "speed": 360, "range": 160, "pierce": 3, "partMul": 1.5, "hitstop": 0.08, "shake": 0.12 },
+    "bolt":      { "kind": "projectile", "auto": "burst",    "cooldown": 12, "multiplier": 4,   "count": 1, "spread": 0,  "speed": 420, "range": 200, "pierce": 99, "stun": 20, "partMul": 1.3, "hitstop": 0.12, "shake": 0.2 }
   }
 }
