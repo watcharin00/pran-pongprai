@@ -40,6 +40,8 @@ npm run lint       # eslint
 
 - เล่นจริงที่ **https://pran-pongprai.vercel.app/** (Vercel, static hosting ของ `dist/`) ต่อกับ repo GitHub `watcharin00/pran-pongprai` push เข้า `master` แล้ว deploy เอง
 - Vercel รันแค่ build ไม่รัน test ต้อง `npm run test` ผ่านก่อน push
+- หลัง push ให้รอจน `index-*.js` บนเว็บตรงกับใน `dist/index.html` (Vercel ใช้เวลาไม่ถึงนาที) แล้วค่อยบอกว่า deploy แล้ว
+- ทดสอบหน้าจอมือถือด้วย Playwright จาก scratchpad (ไม่ใช่ dependency ของโปรเจกต์) ที่ 390×844, 360×740, 844×390, 667×375, 1280×800 ถ้าจะดูตอนสู้ ให้แตะ `#autoBtn` แล้วรอจน `#boss` ไม่ hidden
 - `vite.config.ts` ใช้ `base: './'` จึงวางใต้ path ย่อยได้ (เช่น GitHub Pages) ไม่ต้องแก้
 - เซฟอยู่ใน `localStorage` ของเบราว์เซอร์ผู้เล่นเท่านั้น (แยกตามเครื่อง/เบราว์เซอร์/โดเมน) server ไม่เห็นเซฟ ถ้าจะย้ายเซฟข้ามเครื่องให้ทำปุ่มส่งออก/นำเข้าก่อน ไม่ใช่ทำ backend
 
