@@ -3,11 +3,34 @@
 import { CROPS, MATERIALS, MATERIAL_IDS, MEALS, SKILLS, TUNING, WEAPONS } from '../data';
 import type { CropId, ItemBag, MaterialId, MealId, WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
-import { activeMeal, brewPotion, canAfford, cookMeal, craftWeapon, equipWeapon, goalIndex } from '../core/inventory';
+import { activeMeal, attackMul, brewPotion, canAfford, cookMeal, craftWeapon, equipWeapon, goalIndex } from '../core/inventory';
 import type { GameState } from '../core/state';
+import { materialIconUrl, mealIconUrl, monsterIconUrl, playerIconUrl, potionIconUrl, weaponIconUrl } from '../art/icons';
 import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
 import type { Hud } from './hud';
+import { itemSources, itemUses, type ItemSource, type ItemUse } from './itemInfo';
+
+type BagFilter = 'all' | 'gear' | 'material' | 'seed';
+const FILTERS: BagFilter[] = ['all', 'gear', 'material', 'seed'];
+/** Empty cells pad the grid so it reads as a bag even when nearly empty. */
+const MIN_CELLS = 18;
+/** Armor slots arrive in a later phase; shown empty for now. */
+const ARMOR_SLOTS = ['head', 'body', 'charm'] as const;
+
+/** A bag entry: `m:<material>`, `w:<weapon>` or `potion`. */
+type ItemKey = `m:${MaterialId}` | `w:${WeaponId}` | 'potion';
+
+interface BagItem {
+  key: ItemKey;
+  icon: string;
+  name: string;
+  count: number | null;
+  rarity: 0 | 1 | 2;
+  equipped: boolean;
+}
+
+const img = (src: string, cls = 'ico'): string => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
 
 export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm';
 const TABS: Tab[] = ['bag', 'forge', 'kitchen', 'farm'];
@@ -29,6 +52,8 @@ export class Sheet {
   private readonly sheet: HTMLElement;
   private readonly body: HTMLElement;
   private resetArm = 0;
+  private filter: BagFilter = 'all';
+  private sel: ItemKey | null = null;
   private dirty = false;
   private refreshT = 0;
 
@@ -122,7 +147,7 @@ export class Sheet {
     return Object.entries(rec)
       .map(([k, n]) => {
         const have = s.inv[k as MaterialId];
-        return `<span class="${have >= (n ?? 0) ? 'have' : 'miss'}">${th.materials[k as MaterialId]} ${have}/${n}</span>`;
+        return `<span class="${have >= (n ?? 0) ? 'have' : 'miss'}">${img(materialIconUrl(k as MaterialId), 'ico sm')}${th.materials[k as MaterialId]} ${have}/${n}</span>`;
       })
       .join('');
   }
@@ -132,22 +157,82 @@ export class Sheet {
   }
 
   private bag(s: GameState): string {
+    const p = s.player;
+    const M = th.menu;
     const goal = th.goals[goalIndex(s)];
-    let h = goal ? `<div class="goalbox"><b>${goal.title}</b><p>${goal.desc}</p></div>` : '';
-    h += `<h3 class="sec">${th.menu.skills}</h3><div class="skl">${SKILLS.order
-      .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${th.menu.cooldown(SKILLS[id].cooldown)}</span></div>`)
-      .join('')}<div><b>${th.menu.partsTitle}</b><span class="meta">${th.menu.partsHelp}</span></div></div>`;
-    h += `<h3 class="sec">${th.menu.materials}</h3><div class="inv">${MATERIAL_IDS.filter((k) => MATERIALS[k].category !== 'seed')
-      .map((k) => {
-        const m = MATERIALS[k];
-        const tag = m.rarity ? `<span class="tag">${th.rarity[m.rarity]}</span>` : '';
-        return `<div class="${s.inv[k] ? '' : 'zero'}"><span class="sw" style="background:${m.color}"></span><span>${th.materials[k]}</span>${tag}<span class="n">${s.inv[k]}</span></div>`;
-      })
-      .join('')}</div>`;
+
+    // equipment: slots either side of the character portrait
+    const wkey: ItemKey = `w:${p.weapon}`;
+    const wslot = `<button type="button" class="slot${this.sel === wkey ? ' sel' : ''}" data-item="${wkey}" aria-label="${M.slots.weapon}">${img(weaponIconUrl(p.weapon))}<span>${M.slots.weapon}</span></button>`;
+    const [head, body, charm] = ARMOR_SLOTS.map((k) => `<div class="slot empty" title="${M.slotSoon}"><i>${M.slotEmpty}</i><span>${M.slots[k]}</span></div>`);
+    let h = `<div class="eqp"><div class="slots">${wslot}${head}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${body}${charm}</div></div>`;
+    const atk = Math.round(WEAPONS[p.weapon].damage * attackMul(s));
+    h += `<div class="stats"><div><span>${M.stats.attack}</span><b>${atk}</b></div><div><span>${M.stats.hp}</span><b>${p.maxHp}</b></div><div><span>${M.stats.stamina}</span><b>${TUNING.player.maxStamina}</b></div><div><span>${M.stats.potions}</span><b>${p.potions}</b></div></div>`;
+
+    // filters, detail card, item grid
+    h += `<div class="filters">${FILTERS.map((f) => `<button type="button" class="chipbtn${this.filter === f ? ' on' : ''}" data-filter="${f}">${M.filters[f]}</button>`).join('')}</div>`;
+    const items = this.bagItems(s).filter((it) => this.matches(it.key));
+    if (this.sel && this.sel !== wkey && !items.some((it) => it.key === this.sel)) this.sel = null;
+    h += this.sel ? this.detail(s, this.sel) : `<p class="note">${items.length ? M.bagHelp : M.bagEmpty}</p>`;
+    const cells = items.map(
+      (it) =>
+        `<button type="button" class="cell r${it.rarity}${this.sel === it.key ? ' sel' : ''}${it.equipped ? ' eq' : ''}" data-item="${it.key}" aria-label="${it.name}">${img(it.icon)}${it.count !== null ? `<b>${it.count}</b>` : ''}</button>`,
+    );
+    for (let i = cells.length; i < MIN_CELLS; i++) cells.push('<div class="cell blank"></div>');
+    h += `<div class="grid">${cells.join('')}</div>`;
+
+    if (goal) h += `<div class="goalbox"><b>${goal.title}</b><p>${goal.desc}</p></div>`;
+    h += `<h3 class="sec">${M.skills}</h3><div class="skl">${SKILLS.order
+      .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${M.cooldown(SKILLS[id].cooldown)}</span></div>`)
+      .join('')}<div><b>${M.partsTitle}</b><span class="meta">${M.partsHelp}</span></div></div>`;
     const armed = Date.now() - this.resetArm < 3000;
-    h += `<div class="row"><h3 class="sec">${th.menu.log}</h3><button type="button" class="btn" id="btnReset">${armed ? th.menu.confirmNewGame : th.menu.newGame}</button></div>`;
+    h += `<div class="row"><h3 class="sec">${M.log}</h3><button type="button" class="btn" id="btnReset">${armed ? M.confirmNewGame : M.newGame}</button></div>`;
     h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
     return h;
+  }
+
+  /** Everything the player holds: owned weapons, potions, then materials with a count. */
+  private bagItems(s: GameState): BagItem[] {
+    const out: BagItem[] = [];
+    for (const id of Object.keys(WEAPONS) as WeaponId[]) {
+      if (s.owned.has(id)) out.push({ key: `w:${id}`, icon: weaponIconUrl(id), name: th.weapons[id].name, count: null, rarity: 0, equipped: s.player.weapon === id });
+    }
+    if (s.player.potions > 0) out.push({ key: 'potion', icon: potionIconUrl(), name: th.menu.potionName, count: s.player.potions, rarity: 0, equipped: false });
+    for (const id of MATERIAL_IDS) {
+      const n = s.inv[id];
+      if (n > 0) out.push({ key: `m:${id}`, icon: materialIconUrl(id), name: th.materials[id], count: n, rarity: MATERIALS[id].rarity ?? 0, equipped: false });
+    }
+    return out;
+  }
+
+  private matches(key: ItemKey): boolean {
+    if (this.filter === 'all') return true;
+    if (key === 'potion' || key.startsWith('w:')) return this.filter === 'gear';
+    return MATERIALS[key.slice(2) as MaterialId].category === this.filter;
+  }
+
+  /** Info card for the selected bag item. */
+  private detail(s: GameState, key: ItemKey): string {
+    const M = th.menu;
+    if (key === 'potion') {
+      return `<div class="detail">${img(potionIconUrl(), 'ico lg')}<div><b>${M.potionName}</b><p class="meta">${M.have(s.player.potions)} · ${M.potionDesc(TUNING.player.potion.heal)}</p></div></div>`;
+    }
+    if (key.startsWith('w:')) {
+      const id = key.slice(2) as WeaponId;
+      const w = WEAPONS[id];
+      const speed = w.rate < 0.5 ? M.speed.fast : w.rate < 0.8 ? M.speed.mid : M.speed.slow;
+      const btn =
+        s.player.weapon === id
+          ? `<button type="button" class="btn" disabled>${M.equipped}</button>`
+          : `<button type="button" class="btn" data-equip="${id}" ${s.player.inVillage ? '' : 'disabled'}>${M.equip}</button>`;
+      return `<div class="detail">${img(weaponIconUrl(id), 'ico lg')}<div><b>${th.weapons[id].name}</b><p class="meta">${M.weaponStats(th.weaponTypes[w.type], w.damage, speed)} · ${th.weapons[id].desc}</p>${btn}</div></div>`;
+    }
+    const id = key.slice(2) as MaterialId;
+    const m = MATERIALS[id];
+    const tag = m.rarity ? ` <span class="tag">${th.rarity[m.rarity]}</span>` : '';
+    const src = itemSources(id).map((x) => `<li>${sourceText(x)}</li>`).join('') || `<li class="meta">${M.noSource}</li>`;
+    const use = itemUses(id).map((x) => `<li>${useText(x)}</li>`).join('') || `<li class="meta">${M.noUse}</li>`;
+    return `<div class="detail">${img(materialIconUrl(id), 'ico lg')}<div><b>${th.materials[id]}</b>${tag}<p class="meta">${M.have(s.inv[id])}</p><div class="dcols"><div><h4>${M.sourcesTitle}</h4><ul>${src}</ul></div><div><h4>${M.usesTitle}</h4><ul>${use}</ul></div></div></div></div>`;
   }
 
   private forge(s: GameState): string {
@@ -162,10 +247,10 @@ export class Sheet {
       else if (own) btn = `<button type="button" data-equip="${k}" ${iv ? '' : 'disabled'}>${th.menu.equip}</button>`;
       else btn = `<button type="button" class="primary" data-craft="${k}" ${iv && w.recipe && canAfford(s.inv, w.recipe) ? '' : 'disabled'}>${th.menu.craft}</button>`;
       const speed = w.rate < 0.5 ? th.menu.speed.fast : w.rate < 0.8 ? th.menu.speed.mid : th.menu.speed.slow;
-      h += `<div class="rc${eq ? ' eq' : ''}"><h3><span class="sw" style="background:${w.color}"></span>${th.weapons[k].name}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], w.damage, speed, th.weapons[k].desc)}</div>${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}${btn}</div>`;
+      h += `<div class="rc${eq ? ' eq' : ''}"><h3>${img(weaponIconUrl(k))}${th.weapons[k].name}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], w.damage, speed, th.weapons[k].desc)}</div>${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}${btn}</div>`;
     }
     const P = TUNING.player.potion;
-    h += `<div class="rc"><h3><span class="sw" style="background:#d84a62"></span>${th.menu.potionName}</h3><div class="meta">${th.menu.potionMeta(P.heal, p.potions)}</div><div class="req">${this.req(s, { herb: P.herbCost })}</div><button type="button" class="primary" data-potion="1" ${iv && s.inv.herb >= P.herbCost ? '' : 'disabled'}>${th.menu.brew}</button></div></div>`;
+    h += `<div class="rc"><h3>${img(potionIconUrl())}${th.menu.potionName}</h3><div class="meta">${th.menu.potionMeta(P.heal, p.potions)}</div><div class="req">${this.req(s, { herb: P.herbCost })}</div><button type="button" class="primary" data-potion="1" ${iv && s.inv.herb >= P.herbCost ? '' : 'disabled'}>${th.menu.brew}</button></div></div>`;
     return h;
   }
 
@@ -179,7 +264,7 @@ export class Sheet {
     h += '<div class="recipes">';
     for (const [id, ml] of Object.entries(MEALS) as [MealId, (typeof MEALS)[MealId]][]) {
       const on = cur === id;
-      h += `<div class="rc${on ? ' eq' : ''}"><h3><span class="sw" style="background:${ml.color}"></span>${th.meals[id].name}</h3><div class="meta">${th.meals[id].desc}</div><div class="req">${this.req(s, ml.recipe)}</div><button type="button" class="primary" data-meal="${id}" ${iv && canAfford(s.inv, ml.recipe) && !on ? '' : 'disabled'}>${on ? th.menu.eating : th.menu.cookAndEat}</button></div>`;
+      h += `<div class="rc${on ? ' eq' : ''}"><h3>${img(mealIconUrl(id))}${th.meals[id].name}</h3><div class="meta">${th.meals[id].desc}</div><div class="req">${this.req(s, ml.recipe)}</div><button type="button" class="primary" data-meal="${id}" ${iv && canAfford(s.inv, ml.recipe) && !on ? '' : 'disabled'}>${on ? th.menu.eating : th.menu.cookAndEat}</button></div>`;
     }
     return `${h}</div>`;
   }
@@ -189,7 +274,7 @@ export class Sheet {
     const sel = CROPS[s.selCrop];
     let h = iv ? `<p class="note ok">${th.menu.farmInVillage}</p>` : `<p class="note warn">${th.menu.farmNotInVillage}</p>`;
     h += `<h3 class="sec">${th.menu.seedToPlant}</h3><div class="seeds">${(Object.keys(CROPS) as CropId[])
-      .map((id) => `<button type="button" data-seed="${id}" class="${s.selCrop === id ? 'on' : ''}"><span class="sw" style="background:${CROPS[id].color}"></span>${th.crops[id].name} <b>${s.inv[CROPS[id].seed]}</b></button>`)
+      .map((id) => `<button type="button" data-seed="${id}" class="${s.selCrop === id ? 'on' : ''}">${img(materialIconUrl(CROPS[id].seed), 'ico sm')}${th.crops[id].name} <b>${s.inv[CROPS[id].seed]}</b></button>`)
       .join('')}</div>`;
     h += `<p class="note">${th.menu.growInfo(th.crops[s.selCrop].name, fmtTime(sel.growSeconds), th.crops[s.selCrop].source)}</p>`;
     h += `<label class="chk"><input type="checkbox" id="useFert" ${s.useFert ? 'checked' : ''}> ${th.menu.useFert(s.inv.fert)}</label>`;
@@ -223,6 +308,16 @@ export class Sheet {
       this.hooks.reset();
       return;
     }
+    if (d.filter) {
+      this.filter = d.filter as BagFilter;
+      this.render();
+      return;
+    }
+    if (d.item) {
+      this.sel = this.sel === d.item ? null : (d.item as ItemKey);
+      this.render();
+      return;
+    }
     if (d.seed) {
       s.selCrop = d.seed as CropId;
       this.hooks.changed();
@@ -252,6 +347,28 @@ export class Sheet {
     this.hooks.changed();
     this.render();
   }
+}
+
+function sourceText(x: ItemSource): string {
+  const S = th.menu.source;
+  const pct = (c: number): number => Math.round(c * 100);
+  if (x.kind === 'crop') return `${img(materialIconUrl(CROPS[x.crop].seed), 'ico sm')}${S.crop(th.crops[x.crop].name)}`;
+  if (x.kind === 'gather') return x.chance >= 1 ? S.gather[x.node] : S.gatherChance(S.gather[x.node], pct(x.chance));
+  const mon = th.monsters[x.monster];
+  const icon = img(monsterIconUrl(x.monster), 'ico mon');
+  if (x.kind === 'part') return `${icon}${S.part((mon.parts as Partial<Record<string, string>>)[x.part] ?? x.part, mon.name)}`;
+  if (x.kind === 'carve') return `${icon}${S.carve(mon.name)}`;
+  if (x.kind === 'bonus') return `${icon}${S.bonus(mon.name, pct(x.chance))}`;
+  return `${icon}${S.rare(mon.name, pct(x.chance))}`;
+}
+
+function useText(x: ItemUse): string {
+  const U = th.menu.use;
+  if (x.kind === 'weapon') return `${img(weaponIconUrl(x.weapon), 'ico sm')}${U.weapon(th.weapons[x.weapon].name)}`;
+  if (x.kind === 'meal') return `${img(mealIconUrl(x.meal), 'ico sm')}${U.meal(th.meals[x.meal].name)}`;
+  if (x.kind === 'potion') return `${img(potionIconUrl(), 'ico sm')}${U.potion}`;
+  if (x.kind === 'plant') return U.plant(th.crops[x.crop].name);
+  return U.fertilizer;
 }
 
 function escapeHtml(s: string): string {

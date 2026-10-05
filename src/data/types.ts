@@ -17,9 +17,14 @@ export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon';
 
 export type ItemBag = Partial<Record<MaterialId, number>>;
 
+/** Procedural icon shape drawn by art/icons.ts; `color` tints it. */
+export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack'] as const;
+export type IconShape = (typeof ICON_SHAPES)[number];
+
 export interface MaterialDef {
   color: string;
   category: 'material' | 'seed';
+  icon: IconShape;
   /** 1 = rare, 2 = very rare */
   rarity?: 1 | 2;
 }

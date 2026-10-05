@@ -20,6 +20,7 @@ import type {
   WeaponType,
   WeaponsData,
 } from './types';
+import { ICON_SHAPES } from './types';
 
 export class DataError extends Error {
   constructor(path: string, message: string) {
@@ -96,6 +97,7 @@ export function loadMaterials(v: unknown): Record<MaterialId, MaterialDef> {
     const def: MaterialDef = {
       color: color(m.color, `${p}.color`),
       category: oneOf(m.category, `${p}.category`, ['material', 'seed'] as const),
+      icon: oneOf(m.icon, `${p}.icon`, ICON_SHAPES),
     };
     const rarity = optional(m, 'rarity', (r) => num(r, `${p}.rarity`, 1, 2));
     if (rarity !== undefined) def.rarity = rarity as 1 | 2;

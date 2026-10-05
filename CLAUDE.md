@@ -77,7 +77,8 @@ src/
     terrain.ts             # พื้น น้ำ ขอบหน้าผา ทาง ลานหิน ต้นไม้ (พุ่มแยกชั้น)
     buildings.ts           # บ้าน น้ำพุ ทั่ง หม้อ โคมไฟ
     sprites.ts             # ผู้เล่น มอน (MONSTER_SPRITES: builder ละตัว) อาวุธ จุดเก็บของ
-  ui/                      # DOM overlay: hud.ts, actionPad.ts, sheet.ts, format.ts, *.css
+    icons.ts               # ไอคอนไอเท็ม 18×18 สำหรับเมนู (รูปทรงตาม `icon` ใน materials.json) แคชเป็น data URL
+  ui/                      # DOM overlay: hud.ts, actionPad.ts, sheet.ts, format.ts, itemInfo.ts (ได้จาก/ใช้ทำ คำนวณจาก data), *.css
   data/                    # เนื้อหาเกมเป็น JSON + types.ts + validate.ts (ตรวจตอนโหลด)
     monsters.json
     weapons.json
