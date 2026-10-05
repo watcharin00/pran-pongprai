@@ -7,6 +7,7 @@ import type { GameState, MonsterState } from '../core/state';
 import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
 import { TABS, type Tab } from './sheet';
+import { Minimap } from './minimap';
 
 export interface LogEntry {
   msg: string;
@@ -19,6 +20,7 @@ export class Hud {
   private zoneTimer = 0;
   private partsKey = '';
   onLog: (() => void) | null = null;
+  readonly minimap: Minimap;
 
   constructor(
     overlay: HTMLElement,
@@ -35,6 +37,7 @@ export class Hud {
             <span id="mealChip" class="chip" hidden><span class="sw" id="mealSw"></span><span id="mealName"></span><b id="mealTime"></b></span>
             <button id="goalLine" type="button"><b>${th.hud.goal}</b><span id="goalT"></span></button>
           </div>
+          <canvas id="minimap" role="button" aria-label="${th.menu.tabs.map}"></canvas>
         </div>
         <div id="boss" hidden>
           <div class="bhead"><b id="bName"></b><span class="parts" id="bParts"></span><span id="bTime" class="tm"></span></div>
@@ -53,6 +56,9 @@ export class Hud {
     $(overlay, '#autoBtn').addEventListener('click', handlers.onAuto);
     overlay.querySelectorAll<HTMLElement>('[data-menu]').forEach((b) => b.addEventListener('click', () => handlers.onMenu(b.dataset.menu as Tab)));
     $(overlay, '#goalLine').addEventListener('click', handlers.onGoal);
+    const mm = $(overlay, '#minimap') as HTMLCanvasElement;
+    this.minimap = new Minimap(mm);
+    mm.addEventListener('click', () => handlers.onMenu('map'));
   }
 
   private q(sel: string): HTMLElement {

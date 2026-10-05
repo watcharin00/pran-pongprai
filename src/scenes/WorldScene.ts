@@ -553,6 +553,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.updateCamera(raw);
     this.draw();
     this.text.update(this, raw);
+    this.hud.minimap.draw(s);
 
     this.uiT -= raw;
     if (this.uiT <= 0) {
