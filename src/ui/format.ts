@@ -58,6 +58,9 @@ export const ICONS = {
   kingcrush: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-3 0-5 2-5 5 0 2 2 3 5 3s5-1 5-3c0-3-2-5-5-5z"/><path d="M12 11v5M4 20h16M7 17l-2 3M17 17l2 3"/></svg>',
   batstorm: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10c3-3 6-3 7 0 1-2 5-2 6 0 1-3 4-3 7 0"/><path d="M5 17h14M15 14l4 3-4 3"/></svg>',
   nagafury: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c4 0 4-5 8-5s4 5 8 5"/><path d="M12 15V4M9 6l3-3 3 3M8 10h8"/></svg>',
+  tidelunge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10h16M15 7l4 3-4 3"/><path d="M2 17c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>',
+  crabpincer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-6 3-9 8-10M5 5c0 6 3 9 8 10"/><path d="M13 9l6-3M13 15l6 3"/></svg>',
+  pearlrain: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><path d="M10 8l10-3M10 12h11M10 16l10 3"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h19M18 9l3 3-3 3"/><path d="M4 6l4 6-4 6" stroke-width="1.8"/></svg>',
   // one icon per menu tab (HUD top-right)
   tab_bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M5 9h14l-1 11H6z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/><path d="M9 13h6"/></svg>',

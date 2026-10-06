@@ -11,6 +11,7 @@
     "gingerfowl": { "recipe": { "fowlmeat": 1, "ginger": 2 },                 "color": "#e8c070", "effect": { "maxHpBonus": 10, "staminaRegenMul": 1.5, "dodgeCost": 18 } },
     "deergrill":  { "recipe": { "deermeat": 2, "lemongrass": 1, "pepper": 1 },  "color": "#c86a5a", "effect": { "attackMul": 1.25 } },
     "plaphao":    { "recipe": { "fish": 2, "lemongrass": 1 },                  "color": "#8a9aa8", "effect": { "maxHpBonus": 15, "defense": 8 } },
+    "crabcurry":  { "recipe": { "crabmeat": 1, "pepper": 1, "rice": 1 },         "color": "#e8a040", "effect": { "defense": 12, "attackMul": 1.1 } },
     "hormok":     { "recipe": { "fish": 1, "banana": 1, "pepper": 1 },         "color": "#d8a040", "effect": { "attackMul": 1.15, "staminaRegenMul": 1.2 } }
   }
 }

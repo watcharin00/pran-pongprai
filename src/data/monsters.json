@@ -340,5 +340,73 @@
       { "id": "tailwhip",   "shape": "circle", "radius": 26, "offset": -18, "telegraph": 0.8, "damage": 34, "range": 34, "weight": 2 },
       { "id": "hoodrise",   "shape": "circle", "radius": 44, "offset": 0, "telegraph": 1.2, "damage": 38, "range": 40, "weight": 1 }
     ]
+  },
+  "otter": {
+    "weakTo": "spear",
+    "area": "mangrove",
+    "hp": 3000, "speed": 70, "size": 7, "aggroRadius": 64, "zone": "forest", "spawnMinVillageDist": 0,
+    "huntTime": 90, "turnTime": 0.2, "recover": 0.6, "respawn": 14, "count": 5,
+    "rage": null,
+    "parts": {
+      "tail": { "hp": 700, "drop": { "ottertail": 1 }, "offset": [-6, 0] }
+    },
+    "carve": [
+      { "item": "otterpelt", "min": 1, "max": 2 },
+      { "item": "fish",      "min": 0, "max": 1 },
+      { "item": "fert",      "min": 1, "max": 1 }
+    ],
+    "bonus": { "seed_lotus": 0.3 },
+    "rare": {},
+    "attacks": [
+      { "id": "bite", "shape": "circle", "radius": 12, "offset": 9, "telegraph": 0.45, "damage": 26, "range": 16, "weight": 3 },
+      { "id": "dive", "shape": "line", "length": 90, "width": 14, "telegraph": 0.7, "damage": 32, "range": 90, "minRange": 26, "dash": true, "weight": 2 }
+    ]
+  },
+  "mudcrab": {
+    "weakTo": "sword",
+    "area": "mangrove",
+    "hp": 2600, "speed": 30, "size": 10, "aggroRadius": 50, "zone": "forest", "spawnMinVillageDist": 0,
+    "huntTime": 120, "turnTime": 0.6, "recover": 1.0, "respawn": 18, "count": 3,
+    "rage": null,
+    "parts": {
+      "head": { "hp": 600, "drop": { "crabclaw": 2 }, "offset": [7, -2] }
+    },
+    "carve": [
+      { "item": "crabshell", "min": 2, "max": 3 },
+      { "item": "crabmeat",  "min": 1, "max": 1 },
+      { "item": "fert",      "min": 1, "max": 1 }
+    ],
+    "bonus": {},
+    "rare": {},
+    "attacks": [
+      { "id": "pinch",    "shape": "circle", "radius": 14, "offset": 11, "telegraph": 0.6, "damage": 30, "range": 20, "weight": 3 },
+      { "id": "scuttle",  "shape": "line", "length": 70, "width": 20, "telegraph": 0.8, "damage": 30, "range": 70, "minRange": 20, "dash": true, "weight": 2 },
+      { "id": "clawslam", "shape": "circle", "radius": 24, "offset": 0, "telegraph": 0.85, "damage": 32, "range": 22, "weight": 2 }
+    ]
+  },
+  "saltcroc": {
+    "weakTo": "greatsword",
+    "area": "mangrove",
+    "hp": 13000, "speed": 38, "size": 19, "aggroRadius": 66, "zone": "forest", "spawnMinVillageDist": 0,
+    "huntTime": 240, "turnTime": 1.0, "recover": 1.1, "respawn": 40, "count": 1,
+    "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.3, "damageMul": 1.2 },
+    "parts": {
+      "head": { "hp": 2800, "drop": { "saltfang": 2 }, "offset": [18, -1] },
+      "tail": { "hp": 2000, "drop": { "salttail": 1 }, "offset": [-18, 0] }
+    },
+    "carve": [
+      { "item": "salthide", "min": 4, "max": 5 },
+      { "item": "saltfang", "min": 0, "max": 1 },
+      { "item": "fert",     "min": 3, "max": 3 }
+    ],
+    "bonus": {},
+    "rare": { "blackpearl": 0.25 },
+    "attacks": [
+      { "id": "chomp",     "shape": "circle", "radius": 22, "offset": 16, "telegraph": 0.7, "damage": 40, "range": 28, "weight": 3 },
+      { "id": "tailsweep", "shape": "circle", "radius": 30, "offset": -22, "telegraph": 0.9, "damage": 42, "range": 40, "weight": 2 },
+      { "id": "deathroll", "shape": "line", "length": 110, "width": 28, "telegraph": 1.0, "damage": 50, "range": 110, "minRange": 30, "dash": true, "weight": 2 },
+      { "id": "lunge",     "shape": "line", "length": 160, "width": 24, "telegraph": 1.1, "damage": 52, "range": 160, "minRange": 60, "dash": true, "weight": 1 },
+      { "id": "tidewave",  "shape": "circle", "radius": 48, "offset": 0, "telegraph": 1.2, "damage": 44, "range": 44, "weight": 1 }
+    ]
   }
 }

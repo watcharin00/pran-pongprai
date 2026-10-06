@@ -44,6 +44,13 @@ const PALETTES: Record<Biome, GroundPalette> = {
     sand: ['#c9c4b4', '#d3cebf', '#ddd8ca', '#e6e2d5'],
     water: ['#2a9aa8', '#30a4b2', '#38aebc'],
   },
+  mangrove: {
+    // bright tidal coast: green banks, grey-brown mud flats, sea-green channels
+    grass: ['#5f9a46', '#6aa64e', '#76b056', '#82ba60'],
+    dark: ['#41783a', '#4a8240', '#538c46'],
+    sand: ['#a89678', '#b3a284', '#bdad90', '#c8b99c'],
+    water: ['#2a9a98', '#30a6a2', '#38b2ac'],
+  },
   cave: {
     // bright limestone cave (no dark areas): cream floor, pale walls, clear blue pools
     grass: ['#cdc3a8', '#d6cdb3', '#ded6be', '#e6dfca'],
@@ -177,13 +184,13 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
         const dn = !isWater(tx, ty + 1);
         const lf = !isWater(tx - 1, ty);
         const rt = !isWater(tx + 1, ty);
-        if (up && map.biome === 'swamp' && ly < 3) {
+        if (up && (map.biome === 'swamp' || map.biome === 'mangrove') && ly < 3) {
           // muddy bank instead of a cliff face
           c = ly === 0 ? EDGE_LINE : ly === 1 ? '#6a5a34' : '#4a6a4a';
         } else if (up && map.biome === 'cave' && ly < 3) {
           // smooth stone rim of a cave pool
           c = ly === 0 ? EDGE_LINE : ly === 1 ? '#b9ae93' : '#5fb4c8';
-        } else if (up && map.biome !== 'swamp' && map.biome !== 'cave' && ly < 6) {
+        } else if (up && map.biome !== 'swamp' && map.biome !== 'mangrove' && map.biome !== 'cave' && ly < 6) {
           // cliff face dropping into the water
           const above = tileAt(map, tx, ty - 1);
           c = ly === 0 ? (isGrassTile(above) ? EDGE_LINE : '#f3dca0') : ly === 5 ? '#5a3418' : (lx + (ly >> 1)) % 5 === 0 ? '#9a5a2a' : ly < 3 ? '#d4914a' : '#bf7a3a';
@@ -443,8 +450,25 @@ function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
       const cy = ty * 16 - 3;
       const v = hash(tx * 3, ty * 5);
       // mostly green, some mint and a few autumn-orange trees
-      const pal = v < 0.06 ? ['#8a3a1c', '#c0582a', '#e08040', '#f4b060'] : v < 0.3 ? ['#2a6a4a', '#3c8a5a', '#58ac6a', '#8ad48a'] : ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
+      const mangrove = map.biome === 'mangrove';
+      const pal = mangrove
+        ? v < 0.35 ? ['#1f5a3a', '#2c7a4a', '#46985a', '#74c07a'] : ['#24572e', '#327a3c', '#4c9646', '#78be5c']
+        : v < 0.06 ? ['#8a3a1c', '#c0582a', '#e08040', '#f4b060'] : v < 0.3 ? ['#2a6a4a', '#3c8a5a', '#58ac6a', '#8ad48a'] : ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
       ell(mb, cx + 3, ty * 16 + 14, 10, 3.2, '#000000', 0.22);
+      if (mangrove) {
+        // stilt roots arching out of the mud on both sides of the trunk
+        for (const side of [-1, 1] as const) {
+          for (let k = 0; k < 2; k++) {
+            const reach = 4 + k * 2;
+            for (let i = 0; i <= reach; i++) {
+              const x = cx + side * (1 + i);
+              const y = ty * 16 + 9 + k * 2 + Math.round((i / reach) ** 2 * (5 - k * 2));
+              sp(mb, x, y, '#5a3a22');
+              sp(mb, x, y - 1, '#a8703c');
+            }
+          }
+        }
+      }
       for (let y = ty * 16 + 6; y < ty * 16 + 16; y++) {
         sp(mb, cx - 2, y, '#7a3e1c');
         sp(mb, cx - 1, y, '#d0803e');

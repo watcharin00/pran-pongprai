@@ -628,7 +628,121 @@ function buildKingcobra(f: number, hb: boolean, tb: boolean): HTMLCanvasElement 
   return finish(b);
 }
 
+/** นากใหญ่ (smooth otter): long sleek brown body, small round head, thick tapering tail. Tail part = tail. */
+function buildOtter(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(29, 14);
+  const o = 1;
+  const B = '#7a5a3a';
+  const D = '#5a4028';
+  const L = '#d8c0a0';
+  // tail: thick at the base, tapering; broken = a stub
+  const len = tb ? 2 : 8;
+  for (let i = 0; i < len; i++) {
+    const h = Math.max(1, Math.round(2.6 - i * 0.28));
+    rect(b, 7 - i + o, 7 - Math.floor(h / 2) + Math.round(Math.sin(i * 0.6 + f) * 0.6) + o, 1, h, i % 2 ? D : B);
+  }
+  legs(b, f, [[9 + o, 0], [11 + o, 1], [17 + o, 0], [19 + o, 1]], 9 + o, 2, 2, B, D, '#3a2818');
+  ell(b, 14 + o, 7 + o, 7.2, 2.6, B);
+  ell(b, 14 + o, 8.6 + o, 5.4, 1, L);
+  // head, pale chin, whiskers
+  ell(b, 22 + o, 6 + o, 2.8, 2.3, B);
+  rect(b, 23 + o, 7 + o, 3, 1, L);
+  sp(b, 25 + o, 5 + o, '#221a2a');
+  sp(b, 22 + o, 5 + o, '#221a2a');
+  sp(b, 20 + o, 4 + o, D);
+  sp(b, 26 + o, 7 + o, '#e8e0cc');
+  return finish(b);
+}
+
+/** ปูทะเลยักษ์ (giant mud crab): wide dark shell, scuttling legs, big orange-tipped claws. Head part = claws. */
+function buildMudcrab(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(29, 19);
+  const o = 1;
+  const B = '#4a5a5a';
+  const D = '#2e3a3a';
+  const C = '#e0603a';
+  // jointed walking legs splaying out under the shell, alternating as it scuttles
+  for (let i = 0; i < 4; i++) {
+    const lift = (f + i) % 2;
+    const x = 5 + i * 3;
+    const lean = i < 2 ? -1 : 1;
+    sp(b, x + o, 12 + o, D);
+    sp(b, x + lean + o, 13 - lift + o, D);
+    sp(b, x + lean * 2 + o, 14 - lift + o, D);
+    sp(b, x + lean * 2 + o, 15 - lift + o, '#1e2626');
+  }
+  // flat wide shell with a lighter back and a darker rim
+  ell(b, 12 + o, 9.5 + o, 9, 3.8, D);
+  ell(b, 12 + o, 9 + o, 8, 3.1, B);
+  ell(b, 10.5 + o, 8 + o, 4.4, 1.3, '#6a7a7a');
+  for (let x = 6; x <= 18; x += 3) sp(b, x + o, 6 + o, D);
+  // eyes on stalks above the shell
+  rect(b, 16 + o, 4 + o, 1, 2, D);
+  rect(b, 18 + o, 4 + o, 1, 2, D);
+  sp(b, 16 + o, 3 + o, '#221a2a');
+  sp(b, 18 + o, 3 + o, '#221a2a');
+  // claws reaching forward; broken = small stubs
+  if (!hb) {
+    const snap = f % 2;
+    ell(b, 23 + o, 8 + o, 3.4, 2.4, C);
+    rect(b, 25 + o, 6 - snap + o, 3, 1, '#f4a070');
+    rect(b, 25 + o, 9 + o, 3, 1, '#b84828');
+    ell(b, 22 + o, 13 + o, 2.8, 2, C);
+    rect(b, 24 + o, 12 + o, 2, 1, '#f4a070');
+    rect(b, 20 + o, 9 + o, 2, 2, D);
+  } else {
+    ell(b, 21 + o, 9 + o, 1.6, 1.2, '#8a4a3a');
+    ell(b, 21 + o, 12 + o, 1.4, 1, '#8a4a3a');
+  }
+  return finish(b);
+}
+
+/** จระเข้น้ำเค็ม (saltwater crocodile): bigger and paler than the swamp crocodile, heavy jaw, ridged tail. */
+function buildSaltcroc(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(57, 23);
+  const o = 1;
+  const B = '#6a6a4a';
+  const D = '#46462e';
+  const L = '#d8d0a8';
+  const len = tb ? 7 : 19;
+  for (let i = 0; i < len; i++) {
+    const x = 18 - i;
+    const h = Math.max(1, Math.round(4.4 - i * 0.2));
+    const y = 11 + Math.round(Math.sin(i * 0.4 + f * 0.8) * (i / 9));
+    rect(b, x + o, y - Math.floor(h / 2) + o, 1, h, i % 3 === 0 ? D : B);
+    if (i % 2 === 0) sp(b, x + o, y - Math.floor(h / 2) - 1 + o, D);
+  }
+  lizardLegs(b, f, [[19 + o, 0], [23 + o, 1], [34 + o, 0], [38 + o, 1]], 15 + o, D, '#c8c0a0');
+  ell(b, 29 + o, 11.5 + o, 12, 4.4, B);
+  ell(b, 29 + o, 14 + o, 9, 1.4, L);
+  // two rows of scutes along the back
+  for (let x = 18; x <= 40; x += 2) {
+    sp(b, x + o, 7 + o + (x % 4 === 0 ? 0 : 1), D);
+    if (x % 4 === 2) sp(b, x + o, 9 + o, '#585838');
+  }
+  // broad head and a heavy snout
+  ell(b, 43 + o, 11 + o, 4.2, 3.2, B);
+  rect(b, 44 + o, 9 + o, 11, 4, B);
+  rect(b, 44 + o, 12 + o, 11, 1, D);
+  rect(b, 52 + o, 9 + o, 2, 1, D);
+  sp(b, 43 + o, 8 + o, '#ffd84a');
+  sp(b, 42 + o, 8 + o, D);
+  if (!hb) {
+    for (let x = 45; x <= 54; x += 2) {
+      sp(b, x + o, 12 + o, '#f4eed4');
+      sp(b, x + 1 + o, 13 + o, '#f4eed4');
+    }
+  } else {
+    sp(b, 49 + o, 12 + o, '#8a6a5a');
+    sp(b, 50 + o, 13 + o, '#8a6a5a');
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  otter: (f, _hb, tb) => buildOtter(f, tb),
+  mudcrab: (f, hb) => buildMudcrab(f, hb),
+  saltcroc: (f, hb, tb) => buildSaltcroc(f, hb, tb),
   flyingfox: (f, hb) => buildFlyingfox(f, hb),
   porcupine: (f, _hb, tb) => buildPorcupine(f, tb),
   kingcobra: (f, hb, tb) => buildKingcobra(f, hb, tb),

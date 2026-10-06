@@ -84,8 +84,10 @@ describe('area maps', () => {
         }
       }
       // water and cliffs may cut a trail, but most waypoints must still join up through wide lanes
+      // (the water maps — home's river, the swamp, the mangrove channels — are allowed more cuts;
+      // reaching every exit and monster is still checked below)
       const joined = points.filter(([x, y]) => seen[y * MW + x]).length;
-      expect(joined / points.length, id).toBeGreaterThanOrEqual(id === 'home' || id === 'swamp' ? 0.5 : 0.9);
+      expect(joined / points.length, id).toBeGreaterThanOrEqual(id === 'home' || id === 'swamp' || id === 'mangrove' ? 0.5 : 0.9);
     }
   });
 

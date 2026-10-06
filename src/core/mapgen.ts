@@ -178,7 +178,7 @@ export function stampVillageQuarter(tiles: Uint8Array): void {
 
 export type Edge = 'n' | 's' | 'e' | 'w';
 /** Ground palette / decoration set used by the terrain painter. */
-export type Biome = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave';
+export type Biome = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave' | 'mangrove';
 
 /** An opening in the map border that leads to another area. */
 export interface AreaExit {

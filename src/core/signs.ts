@@ -35,7 +35,7 @@ export function signposts(map: WorldMap): Signpost[] {
 }
 
 /** First open tile beside the exit road, a few tiles past the arrival point so it clears the HUD and the action pad at the screen edges. */
-function exitSignTile(map: WorldMap, e: { edge: Edge; at: number; width: number }): [number, number] | null {
+export function exitSignTile(map: Pick<WorldMap, 'tiles'>, e: { edge: Edge; at: number; width: number }): [number, number] | null {
   const vertical = e.edge === 'n' || e.edge === 's';
   for (const d of [7, 6, 8, 5, 9]) {
     for (const side of [e.at + e.width, e.at - 1]) {

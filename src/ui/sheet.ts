@@ -70,6 +70,7 @@ const WORLD_GRID: Record<AreaId, [number, number]> = {
   limestone: [2, 3],
   cave: [2, 2],
   swamp: [1, 4],
+  mangrove: [1, 5],
 };
 
 /** Connections drawn between world-map nodes (the area exits). */
@@ -79,6 +80,7 @@ const WORLD_LINKS: readonly [AreaId, AreaId][] = [
   ['home', 'limestone'],
   ['limestone', 'cave'],
   ['home', 'swamp'],
+  ['swamp', 'mangrove'],
 ];
 
 /** Integer pixel scale that makes a portrait roughly `target` px wide. */

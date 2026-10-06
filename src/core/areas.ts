@@ -5,9 +5,10 @@ import type { AreaId, ZoneId } from '../data/types';
 import { TUNING } from '../data';
 import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampEastFields, stampVillageQuarter, T, Tile, VILLAGE, walkable, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
 import { parkMiller, vnoise } from './rng';
+import { exitSignTile } from './signs';
 import { openTrails } from './trails';
 
-export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave'];
+export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave', 'mangrove'];
 
 interface AreaSpec {
   seed: number;
@@ -21,7 +22,8 @@ interface AreaSpec {
 const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   bamboo: { seed: 7101, biome: 'bamboo', zone: 'bamboo', exits: [{ edge: 's', at: 30, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'deepwild' }] },
   deepwild: { seed: 7404, biome: 'deepwild', zone: 'deepwild', exits: [{ edge: 's', at: 30, width: 3, to: 'bamboo' }] },
-  swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }] },
+  swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }, { edge: 's', at: 30, width: 3, to: 'mangrove' }] },
+  mangrove: { seed: 7606, biome: 'mangrove', zone: 'mangrove', exits: [{ edge: 'n', at: 30, width: 3, to: 'swamp' }] },
   limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }] },
   cave: { seed: 7505, biome: 'cave', zone: 'cave', exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
 };
@@ -166,6 +168,13 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
           if (r < 0.09) set(x, y, Tile.ROCK);
           else if (r < 0.17 && n < 0.45) set(x, y, Tile.TREE);
           break;
+        case 'mangrove':
+          // tidal channels, mud flats along them, mangroves crowding the banks
+          if (n > 0.67) set(x, y, Tile.WATER);
+          else if (n > 0.57) set(x, y, r < 0.3 ? Tile.TREE : Tile.SAND);
+          else if (r < 0.22) set(x, y, Tile.TREE);
+          else if (r > 0.95) set(x, y, Tile.BUSH);
+          break;
         case 'cave':
           // clear pools in the low spots, stalagmite clumps (TREE tiles, painted as stone) on the rest
           if (n > 0.68) set(x, y, Tile.WATER);
@@ -189,6 +198,15 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
     carvePath(tiles, [ex, ey], centre, Math.max(2, e.width - 1), i % 2 === 0 ? e.edge === 'e' || e.edge === 'w' : !(e.edge === 'e' || e.edge === 'w'));
     for (const [x, y] of exitTiles(e, 4)) set(x, y, Tile.SAND);
   });
+  // every exit road gets a signpost: if water or trees fill both roadsides, clear one spot for it
+  for (const e of spec.exits) {
+    if (exitSignTile({ tiles }, e)) continue;
+    const side = e.at + e.width;
+    if (e.edge === 'n') set(side, 7, Tile.GRASS);
+    else if (e.edge === 's') set(side, MH - 8, Tile.GRASS);
+    else if (e.edge === 'w') set(7, side, Tile.GRASS);
+    else set(MW - 8, side, Tile.GRASS);
+  }
   // an open clearing in the middle so every area has room to fight
   for (let y = centre[1] - 3; y <= centre[1] + 3; y++) for (let x = centre[0] - 4; x <= centre[0] + 4; x++) if (get(x, y) !== Tile.SAND) set(x, y, Tile.GRASS);
 
