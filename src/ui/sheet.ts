@@ -4,7 +4,7 @@ import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONS
 import { ARMOR_SLOTS, MEDALS, type CropBed, type MealEffect, type AreaId, type ArmorId, type ArmorSlot, type WeaponType, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
 import { freePlotsFor, plantAll, plantOne, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
-import { AREA_IDS } from '../core/areas';
+import { AREA_IDS, areaMap } from '../core/areas';
 import { ELDER_HOUSE, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
 import { allRequestsDone, currentRequest } from '../core/requests';
 import { hasMedal, medalCount } from '../core/medals';
@@ -82,18 +82,25 @@ const TYPE_ICON_WEAPON: Record<WeaponType, WeaponId> = Object.fromEntries(
 const SKILL_ICONS = ICONS as Readonly<Record<string, string>>;
 export const TABS: readonly Tab[] = ['bag', 'forge', 'kitchen', 'farm', 'book', 'map'];
 
-/** World-map grid position (column, row) of each area, matching the exits. */
-const WORLD_GRID: Record<AreaId, [number, number]> = {
-  deepwild: [1, 1],
-  peat: [0, 1],
-  bamboo: [1, 2],
-  home: [1, 3],
-  limestone: [2, 3],
-  cave: [2, 2],
-  savanna: [3, 3],
-  swamp: [1, 4],
-  mangrove: [1, 5],
+/**
+ * Island centres on the world-map board (% of width, % of height). Hand-placed as an archipelago,
+ * but every neighbour keeps the direction of the exit between them (swamp south of home, peat west
+ * of the deep wild, ...); vertical gaps leave room for each island's label.
+ */
+const AREA_POS: Record<AreaId, [number, number]> = {
+  peat: [14, 22],
+  deepwild: [40, 13],
+  bamboo: [40, 31],
+  cave: [71, 29],
+  home: [38, 51],
+  limestone: [68, 50],
+  savanna: [84, 69],
+  swamp: [34, 71],
+  mangrove: [18, 87],
 };
+
+/** Goal step (1-based) whose hunt happens in each area, shown instead of a level. */
+const AREA_STEP: Record<AreaId, number> = { home: 1, bamboo: 5, swamp: 6, limestone: 7, deepwild: 8, cave: 9, mangrove: 10, peat: 11, savanna: 12 };
 
 /** Connections drawn between world-map nodes (the area exits). */
 const WORLD_LINKS: readonly [AreaId, AreaId][] = [
@@ -142,6 +149,7 @@ export class Sheet {
   private mealFilter: MealFilter = 'all';
   private mealSel: MealId | null = null;
   private bedFilter: BedFilter = 'all';
+  private mapSel: AreaId | null = null;
   private dirty = false;
   private refreshT = 0;
 
@@ -720,11 +728,79 @@ export class Sheet {
   /** Map tab: the current area with the player and its exits, then the world grid. */
   private worldMap(s: GameState): string {
     const M = th.menu.map;
+    const sel = this.mapSel ?? s.area;
+    this.mapSel = sel;
+    const cx = (id: AreaId): number => AREA_POS[id][0];
+    const cy = (id: AreaId): number => AREA_POS[id][1];
+
+    // trails between connected areas (dashed), drawn under the islands
+    const lines = WORLD_LINKS.map(([a, b]) => {
+      const known = s.visited.has(a) && s.visited.has(b);
+      return `<line x1="${cx(a)}" y1="${cy(a)}" x2="${cx(b)}" y2="${cy(b)}" class="${known ? 'known' : ''}"/>`;
+    }).join('');
+    const regions = AREA_IDS.map((id) => {
+      const seen = s.visited.has(id);
+      const here = s.area === id;
+      const pic = seen ? `<img src="${areaThumbUrl(areaMap(id))}" alt="">` : `<span class="wfog">${ICONS.lock}</span>`;
+      return `<button type="button" class="wreg${seen ? '' : ' locked'}${here ? ' here' : ''}${sel === id ? ' sel' : ''}" style="left:${cx(id)}%;top:${cy(id)}%" data-area="${id}" aria-label="${th.areas[id]}"><span class="wisle">${pic}</span><span class="wlabel"><b>${th.areas[id]}</b><small>${M.step(AREA_STEP[id])}</small></span>${here ? `<span class="wpin">${ICONS.mappin}</span>` : ''}</button>`;
+    }).join('');
+    const board = `<div class="wboard"><svg class="wlinks" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>${regions}<span class="wcompass">${ICONS.compass}</span></div>`;
+    return `<div class="wmap">${board}${this.areaPanel(s, sel)}</div>`;
+  }
+
+  /** Details of one area: picture (live for the current one), description, monsters, drops, how to get there. */
+  private areaPanel(s: GameState, id: AreaId): string {
+    const M = th.menu.map;
+    const seen = s.visited.has(id);
+    const here = s.area === id;
+    let h = `<aside class="wpanel"><h3>${here ? ICONS.mappin : seen ? ICONS.tab_map : ICONS.lock}${th.areas[id]}</h3>`;
+    if (here) h += this.liveAreaMap(s);
+    else if (seen) h += `<div class="amap"><img src="${areaThumbUrl(areaMap(id))}" alt=""></div>`;
+    else h += `<div class="amap locked"><span>${ICONS.lock}${M.locked}</span></div>`;
+    h += `<p class="wdesc">${seen ? th.areaInfo[id] : M.lockedDesc}</p>`;
+
+    const rows: string[] = [];
+    rows.push(`<li><span>${M.step(AREA_STEP[id])}</span><b>${id === 'home' ? M.start : th.goals[AREA_STEP[id] - 1]?.title ?? ''}</b></li>`);
+    const kinds = MONSTER_IDS.filter((k) => MONSTERS[k].area === id);
+    if (kinds.length) {
+      const mons = kinds.map((k) => ((s.kills[k] ?? 0) > 0 ? img(monsterIconUrl(k), 'ico mon') : `<img class="ico mon unk" src="${monsterIconUrl(k)}" alt="">`)).join('');
+      rows.push(`<li><span>${M.monsters}</span><b class="wicons">${mons}</b></li>`);
+      // notable drops: part drops and rare drops of the kinds already hunted
+      const drops = new Set<MaterialId>();
+      for (const k of kinds) {
+        if (!(s.kills[k] ?? 0)) continue;
+        const def = MONSTERS[k];
+        for (const pd of Object.values(def.parts)) for (const m of Object.keys(pd?.drop ?? {})) drops.add(m as MaterialId);
+        for (const m of Object.keys(def.rare)) drops.add(m as MaterialId);
+      }
+      const dropHtml = [...drops].map((m) => `<span title="${th.materials[m]}">${img(materialIconUrl(m), 'ico sm')}</span>`).join('');
+      rows.push(`<li><span>${M.drops}</span><b class="wicons">${dropHtml || `<em>${M.unknownDrops}</em>`}</b></li>`);
+    }
+    if (id !== 'home') {
+      // the way in: the neighbouring area whose exit leads here (prefer one already explored)
+      const from = AREA_IDS.filter((a) => areaMap(a).exits.some((e) => e.to === id)).sort((a, b) => Number(s.visited.has(b)) - Number(s.visited.has(a)))[0];
+      const exit = from ? areaMap(from).exits.find((e) => e.to === id) : undefined;
+      if (from && exit) rows.push(`<li><span>${M.route}</span><b>${M.routeFrom(M.edges[exit.edge], th.areas[from])}</b></li>`);
+    }
+    h += `<ul class="winfo">${rows.join('')}</ul>`;
+    if (id === 'home') {
+      const marks = [M.forge, M.kitchen, M.farm, M.elder, M.paddy, M.pond].map((n) => `<span>${n}</span>`).join('');
+      h += `<h4>${M.landmarks}</h4><div class="wmarks">${marks}</div>`;
+    }
+    if (s.area !== 'home') {
+      const fight = inFight(s);
+      h += `<p class="note${fight ? ' warn' : ''}">${fight ? M.inFight : M.goHomeHelp}</p><button type="button" class="fbtn primary" data-travel="home" ${fight || s.player.dead ? 'disabled' : ''}>${ICONS.tab_map}${M.goHome}</button>`;
+    }
+    return `${h}</aside>`;
+  }
+
+  /** The current area's map with the player, monsters, village stations and exits (the old map tab view). */
+  private liveAreaMap(s: GameState): string {
+    const M = th.menu.map;
     const map = s.map;
     const pct = (v: number, max: number): string => `${Math.max(0, Math.min(100, (v / max) * 100)).toFixed(2)}%`;
     const W = MW * T;
     const H = MH * T;
-    let h = `<div class="row"><h3 class="sec">${M.here(th.areas[s.area])}</h3></div>`;
     const exits = map.exits
       .map((e) => {
         const mid = e.at + e.width / 2;
@@ -734,7 +810,6 @@ export class Sheet {
         return `<span class="mexit e-${e.edge}" style="${pos}">${arrow} ${th.areas[e.to]}</span>`;
       })
       .join('');
-    // markers: monsters (bosses larger), village stations, then the player on top
     const mons = s.monsters
       .map((m) => {
         const boss = MONSTERS[m.kind].rage !== null;
@@ -744,47 +819,22 @@ export class Sheet {
     const places =
       s.area === 'home'
         ? [
-            // labels sit on the buildings, which are far enough apart not to overlap on a phone
-            [{ x: (SMITH.x + SMITH.w / 2) * T, y: (SMITH.y + 1) * T }, th.menu.map.forge],
-            [{ x: (INN.x + INN.w / 2) * T, y: (INN.y + 1) * T }, th.menu.map.kitchen],
-            [FARM_CENTER, th.menu.map.farm],
-            [{ x: (ELDER_HOUSE.x + ELDER_HOUSE.w / 2) * T, y: (ELDER_HOUSE.y + 1) * T }, th.menu.map.elder],
-            [PADDY_CENTER, th.menu.map.paddy],
-            [POND_CENTER, th.menu.map.pond],
+            [{ x: (SMITH.x + SMITH.w / 2) * T, y: (SMITH.y + 1) * T }, M.forge],
+            [{ x: (INN.x + INN.w / 2) * T, y: (INN.y + 1) * T }, M.kitchen],
+            [FARM_CENTER, M.farm],
+            [{ x: (ELDER_HOUSE.x + ELDER_HOUSE.w / 2) * T, y: (ELDER_HOUSE.y + 1) * T }, M.elder],
+            [PADDY_CENTER, M.paddy],
+            [POND_CENTER, M.pond],
           ]
             .map(([o, name]) => `<span class="mplace" style="left:${pct((o as { x: number }).x, W)};top:${pct((o as { y: number }).y, H)}">${name as string}</span>`)
             .join('')
         : '';
     const me = `<span class="mme" style="left:${pct(s.player.x, W)};top:${pct(s.player.y, H)}"><i></i><b>${M.you}</b></span>`;
-    h += `<div class="amap"><img src="${areaThumbUrl(map)}" alt="">${places}${mons}${exits}${me}</div>`;
+    let h = `<div class="amap"><img src="${areaThumbUrl(map)}" alt="">${places}${mons}${exits}${me}</div>`;
     h += `<div class="mlegend"><span><i class="lg-me"></i>${M.you}</span><span><i class="mdot"></i>${M.legendMonster}</span><span><i class="mdot boss"></i>${M.legendBoss}</span><span><i class="lg-sw path"></i>${M.legendPath}</span><span><i class="lg-sw woods"></i>${M.legendWoods}</span><span><i class="lg-sw water"></i>${M.legendWater}</span></div>`;
-    if (s.area !== 'home') {
-      const fight = inFight(s);
-      h += `<div class="row"><span class="note${fight ? ' warn' : ''}">${fight ? M.inFight : M.goHomeHelp}</span><button type="button" class="btn" data-travel="home" ${fight || s.player.dead ? 'disabled' : ''}>${M.goHome}</button></div>`;
-    }
-
-    // world diagram: one node per area with connector lines matching the exits
-    h += `<h3 class="sec">${M.world}</h3><div class="wgraph">`;
-    for (const id of AREA_IDS) {
-      const [col, row] = WORLD_GRID[id];
-      const seen = s.visited.has(id);
-      const here = s.area === id;
-      const kinds = MONSTER_IDS.filter((k) => MONSTERS[k].area === id);
-      const monHtml = kinds.map((k) => ((s.kills[k] ?? 0) > 0 ? img(monsterIconUrl(k), 'ico mon') : `<img class="ico mon unk" src="${monsterIconUrl(k)}" alt="">`)).join('');
-      h += `<div class="wnode${here ? ' here' : ''}${seen ? '' : ' unseen'}" style="grid-column:${col * 2 - 1};grid-row:${row * 2 - 1}"><b>${th.areas[id]}</b>${
-        here ? `<span class="tag">${M.youAreHere}</span>` : seen ? '' : `<span class="meta">${M.unvisited}</span>`
-      }<div class="wmons">${monHtml}</div></div>`;
-    }
-    for (const [a, b] of WORLD_LINKS) {
-      const [c1, r1] = WORLD_GRID[a];
-      const [c2, r2] = WORLD_GRID[b];
-      const vertical = c1 === c2;
-      h += `<i class="wlink ${vertical ? 'v' : 'h'}" style="grid-column:${vertical ? c1 * 2 - 1 : c1 * 2};grid-row:${vertical ? Math.min(r1, r2) * 2 : r1 * 2 - 1}"></i>`;
-    }
-    return `${h}</div>`;
+    return h;
   }
 
-  /** Bestiary: portrait grid, then the selected entry. Entries unlock on the first successful hunt. */
   private book(s: GameState): string {
     const B = th.menu.book;
     const known = MONSTER_IDS.filter((k) => (s.kills[k] ?? 0) > 0);
@@ -876,6 +926,12 @@ export class Sheet {
     }
     if (d.filter) {
       this.filter = d.filter as BagFilter;
+      this.render();
+      return;
+    }
+    if (d.area) {
+      this.mapSel = d.area as AreaId;
+      this.hooks.sfx('ui');
       this.render();
       return;
     }

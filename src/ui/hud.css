@@ -291,16 +291,6 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .lg-sw{width:14px;height:10px;border-radius:2px;display:inline-block;border:1px solid rgba(0,0,0,.4)}
 .lg-sw.path{background:#f1d696}.lg-sw.woods{background:#3f8a3e}.lg-sw.water{background:#3cbcb0}
 /* world map: area diagram */
-.wgraph{flex:none;display:grid;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr);grid-auto-rows:auto;width:100%;max-width:440px;align-self:center}
-.wgraph>:nth-child(n){min-width:0}
-.wnode{display:flex;flex-direction:column;gap:3px;background:var(--card);border:2px solid var(--line2);border-radius:10px;padding:7px 8px;font-size:12px}
-.wnode b{font:500 13.5px var(--display)}
-.wnode.here{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,209,102,.25)}
-.wnode.unseen{border-style:dashed;opacity:.75}
-.wlink{display:block;justify-self:center;align-self:center;background:var(--line2)}
-.wlink.v{width:4px;height:16px}
-.wlink.h{width:100%;height:4px}
-.wmons{display:flex;flex-wrap:wrap;gap:2px;align-items:center;min-height:18px}
 .ico.mon.unk{filter:brightness(0);opacity:.45}
 @media (max-width:430px){.tab{padding:10px 5px 8px;font-size:12px}}
 
@@ -480,3 +470,61 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
   .fcrops{max-height:min(520px,calc(100dvh - 300px));overflow-y:auto;padding-right:2px}
 }
 @media (min-width:760px){.fplots .plotgrid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}.plot{min-height:68px}.plot img{width:30px;height:30px}}
+
+/* ---------------------------------------------------------------- world map tab
+   a sea board with one island per area (the area's own map picture), trails along the exits,
+   and a details panel for the tapped area */
+.wmap{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
+.wboard{position:relative;aspect-ratio:4/5;border:3px solid var(--ink);border-radius:14px;overflow:hidden;
+  background:
+    radial-gradient(ellipse 60% 40% at 18% 8%,rgba(255,255,255,.22),transparent 70%),
+    radial-gradient(ellipse 50% 35% at 92% 96%,rgba(255,255,255,.18),transparent 70%),
+    radial-gradient(ellipse 80% 70% at 50% 50%,#2c93a0 0%,#227a8e 55%,#1a5f78 100%);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.35)}
+.wboard::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background:repeating-linear-gradient(170deg,transparent 0 14px,rgba(200,255,240,.18) 14px 15px,transparent 15px 30px)}
+.wlinks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.wlinks line{stroke:#f0d6a4;stroke-width:2.2px;stroke-dasharray:6 5;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:.45}
+.wlinks line.known{opacity:.95}
+.wreg{position:absolute;width:20%;transform:translate(-50%,-58%);display:flex;flex-direction:column;align-items:center;padding:0;background:none;border:0;color:var(--cream);cursor:pointer}
+.wisle{position:relative;display:block;width:100%;aspect-ratio:4/3;overflow:hidden;background:#2a4a2a;
+  border-radius:46% 54% 50% 50% / 55% 45% 55% 45%;
+  box-shadow:0 0 0 3px #e9d6a0,0 0 0 7px rgba(240,214,160,.22),0 7px 0 rgba(0,0,0,.35);transition:transform .15s}
+.wisle img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.wreg:hover .wisle,.wreg:focus-visible .wisle{transform:scale(1.04)}
+.wreg.sel .wisle{box-shadow:0 0 0 3px var(--gold),0 0 18px 4px color-mix(in srgb,var(--gold) 55%,transparent),0 7px 0 rgba(0,0,0,.35)}
+.wreg.locked .wisle{background:#1b2232;box-shadow:0 0 0 3px #3a4560,0 0 0 7px rgba(58,69,96,.3),0 7px 0 rgba(0,0,0,.35)}
+.wfog{display:grid;place-items:center;width:100%;height:100%;color:#7a849a;background:radial-gradient(circle,#2a3348,#161c2a)}
+.wfog svg{width:34%;height:34%}
+.wlabel{position:relative;z-index:1;margin-top:-8px;display:flex;flex-direction:column;align-items:center;max-width:135%;padding:2px 8px;background:rgba(16,22,34,.88);border:1px solid var(--line2);border-radius:8px;text-align:center;line-height:1.25}
+.wlabel b{font:500 11.5px var(--display);color:var(--cream)}
+.wlabel small{font-size:10px;color:var(--muted)}
+.wreg.locked .wlabel b{color:var(--muted)}
+.wreg.sel .wlabel{border-color:var(--gold)}
+.wpin{position:absolute;top:-22px;left:50%;transform:translateX(-50%);color:#4aa8ff;filter:drop-shadow(0 2px 0 rgba(0,0,0,.45));animation:wbob 1.2s ease-in-out infinite}
+.wpin svg{width:26px;height:26px}
+@keyframes wbob{50%{transform:translate(-50%,-4px)}}
+.wcompass{position:absolute;right:10px;bottom:10px;width:54px;height:54px;pointer-events:none}
+.wcompass svg{width:100%;height:100%}
+.wpanel{display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--card);border:2px solid var(--line2);border-radius:12px;min-width:0}
+.wpanel h3{display:flex;align-items:center;gap:6px;margin:0;font:500 17px var(--display);color:var(--cream)}
+.wpanel h3 svg{width:20px;height:20px;color:var(--gold);flex:none}
+.wpanel h4{margin:2px 0 0;font:500 13px var(--display);color:var(--muted)}
+.amap.locked{aspect-ratio:4/3;display:grid;place-items:center;background:radial-gradient(circle,#232c40,#141a28);color:var(--muted);border-radius:10px}
+.amap.locked span{display:flex;flex-direction:column;align-items:center;gap:6px;font:500 13px var(--display)}
+.amap.locked svg{width:34px;height:34px}
+.wdesc{margin:0;font-size:13px;color:var(--cream)}
+.winfo{list-style:none;margin:0;padding:0;background:#1a2030;border:1px solid var(--line2);border-radius:8px}
+.winfo li{display:grid;grid-template-columns:92px minmax(0,1fr);gap:8px;align-items:center;padding:6px 10px;border-top:1px solid #2a3348;font-size:12.5px}
+.winfo li:first-child{border-top:0}
+.winfo span{color:var(--muted)}
+.winfo b{font-weight:500;color:var(--cream)}
+.winfo em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.wicons{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.wicons .ico.mon{width:30px;height:30px}
+.wmarks{display:flex;flex-wrap:wrap;gap:4px}
+.wmarks span{font-size:12px;background:#1a2030;border:1px solid var(--line2);border-radius:6px;padding:2px 8px}
+.wpanel .fbtn{align-self:stretch}
+@media (max-width:480px){.wlabel b{font-size:10.5px;white-space:normal}.wlabel{max-width:118%;padding:1px 5px}.wcompass{width:42px;height:42px}}
+@media (min-width:760px){.wmap{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.wpin{animation:none}}
