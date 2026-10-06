@@ -1,7 +1,7 @@
 // Paints the whole world once: ground (incl. buildings) and a separate canopy
 // layer that is drawn above entities so characters can walk "under" trees.
 import { hash, vnoise } from '../core/rng';
-import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
+import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, inVillageTile, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
 import { signposts } from '../core/signs';
 import { drawAnvil, drawBoard, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
 import { drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
@@ -110,7 +110,7 @@ export interface TerrainArt {
 }
 
 /** Ground, details, trees and signposts: everything except the village buildings. Paints the top `rows` rows. */
-function paintBase(map: WorldMap, rows = MH): { mb: PixelBuffer; cb: PixelBuffer; lights: StaticLight[] } {
+function paintBase(map: WorldMap, rows = MH, reliefOy = 0): { mb: PixelBuffer; cb: PixelBuffer; lights: StaticLight[] } {
   const lights: StaticLight[] = [];
   const mb = createBuffer(MW * T, rows * T);
   const cb = createBuffer(MW * T, rows * T);
@@ -120,6 +120,7 @@ function paintBase(map: WorldMap, rows = MH): { mb: PixelBuffer; cb: PixelBuffer
   TUFT = pal.tuft ?? ['#4e8a2e', '#356a26', '#a8dc6a', '#9ad460'];
   WATER_ACCENT = pal.waterAccent ?? SEA_ACCENT;
   paintGround(map, mb);
+  paintRelief(map, mb, reliefOy);
   paintDetails(map, mb, lights);
   paintTrees(map, mb, cb);
   for (const sg of signposts(map)) drawSignpost(mb, sg.x, sg.y, sg.arms.map((a) => a.edge));
@@ -172,7 +173,7 @@ export function buildNorthFill(map: WorldMap): { ground: HTMLCanvasElement; cano
     }
   }
   const shifted: WorldMap = { ...map, exits: [], tiles, riverX, reach: new Uint8Array(MW * MH), bridgeEast: map.bridgeEast + r, bridgeNorth: map.bridgeNorth + r };
-  const { mb, cb } = paintBase(shifted, r);
+  const { mb, cb } = paintBase(shifted, r, -r * T);
   return { ground: toCanvas(mb), canopy: toCanvas(cb) };
 }
 
@@ -192,8 +193,122 @@ export function buildSouthFill(map: WorldMap): { ground: HTMLCanvasElement; cano
     for (let y = 1; y < MH; y++) tiles[y * MW + x] = blocking(edge) ? Tile.TREE : edge;
   }
   const strip: WorldMap = { ...map, exits: [], tiles, riverX: new Int16Array(MH).fill(map.riverX[MH - 1] ?? -100), reach: new Uint8Array(MW * MH), bridgeEast: -10, bridgeNorth: -10 };
-  const { mb, cb } = paintBase(strip, r + 1);
+  const { mb, cb } = paintBase(strip, r + 1, (MH - 1) * T);
   return { ground: toCanvas(mb), canopy: toCanvas(cb) };
+}
+
+/**
+ * Relief per biome (visual only: collision, telegraphs and the minimap are untouched).
+ * amp: hill-shading strength; size: hill size in px; steps: terraces (0 = smooth rolling ground).
+ */
+const RELIEF: Record<Biome, { amp: number; size: number; steps: number }> = {
+  home: { amp: 0.1, size: 170, steps: 0 },
+  bamboo: { amp: 0.14, size: 150, steps: 2 },
+  swamp: { amp: 0.05, size: 210, steps: 0 },
+  limestone: { amp: 0.16, size: 140, steps: 4 },
+  deepwild: { amp: 0.12, size: 150, steps: 3 },
+  cave: { amp: 0.1, size: 130, steps: 3 },
+  mangrove: { amp: 0.05, size: 210, steps: 0 },
+  peat: { amp: 0.06, size: 190, steps: 0 },
+  savanna: { amp: 0.15, size: 190, steps: 3 },
+};
+
+/** Ground that rises and falls: grass, forest floor, paths, and what stands on them. */
+/** Height (px) of the earth bank painted under each terrace edge. */
+const BANK = 7;
+const RELIEF_TILES = new Set<number>([Tile.GRASS, Tile.FLOWER, Tile.WALL, Tile.SAND, Tile.TREE, Tile.BUSH, Tile.ROCK]);
+
+/**
+ * Paints height on the ground layer: slopes facing the top-left light are brighter, the far
+ * sides darker (quantised and dithered so it stays pixel art), and in terraced biomes each
+ * terrace gets a bright lip with a short dark bank under it. The village is left flat so it
+ * matches the prototype. `oy` shifts the height field for the edge strips painted beyond the map.
+ */
+function paintRelief(map: WorldMap, mb: PixelBuffer, oy: number): void {
+  const R = RELIEF[map.biome];
+  const d = mb.d;
+  const W = MW * T;
+  const H = mb.h;
+  const seed = map.area.length * 977 + map.area.charCodeAt(0) * 131;
+  // height on a 2px grid
+  const GW = (W >> 1) + 3;
+  const GH = (H >> 1) + 3;
+  // sample the noise every 8px (it is smooth at this scale), then fill the 2px grid bilinearly
+  const CW = (W >> 3) + 2;
+  const CH = (H >> 3) + 2;
+  const coarse = new Float32Array(CW * CH);
+  for (let cy = 0; cy < CH; cy++) {
+    for (let cx = 0; cx < CW; cx++) {
+      const x = cx * 8 + seed;
+      const y = cy * 8 + oy + seed * 0.7;
+      coarse[cy * CW + cx] = vnoise(x, y, R.size) * 0.72 + vnoise(x + 400, y + 300, R.size * 0.45) * 0.28;
+    }
+  }
+  const hgt = new Float32Array(GW * GH);
+  for (let gy = 0; gy < GH; gy++) {
+    const fy = (gy * 2) / 8;
+    const y0 = Math.min(CH - 2, Math.floor(fy));
+    const ty = fy - y0;
+    for (let gx = 0; gx < GW; gx++) {
+      const fx = (gx * 2) / 8;
+      const x0 = Math.min(CW - 2, Math.floor(fx));
+      const tx = fx - x0;
+      const a = coarse[y0 * CW + x0] ?? 0;
+      const b = coarse[y0 * CW + x0 + 1] ?? 0;
+      const c = coarse[(y0 + 1) * CW + x0] ?? 0;
+      const e = coarse[(y0 + 1) * CW + x0 + 1] ?? 0;
+      hgt[gy * GW + gx] = (a + (b - a) * tx) * (1 - ty) + (c + (e - c) * tx) * ty;
+    }
+  }
+  const hAt = (px: number, py: number): number => {
+    const gx = Math.max(0, Math.min(GW - 1, px >> 1));
+    const gy = Math.max(0, Math.min(GH - 1, py >> 1));
+    return hgt[gy * GW + gx] ?? 0;
+  };
+  // terrace level per grid cell, precomputed (looked up many times per pixel)
+  const lv = new Int8Array(GW * GH);
+  for (let k = 0; k < lv.length; k++) lv[k] = Math.floor((hgt[k] ?? 0) * R.steps);
+  const lvl = (px: number, py: number): number => lv[Math.max(0, Math.min(GH - 1, py >> 1)) * GW + Math.max(0, Math.min(GW - 1, px >> 1))] ?? 0;
+  const mul = (i: number, k: number): void => {
+    d[i] = Math.max(0, Math.min(255, (d[i] ?? 0) * k));
+    d[i + 1] = Math.max(0, Math.min(255, (d[i + 1] ?? 0) * k));
+    d[i + 2] = Math.max(0, Math.min(255, (d[i + 2] ?? 0) * k));
+  };
+  for (let py = 0; py < H; py++) {
+    const mapY = py + oy;
+    const ty = Math.floor(mapY / T);
+    for (let px = 0; px < W; px++) {
+      const tx = px >> 4;
+      if (!RELIEF_TILES.has(tileAt(map, tx, ty)) || (map.area === 'home' && inVillageTile(tx, ty))) continue;
+      const i = (py * W + px) * 4;
+      // slope toward the bottom-right = the surface faces the top-left light
+      // 2×2 blocks so the shading reads as chunky pixel art rather than grain
+      const bx = px & ~1;
+      const by = py & ~1;
+      const slope = (hAt(bx + 4, by + 4) - hAt(bx - 4, by - 4)) * (R.size / 9);
+      const dither = (hash(bx >> 1, (by + oy) >> 1) - 0.5) * 0.35;
+      const q = Math.max(-2, Math.min(2, Math.round(slope * 2.2 + dither)));
+      let k = 1 + q * R.amp * 0.6;
+      if (R.steps > 0) {
+        const here = lvl(px, py);
+        // terrace lip: two bright rows along the top edge of a rise
+        if (here > lvl(px, py + 1) || here > lvl(px, py + 2)) k *= 1.2;
+        else {
+          // the bank under a higher terrace: a dark outline, then a striped earth face fading out
+          for (let up = 1; up <= BANK; up++) {
+            if (lvl(px, py - up) > here) {
+              if (up === 1) k *= 0.42;
+              else k *= (up <= 4 ? 0.6 : up === 5 ? 0.7 : up === 6 ? 0.8 : 0.9) * (((px >> 1) + here) % 3 === 0 ? 0.88 : 1);
+              break;
+            }
+          }
+          if (lvl(px - 1, py) > here || lvl(px - 3, py) > here) k *= 0.74; // side shadow right of a rise
+          else if (lvl(px + 1, py) > here) k *= 1.12; // its lit left side
+        }
+      }
+      if (k !== 1) mul(i, k);
+    }
+  }
 }
 
 function sandNeighbours(map: WorldMap, tx: number, ty: number): number {

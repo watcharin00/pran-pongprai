@@ -487,16 +487,24 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .wlinks line{stroke:#f0d6a4;stroke-width:2.2px;stroke-dasharray:6 5;stroke-linecap:round;vector-effect:non-scaling-stroke;opacity:.45}
 .wlinks line.known{opacity:.95}
 .wreg{position:absolute;width:20%;transform:translate(-50%,-58%);display:flex;flex-direction:column;align-items:center;padding:0;background:none;border:0;color:var(--cream);cursor:pointer}
-.wisle{position:relative;display:block;width:100%;aspect-ratio:4/3;overflow:hidden;background:#2a4a2a;
+/* islands stand out of the sea: sandy rim, then a thick earth cliff (stacked shadows follow the
+   rounded outline), a wet foot and a soft shadow on the water; lit from the top-left */
+.wisle{--cliff:#9a6a3a;--cliffd:#6a4424;position:relative;display:block;width:100%;aspect-ratio:4/3;overflow:hidden;background:#2a4a2a;
   border-radius:46% 54% 50% 50% / 55% 45% 55% 45%;
-  box-shadow:0 0 0 3px #e9d6a0,0 0 0 7px rgba(240,214,160,.22),0 7px 0 rgba(0,0,0,.35);transition:transform .15s}
+  box-shadow:0 0 0 3px #e9d6a0,0 7px 0 2px var(--cliff),0 12px 0 2px var(--cliffd),0 14px 0 3px rgba(20,60,70,.55),0 19px 14px 2px rgba(0,0,0,.35);transition:transform .15s}
+.wisle::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(ellipse 70% 60% at 30% 25%,rgba(255,250,220,.28),transparent 60%),radial-gradient(ellipse 80% 70% at 75% 85%,rgba(0,20,10,.32),transparent 65%)}
+.wreg[data-area="limestone"] .wisle,.wreg[data-area="cave"] .wisle{--cliff:#b8ae98;--cliffd:#857a66}
+.wreg[data-area="savanna"] .wisle{--cliff:#c08a4a;--cliffd:#8a5a2a}
+.wreg[data-area="swamp"] .wisle,.wreg[data-area="mangrove"] .wisle,.wreg[data-area="peat"] .wisle{--cliff:#6a5a3a;--cliffd:#4a3e28}
 .wisle img{display:block;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
 .wreg:hover .wisle,.wreg:focus-visible .wisle{transform:scale(1.04)}
-.wreg.sel .wisle{box-shadow:0 0 0 3px var(--gold),0 0 18px 4px color-mix(in srgb,var(--gold) 55%,transparent),0 7px 0 rgba(0,0,0,.35)}
-.wreg.locked .wisle{background:#1b2232;box-shadow:0 0 0 3px #3a4560,0 0 0 7px rgba(58,69,96,.3),0 7px 0 rgba(0,0,0,.35)}
+.wreg.sel .wisle{box-shadow:0 0 0 3px var(--gold),0 5px 0 2px var(--cliff),0 9px 0 2px var(--cliffd),0 11px 0 3px rgba(20,60,70,.55),0 0 22px 6px color-mix(in srgb,var(--gold) 50%,transparent)}
+.wreg.locked .wisle{--cliff:#2a3348;--cliffd:#1a2030;background:#1b2232;box-shadow:0 0 0 3px #3a4560,0 5px 0 2px var(--cliff),0 9px 0 2px var(--cliffd),0 16px 14px 2px rgba(0,0,0,.35)}
+.wreg.locked .wisle::after{background:radial-gradient(ellipse 70% 60% at 30% 25%,rgba(255,255,255,.08),transparent 60%)}
 .wfog{display:grid;place-items:center;width:100%;height:100%;color:#7a849a;background:radial-gradient(circle,#2a3348,#161c2a)}
 .wfog svg{width:34%;height:34%}
-.wlabel{position:relative;z-index:1;margin-top:-8px;display:flex;flex-direction:column;align-items:center;max-width:135%;padding:2px 8px;background:rgba(16,22,34,.88);border:1px solid var(--line2);border-radius:8px;text-align:center;line-height:1.25}
+.wlabel{position:relative;z-index:1;margin-top:-2px;display:flex;flex-direction:column;align-items:center;max-width:135%;padding:2px 8px;background:rgba(16,22,34,.88);border:1px solid var(--line2);border-radius:8px;text-align:center;line-height:1.25}
 .wlabel b{font:500 11.5px var(--display);color:var(--cream)}
 .wlabel small{font-size:10px;color:var(--muted)}
 .wreg.locked .wlabel b{color:var(--muted)}
@@ -570,8 +578,8 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
   .bag2 .fbody{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
 }
 /* the island the current goal is hunted on */
-.wreg.goal .wisle{box-shadow:0 0 0 3px var(--gold),0 0 0 7px rgba(255,209,102,.3),0 7px 0 rgba(0,0,0,.35);animation:wgoal 1.6s ease-in-out infinite}
-@keyframes wgoal{50%{box-shadow:0 0 0 3px var(--gold),0 0 16px 8px rgba(255,209,102,.45),0 7px 0 rgba(0,0,0,.35)}}
+.wreg.goal .wisle{box-shadow:0 0 0 3px var(--gold),0 5px 0 2px var(--cliff),0 9px 0 2px var(--cliffd),0 11px 0 3px rgba(20,60,70,.55),0 0 0 9px rgba(255,209,102,.25);animation:wgoal 1.6s ease-in-out infinite}
+@keyframes wgoal{50%{box-shadow:0 0 0 3px var(--gold),0 5px 0 2px var(--cliff),0 9px 0 2px var(--cliffd),0 11px 0 3px rgba(20,60,70,.55),0 0 18px 10px rgba(255,209,102,.45)}}
 .wlabel .wgoal{color:#3a2410;background:var(--gold);border-radius:6px;padding:0 6px;margin-top:1px;font:600 10px var(--display);white-space:nowrap}
 .wreg.goal .wlabel{border-color:var(--gold)}
 .winfo li.now span,.winfo li.now b{color:var(--gold)}
