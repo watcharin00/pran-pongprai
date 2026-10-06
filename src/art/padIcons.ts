@@ -269,3 +269,119 @@ export function padFaceUrl(kind: PadFace): string {
 export function skillFaceUrl(kind: SkillKind): string {
   return face(`sk:${kind}`, 'silver', DISCS.skill, SKILL_ICONS[kind]);
 }
+
+// ---------------------------------------------------------------- HUD menu tiles (right rail)
+
+const M = 24;
+
+/** Wooden tile with a gold rim (rounded corners), for the menu buttons. */
+function drawTile(b: PixelBuffer): void {
+  for (let y = 0; y < M; y++) {
+    for (let x = 0; x < M; x++) {
+      const e = Math.min(x, y, M - 1 - x, M - 1 - y);
+      // round the corners off
+      const cx = Math.min(x, M - 1 - x);
+      const cy = Math.min(y, M - 1 - y);
+      if (cx + cy < 2) continue;
+      let c: string;
+      if (e === 0 || cx + cy === 2) c = '#16202e';
+      else if (e === 1) c = x + y < M - 1 ? (y <= 1 || x <= 1 ? '#fff0a8' : '#e8b440') : x >= M - 2 || y >= M - 2 ? '#9a6814' : '#e8b440';
+      else if (e === 2) c = '#3a2410';
+      else {
+        // planks: lighter at the top, a dark seam every 6 rows
+        const seam = (y - 3) % 6 === 5;
+        c = seam ? '#4a2c14' : mix('#9a6436', '#6a3e1c', (y - 3) / (M - 6));
+        if (!seam && (y - 3) % 6 === 0) c = mix(c, '#ffffff', 0.08);
+        if (e === 3 && (x === 3 || y === 3)) c = mix(c, '#000000', 0.25);
+      }
+      sp(b, x, y, c);
+    }
+  }
+}
+
+type MenuIcon = (b: PixelBuffer) => void;
+
+const MENU_ICONS: Record<'bag' | 'forge' | 'kitchen' | 'farm' | 'book' | 'map', MenuIcon> = {
+  // leather backpack with a flap and a gold buckle
+  bag: (b) => {
+    rect(b, 7, 8, 10, 10, '#a8703c');
+    rect(b, 7, 8, 10, 1, '#c8884a');
+    rect(b, 8, 5, 8, 4, '#c8884a');
+    rect(b, 9, 4, 6, 1, '#7a4a24');
+    rect(b, 7, 9, 10, 4, '#b87a40');
+    rect(b, 11, 11, 2, 2, '#e8b440');
+    rect(b, 9, 14, 6, 3, '#8a5530');
+    rect(b, 6, 10, 1, 7, '#7a4a24');
+    rect(b, 17, 10, 1, 7, '#7a4a24');
+  },
+  // hammer crossed with tongs, a blue spark
+  forge: (b) => {
+    line(b, 6, 18, 15, 9, '#8a5a30');
+    line(b, 7, 18, 16, 9, '#a8703c');
+    rect(b, 13, 5, 6, 4, '#8a94a8');
+    rect(b, 13, 5, 6, 1, '#d8e0ec');
+    line(b, 17, 18, 8, 9, '#b4bccb');
+    line(b, 18, 18, 9, 9, '#e8eef4');
+    rect(b, 7, 7, 3, 2, '#b4bccb');
+    sp(b, 18, 13, '#8ad4ff');
+    sp(b, 19, 12, '#ffffff');
+    sp(b, 17, 12, '#8ad4ff');
+  },
+  // a pot of curry with steam
+  kitchen: (b) => {
+    ell(b, 12, 14, 6.5, 5, '#4a4a56');
+    ell(b, 12, 11, 6.5, 1.8, '#6a6a78');
+    ell(b, 12, 11, 5, 1.2, '#e8902e');
+    sp(b, 10, 11, '#ffd35c');
+    rect(b, 4, 12, 2, 2, '#4a4a56');
+    rect(b, 18, 12, 2, 2, '#4a4a56');
+    for (const [x, y] of [[10, 8], [11, 7], [10, 6], [14, 8], [13, 7], [14, 5]] as const) sp(b, x, y, '#ffffff');
+  },
+  // a sprout in a mound of soil
+  farm: (b) => {
+    ell(b, 12, 17, 7, 3, '#7a4a24');
+    ell(b, 12, 16, 6, 2, '#9a6436');
+    rect(b, 11, 10, 2, 6, '#3f8a2e');
+    ell(b, 8.5, 10, 3.5, 2, '#5fc26a');
+    ell(b, 15.5, 8.5, 3.5, 2, '#5fc26a');
+    sp(b, 7, 9, '#a8f0a0');
+    sp(b, 15, 7, '#a8f0a0');
+  },
+  // a rolled scroll (the bestiary)
+  book: (b) => {
+    rect(b, 8, 5, 9, 13, '#f3e4c2');
+    rect(b, 7, 4, 11, 2, '#d8c49a');
+    rect(b, 7, 17, 11, 2, '#d8c49a');
+    rect(b, 6, 4, 1, 2, '#a8803c');
+    rect(b, 18, 17, 1, 2, '#a8803c');
+    for (const y of [8, 10, 12, 14]) rect(b, 10, y, y === 14 ? 3 : 5, 1, '#8a7050');
+  },
+  // treasure map: a dashed path and a red X
+  map: (b) => {
+    rect(b, 5, 6, 14, 12, '#f1d696');
+    rect(b, 5, 6, 14, 1, '#dcb46e');
+    rect(b, 9, 6, 1, 12, '#dcb46e');
+    rect(b, 14, 6, 1, 12, '#dcb46e');
+    for (const [x, y] of [[7, 15], [8, 14], [10, 13], [11, 12], [12, 11]] as const) sp(b, x, y, '#8a5530');
+    line(b, 14, 8, 17, 11, '#d8243c');
+    line(b, 17, 8, 14, 11, '#d8243c');
+  },
+};
+
+export type MenuTile = keyof typeof MENU_ICONS;
+
+/** Menu rail button: wooden tile + item icon. */
+export function menuTileUrl(kind: MenuTile): string {
+  const key = `menu:${kind}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const base = createBuffer(M, M);
+  drawTile(base);
+  const layer = createBuffer(M, M);
+  MENU_ICONS[kind](layer);
+  const canvas = toCanvas(base);
+  canvas.getContext('2d')?.drawImage(finish(layer), 0, 0);
+  const url = canvas.toDataURL();
+  cache.set(key, url);
+  return url;
+}
