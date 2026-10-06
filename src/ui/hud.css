@@ -528,3 +528,44 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 @media (max-width:480px){.wlabel b{font-size:10.5px;white-space:normal}.wlabel{max-width:118%;padding:1px 5px}.wcompass{width:42px;height:42px}}
 @media (min-width:760px){.wmap{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.wpin{animation:none}}
+/* bag + bestiary in the forge layout */
+.ftypes button small{font:600 11px var(--pixel);color:var(--muted);margin-left:2px}
+.ftypes button.on small{color:var(--gold)}
+.bag2 .fbody .grid{align-content:start}
+.cell[class*=" t"]{background:radial-gradient(circle,color-mix(in srgb,var(--tc) 32%,#2b3550) 0%,#2b3550 75%);border-color:color-mix(in srgb,var(--tc) 55%,var(--line2))}
+.cell.t0{background:#2b3550;border-color:var(--line2)}
+.cell.eq::after{content:"";position:absolute;top:3px;left:3px;width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 4px var(--gold)}
+.fdetail.empty{justify-content:center;min-height:120px}
+.flines{list-style:none;align-self:stretch;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.flines li{display:flex;align-items:center;gap:4px;padding:5px 10px;background:#1a2030;border:1px solid var(--line2);border-radius:8px;min-width:0}
+.bagchar{display:flex;flex-direction:column;gap:8px}
+.bagchar>h4{margin:0;font:500 13px var(--display);color:var(--muted)}
+.bagchar .eqp{align-self:stretch}
+.bagtext{display:flex;flex-direction:column;gap:12px}
+.skl .sico{display:inline-grid;place-items:center;width:22px;height:22px;color:var(--sk);flex:none}
+.skl .sico svg{width:20px;height:20px}
+.bookprog>div{display:flex;flex-direction:column;gap:2px}
+.bookprog .big{font:600 18px var(--pixel);color:var(--gold)}
+.book2 .fbody{gap:10px}
+.book2 .bgrid{display:flex}
+.book2 .bcard{flex:0 0 96px;scroll-snap-align:start}
+.bcard.boss:not(.locked){border-color:color-mix(in srgb,var(--rare) 55%,var(--line2))}
+/* phones: sub-menu, then a compact character card, then the items */
+.bag2 .fsub{order:-2}
+.bag2 .bagchar{display:flex;order:-1}
+@media (max-width:759px){.bag2 .bagchar .hero{min-height:84px}.bag2 .bagchar .fstats{display:grid;grid-template-columns:1fr 1fr}.bag2 .bagchar .fstats li{border-top:0;border-bottom:1px solid #2a3348}}
+@media (min-width:760px){
+  .bag2 .fbody{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .bag2 .bagchar{order:0;grid-column:2}
+  .bag2 .fsub{order:0}
+  .bag2{grid-template-columns:150px minmax(0,1fr)}
+  .book2{grid-template-columns:170px minmax(0,1fr)}
+  .book2 .fbody{grid-template-columns:236px minmax(0,1fr)}
+  .book2 .bgrid{display:grid;grid-template-columns:repeat(2,1fr);max-height:min(520px,calc(100dvh - 240px));overflow-y:auto;align-content:start}
+  .book2 .bcard{flex:none}
+}
+@media (min-width:980px){
+  .bag2{grid-template-columns:150px minmax(0,1fr) 230px}
+  .bag2 .bagchar{grid-column:auto}
+  .bag2 .fbody{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+}

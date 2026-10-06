@@ -61,6 +61,7 @@ function strongVs(s: GameState, id: WeaponId): string {
 
 export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm' | 'book' | 'map';
 type ForgeSub = 'craft' | 'upgrade' | 'armor';
+type BagSub = 'items' | 'hunt' | 'settings';
 type MealFilter = 'all' | 'hp' | 'atk' | 'def' | 'st';
 type BedFilter = 'all' | CropBed;
 const BED_FILTERS: readonly BedFilter[] = ['all', 'soil', 'paddy', 'pond'];
@@ -150,6 +151,8 @@ export class Sheet {
   private mealSel: MealId | null = null;
   private bedFilter: BedFilter = 'all';
   private mapSel: AreaId | null = null;
+  private bagSub: BagSub = 'items';
+  private bookArea: AreaId | 'all' = 'all';
   private dirty = false;
   private refreshT = 0;
 
@@ -301,12 +304,23 @@ export class Sheet {
     return s.player.inVillage ? `<p class="note ok">${th.menu.inVillage}</p>` : `<p class="note warn">${th.menu.notInVillage}</p>`;
   }
 
+  /** Bag tab: sub-menu (items / hunt / settings), then the chosen view. */
   private bag(s: GameState): string {
+    const G = th.menu.bagTab;
+    const subs: [BagSub, string, string][] = [
+      ['items', ICONS.tab_bag, G.items],
+      ['hunt', ICONS.tab_book, G.hunt],
+      ['settings', ICONS.soundOn, G.settings],
+    ];
+    const nav = `<nav class="fsub">${subs.map(([k, ic, label]) => `<button type="button" class="${this.bagSub === k ? 'on' : ''}" data-bsub="${k}">${ic}<span>${label}</span></button>`).join('')}</nav>`;
+    const body = this.bagSub === 'hunt' ? this.bagHunt(s) : this.bagSub === 'settings' ? this.bagSettings() : this.bagItemsView(s);
+    return `<div class="forge bag2">${nav}${body}</div>`;
+  }
+
+  /** Character card: equipment slots around the portrait, stats, active armor perks. */
+  private characterCard(s: GameState): string {
     const p = s.player;
     const M = th.menu;
-    const goal = th.goals[goalIndex(s)];
-
-    // equipment: slots either side of the character portrait
     const wkey: ItemKey = `w:${p.weapon}`;
     const wslot = `<button type="button" class="slot${this.sel === wkey ? ' sel' : ''}" data-item="${wkey}" aria-label="${M.slots.weapon}">${img(weaponIconUrl(p.weapon))}<span>${M.slots.weapon}</span></button>`;
     const [head, body, charm] = ARMOR_SLOTS.map((k) => {
@@ -315,37 +329,67 @@ export class Sheet {
       const key: ItemKey = `a:${id}`;
       return `<button type="button" class="slot${this.sel === key ? ' sel' : ''}" data-item="${key}" aria-label="${th.armor[id].name}">${img(armorIconUrl(id))}<span>${M.slots[k]}</span></button>`;
     });
-    // two columns on wide screens: character + stats | filters + items
-    let h = `<div class="bagcols"><div class="bagL"><div class="eqp"><div class="slots">${wslot}${head}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${body}${charm}</div></div>`;
+    let h = `<aside class="fcompare bagchar"><h4>${th.menu.bagTab.character}</h4><div class="eqp"><div class="slots">${wslot}${head}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${body}${charm}</div></div>`;
     const atk = Math.round(weaponPower(s, p.weapon) * attackMul(s));
-    const def = defenseOf(s);
-    h += `<div class="stats"><div><span>${M.stats.attack}</span><b>${atk}</b></div><div title="${M.reduction(Math.round(damageReduction(s) * 100))}"><span>${M.stats.defense}</span><b>${def}</b></div><div><span>${M.stats.hp}</span><b>${p.maxHp}</b></div><div><span>${M.stats.stamina}</span><b>${p.maxSt}</b></div></div>`;
+    h += `<ul class="fstats">${this.statRow(M.stats.attack, `${atk}`)}${this.statRow(M.stats.defense, `${defenseOf(s)} · ${M.reduction(Math.round(damageReduction(s) * 100))}`)}${this.statRow(M.stats.hp, `${p.maxHp}`)}${this.statRow(M.stats.stamina, `${p.maxSt}`)}</ul>`;
     const perksOn = activePerks(s);
     if (perksOn.length) h += `<p class="perk on"><b>${M.activePerks}</b> ${perksOn.map((k) => th.perks[k].name).join(' · ')}</p>`;
+    return `${h}</aside>`;
+  }
 
-    // filters, detail card, item grid
-    h += `</div><div class="bagR"><div class="filters">${FILTERS.map((f) => `<button type="button" class="chipbtn${this.filter === f ? ' on' : ''}" data-filter="${f}">${M.filters[f]}</button>`).join('')}</div>`;
-    const items = this.bagItems(s).filter((it) => this.matches(it.key));
+  /** Display tier of a bag entry, for its glow colour. */
+  private itemTier(key: ItemKey): number {
+    if (key.startsWith('w:')) return gearTier(WEAPONS[key.slice(2) as WeaponId].recipe);
+    if (key.startsWith('a:')) return gearTier(ARMOR[key.slice(2) as ArmorId].recipe);
+    if (key.startsWith('m:')) {
+      const r = MATERIALS[key.slice(2) as MaterialId].rarity ?? 0;
+      return r === 2 ? 3 : r === 1 ? 2 : 0;
+    }
+    return 1;
+  }
+
+  private bagItemsView(s: GameState): string {
+    const M = th.menu;
+    const all = this.bagItems(s);
+    const tabs = FILTERS.map((f) => {
+      const n = all.filter((it) => f === 'all' || this.matchesFilter(it.key, f)).length;
+      return `<button type="button" class="${this.filter === f ? 'on' : ''}" data-filter="${f}"><span>${M.filters[f]}</span><small>${n}</small></button>`;
+    }).join('');
+    const items = all.filter((it) => this.matches(it.key));
+    const wkey: ItemKey = `w:${s.player.weapon}`;
     if (this.sel && this.sel !== wkey && !this.sel.startsWith('a:') && !items.some((it) => it.key === this.sel)) this.sel = null;
-    h += this.sel ? this.detail(s, this.sel) : `<p class="note">${items.length ? M.bagHelp : M.bagEmpty}</p>`;
     const cells = items.map(
       (it) =>
-        `<button type="button" class="cell r${it.rarity}${this.sel === it.key ? ' sel' : ''}${it.equipped ? ' eq' : ''}" data-item="${it.key}" aria-label="${it.name}">${img(it.icon)}${it.count !== null ? `<b>${it.count}</b>` : ''}</button>`,
+        `<button type="button" class="cell t${this.itemTier(it.key)}${this.sel === it.key ? ' sel' : ''}${it.equipped ? ' eq' : ''}" data-item="${it.key}" aria-label="${it.name}">${img(it.icon)}${it.count !== null ? `<b>${it.count}</b>` : ''}</button>`,
     );
     for (let i = cells.length; i < MIN_CELLS; i++) cells.push('<div class="cell blank"></div>');
-    h += `<div class="grid">${cells.join('')}</div></div></div>`;
+    const detail = this.sel ? this.detail(s, this.sel) : `<div class="fdetail empty"><p class="note">${items.length ? M.bagHelp : M.bagEmpty}</p></div>`;
+    return `<section class="fmain"><div class="ftypes">${tabs}</div><div class="fbody"><div class="grid">${cells.join('')}</div>${detail}</div></section>${this.characterCard(s)}`;
+  }
 
+  /** Goal, the elder's request and the weapon's skills. */
+  private bagHunt(s: GameState): string {
+    const M = th.menu;
+    const goal = th.goals[goalIndex(s)];
+    let h = '<section class="fmain bagtext">';
     if (goal) h += `<div class="goalbox"><b>${goal.title}</b><p>${goal.desc}</p></div>`;
     h += this.requestCard(s);
-    h += `<h3 class="sec">${M.skills}</h3><div class="skl">${weaponSkills(p.weapon)
-      .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${M.cooldown(SKILLS[id].cooldown)}</span></div>`)
-      .join('')}<div><b>${M.partsTitle}</b><span class="meta">${M.partsHelp}</span></div></div>`;
+    h += `<h3 class="sec">${M.skills}</h3><div class="skl">${weaponSkills(s.player.weapon)
+      .map((id) => `<div><span class="sico">${SKILL_ICONS[id] ?? ''}</span><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${M.cooldown(SKILLS[id].cooldown)}</span></div>`)
+      .join('')}<div><span class="sico">${ICONS.attack}</span><b>${M.partsTitle}</b><span class="meta">${M.partsHelp}</span></div></div>`;
+    return `${h}</section>`;
+  }
+
+  /** Sound, log and new game. */
+  private bagSettings(): string {
+    const M = th.menu;
     const snd = this.hooks.sound.get();
+    let h = '<section class="fmain bagtext">';
     h += `<div class="sound"><h3 class="sec">${M.sound.title}</h3><label class="chk"><input type="checkbox" id="sndOn" ${snd.on ? 'checked' : ''}>${M.sound.on}</label><label class="vol"><span>${M.sound.volume}</span><input type="range" id="sndVol" min="0" max="100" step="5" value="${Math.round(snd.volume * 100)}" aria-label="${M.sound.volume}" ${snd.on ? '' : 'disabled'}></label><label class="vol"><span>${M.sound.music}</span><input type="range" id="sndMusic" min="0" max="100" step="5" value="${Math.round(snd.music * 100)}" aria-label="${M.sound.music}" ${snd.on ? '' : 'disabled'}></label></div>`;
     const armed = Date.now() - this.resetArm < 3000;
     h += `<div class="row"><h3 class="sec">${M.log}</h3><button type="button" class="btn" id="btnReset">${armed ? M.confirmNewGame : M.newGame}</button></div>`;
     h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
-    return h;
+    return `${h}</section>`;
   }
 
   /** The elder's current hunt request with progress and reward. */
@@ -360,6 +404,7 @@ export class Sheet {
 
   /** Opens the bag tab scrolled to the hunt request (talking to the elder). */
   openRequests(): void {
+    this.bagSub = 'hunt';
     this.open('bag');
     this.body.querySelector('#reqbox')?.scrollIntoView({ block: 'center' });
   }
@@ -382,40 +427,31 @@ export class Sheet {
   }
 
   private matches(key: ItemKey): boolean {
-    if (this.filter === 'all') return true;
-    if (key === 'potion' || key.startsWith('w:') || key.startsWith('a:')) return this.filter === 'gear';
-    return MATERIALS[key.slice(2) as MaterialId].category === this.filter;
+    return this.matchesFilter(key, this.filter);
   }
 
-  /** Info card for the selected bag item. */
+  private matchesFilter(key: ItemKey, f: BagFilter): boolean {
+    if (f === 'all') return true;
+    if (key === 'potion' || key.startsWith('w:') || key.startsWith('a:')) return f === 'gear';
+    return MATERIALS[key.slice(2) as MaterialId].category === f;
+  }
+
+  /** Info card for the selected bag item, in the forge's detail style. */
   private detail(s: GameState, key: ItemKey): string {
     const M = th.menu;
+    const G = th.menu.bagTab;
+    if (key.startsWith('w:')) return this.weaponDetail(s, key.slice(2) as WeaponId, 'craft');
+    if (key.startsWith('a:')) return this.armorDetail(s, key.slice(2) as ArmorId);
     if (key === 'potion') {
-      return `<div class="detail">${img(potionIconUrl(), 'ico lg')}<div><b>${M.potionName}</b><p class="meta">${M.have(s.player.potions)} · ${M.potionDesc(TUNING.player.potion.heal)}</p></div></div>`;
-    }
-    if (key.startsWith('w:')) {
-      const id = key.slice(2) as WeaponId;
-      const w = WEAPONS[id];
-      const speed = w.rate < 0.5 ? M.speed.fast : w.rate < 0.8 ? M.speed.mid : M.speed.slow;
-      const btn =
-        s.player.weapon === id
-          ? `<button type="button" class="btn" disabled>${M.equipped}</button>`
-          : `<button type="button" class="btn" data-equip="${id}" ${s.player.inVillage ? '' : 'disabled'}>${M.equip}</button>`;
-      return `<div class="detail">${img(weaponIconUrl(id), 'ico lg')}<div><b>${th.weaponName(id, weaponLevel(s, id))}</b><p class="meta">${M.weaponStats(th.weaponTypes[w.type], Math.round(weaponPower(s, id)), speed)} · ${th.weapons[id].desc}</p>${strongVs(s, id)}${btn}</div></div>`;
-    }
-    if (key.startsWith('a:')) {
-      const id = key.slice(2) as ArmorId;
-      const a = ARMOR[id];
-      const on = s.armor[a.slot] === id;
-      const btn = `<button type="button" class="btn" ${on ? `data-unequip="${id}"` : `data-wear="${id}"`} ${s.player.inVillage ? '' : 'disabled'}>${on ? M.unequip : M.wear}</button>`;
-      return `<div class="detail">${img(armorIconUrl(id), 'ico lg')}<div><b>${th.armor[id].name}</b><p class="meta">${M.armorMeta(M.slots[a.slot], a.defense, a.maxHp, a.stamina)} · ${th.armor[id].desc}</p>${perkLines(s, id)}${btn}</div></div>`;
+      return `<div class="fdetail t1"><div class="fhead"><div class="fhero">${img(potionIconUrl(), 'big')}</div><div><h3>${M.potionName}</h3><p class="meta">${M.have(s.player.potions)} · ${M.potionDesc(TUNING.player.potion.heal)}</p></div></div></div>`;
     }
     const id = key.slice(2) as MaterialId;
     const m = MATERIALS[id];
-    const tag = m.rarity ? ` <span class="tag">${th.rarity[m.rarity]}</span>` : '';
+    const tier = this.itemTier(key);
+    const badge = m.rarity ? `<span class="badge t${tier}">${th.rarity[m.rarity]}</span>` : '';
     const src = itemSources(id).map((x) => `<li>${sourceText(x)}</li>`).join('') || `<li class="meta">${M.noSource}</li>`;
     const use = itemUses(id).map((x) => `<li>${useText(x)}</li>`).join('') || `<li class="meta">${M.noUse}</li>`;
-    return `<div class="detail">${img(materialIconUrl(id), 'ico lg')}<div><b>${th.materials[id]}</b>${tag}<p class="meta">${M.have(s.inv[id])}</p><div class="dcols"><div><h4>${M.sourcesTitle}</h4><ul>${src}</ul></div><div><h4>${M.usesTitle}</h4><ul>${use}</ul></div></div></div></div>`;
+    return `<div class="fdetail t${tier}"><div class="fhead"><div class="fhero">${img(materialIconUrl(id), 'big')}</div><div><h3>${th.materials[id]}</h3>${badge}<p class="meta">${M.have(s.inv[id])}</p></div></div><h4>${G.sources}</h4><ul class="flines">${src}</ul><h4>${G.uses}</h4><ul class="flines">${use}</ul></div>`;
   }
 
   /** Materials as rows: icon, name, have/need, tick or cross. */
@@ -482,7 +518,7 @@ export class Sheet {
     return `<section class="fmain"><div class="ftypes">${tabs}</div>${hint}<div class="fbody"><div class="flist">${items.join('')}</div>${detail}</div></section>${this.weaponCompare(s)}`;
   }
 
-  private weaponDetail(s: GameState, k: WeaponId): string {
+  private weaponDetail(s: GameState, k: WeaponId, mode: ForgeSub = this.forgeSub): string {
     const F = th.menu.forge;
     const p = s.player;
     const w = WEAPONS[k];
@@ -492,7 +528,7 @@ export class Sheet {
     const iv = p.inVillage;
     const lv = weaponLevel(s, k);
     const UP = WEAPONS_DATA.upgrade;
-    const upgrading = this.forgeSub === 'upgrade';
+    const upgrading = mode === 'upgrade';
     const power = weaponPower(s, k);
     const next = upgrading && lv < UP.maxLevel ? w.damage * (UP.damageMul[lv + 1] ?? 1) : null;
     const curPower = weaponPower(s, p.weapon);
@@ -835,19 +871,34 @@ export class Sheet {
     return h;
   }
 
+  /** Bestiary: progress card | area tabs, portrait list, entry. */
   private book(s: GameState): string {
     const B = th.menu.book;
     const known = MONSTER_IDS.filter((k) => (s.kills[k] ?? 0) > 0);
-    if (!this.bookSel) this.bookSel = known[0] ?? MONSTER_IDS[0] ?? null;
-    let h = `<div class="row"><h3 class="sec">${B.progress(known.length, MONSTER_IDS.length)}</h3><span class="medalcount">${B.medalsProgress(medalCount(s), MONSTER_IDS.length * MEDALS.length)}</span></div><p class="note">${B.help}</p>`;
-    h += `<div class="bgrid">${MONSTER_IDS.map((k) => {
-      const p = monsterPortrait(k);
-      const sc = portraitScale(p.w, 64);
-      const seen = (s.kills[k] ?? 0) > 0;
-      return `<button type="button" class="bcard${seen ? '' : ' locked'}${this.bookSel === k ? ' sel' : ''}" data-mon="${k}"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><span>${seen ? th.monsters[k].name : B.unknown}</span>${seen ? medalPips(s, k) : ''}</button>`;
-    }).join('')}</div>`;
-    if (this.bookSel) h += this.bookEntry(s, this.bookSel);
-    return h;
+    const pct = Math.round((known.length / MONSTER_IDS.length) * 100);
+    const medals = medalCount(s);
+    const nav = `<nav class="fsub"><div class="fpotion bookprog"><div><b>${B.recorded}</b><span class="big">${known.length}/${MONSTER_IDS.length}</span><span class="reqbar"><i style="width:${pct}%"></i></span><b>${B.medals}</b><span class="big">${medals}/${MONSTER_IDS.length * MEDALS.length}</span></div></div><p class="fhint">${B.help}</p></nav>`;
+    const areas: (AreaId | 'all')[] = ['all', ...AREA_IDS.filter((a) => MONSTER_IDS.some((k) => MONSTERS[k].area === a))];
+    const tabs = areas
+      .map((a) => {
+        const kinds = MONSTER_IDS.filter((k) => a === 'all' || MONSTERS[k].area === a);
+        const got = kinds.filter((k) => (s.kills[k] ?? 0) > 0).length;
+        return `<button type="button" class="${this.bookArea === a ? 'on' : ''}" data-barea="${a}"><span>${a === 'all' ? B.all : th.areas[a]}</span><small>${got}/${kinds.length}</small></button>`;
+      })
+      .join('');
+    const list = MONSTER_IDS.filter((k) => this.bookArea === 'all' || MONSTERS[k].area === this.bookArea);
+    if (!this.bookSel || !list.includes(this.bookSel)) this.bookSel = list.find((k) => (s.kills[k] ?? 0) > 0) ?? list[0] ?? null;
+    const cards = list
+      .map((k) => {
+        const p = monsterPortrait(k);
+        const sc = portraitScale(p.w, 56);
+        const seen = (s.kills[k] ?? 0) > 0;
+        const boss = MONSTERS[k].rage !== null;
+        return `<button type="button" class="bcard${seen ? '' : ' locked'}${boss ? ' boss' : ''}${this.bookSel === k ? ' sel' : ''}" data-mon="${k}"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><span>${seen ? th.monsters[k].name : B.unknown}</span>${seen ? medalPips(s, k) : ''}</button>`;
+      })
+      .join('');
+    const entry = this.bookSel ? this.bookEntry(s, this.bookSel) : '';
+    return `<div class="forge book2">${nav}<section class="fmain"><div class="ftypes">${tabs}</div><div class="fbody"><div class="flist bgrid">${cards}</div>${entry}</div></section></div>`;
   }
 
   private bookEntry(s: GameState, k: MonsterId): string {
@@ -926,6 +977,13 @@ export class Sheet {
     }
     if (d.filter) {
       this.filter = d.filter as BagFilter;
+      this.render();
+      return;
+    }
+    if (d.bsub || d.barea) {
+      if (d.bsub) this.bagSub = d.bsub as BagSub;
+      if (d.barea) this.bookArea = d.barea as AreaId | 'all';
+      this.hooks.sfx('ui');
       this.render();
       return;
     }
