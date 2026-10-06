@@ -125,11 +125,11 @@ export class Hud {
     box.hidden = false;
     const def = MONSTERS[m.kind];
     const names = th.monsters[m.kind];
-    this.q('#bName').textContent = names.name + (m.rage ? th.hud.enraged : '') + (m.mode === 'stun' ? th.hud.stunned : '');
+    this.q('#bName').textContent = (m.vet ? th.hud.veteran(names.name) : names.name) + (m.rage ? th.hud.enraged : '') + (m.mode === 'stun' ? th.hud.stunned : '');
     const bt = this.q('#bTime');
     bt.textContent = m.huntT !== null ? fmtTime(m.huntT) : '';
     bt.classList.toggle('low', m.huntT !== null && m.huntT < 15);
-    this.q('#bHp').style.width = `${Math.max(0, (m.hp / def.hp) * 100)}%`;
+    this.q('#bHp').style.width = `${Math.max(0, (m.hp / m.maxHp) * 100)}%`;
     const partIds = Object.keys(def.parts) as PartId[];
     const key = m.id + partIds.map((k) => (m.parts[k]?.broken ? 1 : 0)).join('');
     if (key !== this.partsKey) {

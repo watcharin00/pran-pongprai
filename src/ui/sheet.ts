@@ -1,12 +1,13 @@
 // The single menu: bottom sheet on phones, side drawer on wide screens.
 // The game pauses while it is open.
 import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
-import { ARMOR_SLOTS, type AreaId, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type WeaponId } from '../data/types';
+import { ARMOR_SLOTS, MEDALS, type AreaId, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS } from '../core/areas';
 import { ELDER_HOUSE, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
 import { allRequestsDone, currentRequest } from '../core/requests';
+import { hasMedal, medalCount } from '../core/medals';
 import { requestText, rewardText } from './talk';
 import { fastTravelHome, inFight } from '../core/travel';
 import { areaThumbUrl } from '../art/mapThumb';
@@ -142,6 +143,7 @@ export class Sheet {
     this.body.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;
       if (t.id === 'sndVol') this.hooks.sound.set({ ...this.hooks.sound.get(), volume: Number(t.value) / 100 });
+      if (t.id === 'sndMusic') this.hooks.sound.set({ ...this.hooks.sound.get(), music: Number(t.value) / 100 });
     });
     this.body.addEventListener('click', (e) => this.onClick(e));
     hud.onLog = () => {
@@ -261,7 +263,7 @@ export class Sheet {
       .map((id) => `<div><b>${th.skills[id].name}</b><span class="meta">${th.skills[id].desc} · ${M.cooldown(SKILLS[id].cooldown)}</span></div>`)
       .join('')}<div><b>${M.partsTitle}</b><span class="meta">${M.partsHelp}</span></div></div>`;
     const snd = this.hooks.sound.get();
-    h += `<div class="sound"><h3 class="sec">${M.sound.title}</h3><label class="chk"><input type="checkbox" id="sndOn" ${snd.on ? 'checked' : ''}>${M.sound.on}</label><input type="range" id="sndVol" min="0" max="100" step="5" value="${Math.round(snd.volume * 100)}" aria-label="${M.sound.volume}" ${snd.on ? '' : 'disabled'}></div>`;
+    h += `<div class="sound"><h3 class="sec">${M.sound.title}</h3><label class="chk"><input type="checkbox" id="sndOn" ${snd.on ? 'checked' : ''}>${M.sound.on}</label><label class="vol"><span>${M.sound.volume}</span><input type="range" id="sndVol" min="0" max="100" step="5" value="${Math.round(snd.volume * 100)}" aria-label="${M.sound.volume}" ${snd.on ? '' : 'disabled'}></label><label class="vol"><span>${M.sound.music}</span><input type="range" id="sndMusic" min="0" max="100" step="5" value="${Math.round(snd.music * 100)}" aria-label="${M.sound.music}" ${snd.on ? '' : 'disabled'}></label></div>`;
     const armed = Date.now() - this.resetArm < 3000;
     h += `<div class="row"><h3 class="sec">${M.log}</h3><button type="button" class="btn" id="btnReset">${armed ? M.confirmNewGame : M.newGame}</button></div>`;
     h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
@@ -497,12 +499,12 @@ export class Sheet {
     const B = th.menu.book;
     const known = MONSTER_IDS.filter((k) => (s.kills[k] ?? 0) > 0);
     if (!this.bookSel) this.bookSel = known[0] ?? MONSTER_IDS[0] ?? null;
-    let h = `<div class="row"><h3 class="sec">${B.progress(known.length, MONSTER_IDS.length)}</h3></div><p class="note">${B.help}</p>`;
+    let h = `<div class="row"><h3 class="sec">${B.progress(known.length, MONSTER_IDS.length)}</h3><span class="medalcount">${B.medalsProgress(medalCount(s), MONSTER_IDS.length * MEDALS.length)}</span></div><p class="note">${B.help}</p>`;
     h += `<div class="bgrid">${MONSTER_IDS.map((k) => {
       const p = monsterPortrait(k);
       const sc = portraitScale(p.w, 64);
       const seen = (s.kills[k] ?? 0) > 0;
-      return `<button type="button" class="bcard${seen ? '' : ' locked'}${this.bookSel === k ? ' sel' : ''}" data-mon="${k}"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><span>${seen ? th.monsters[k].name : B.unknown}</span></button>`;
+      return `<button type="button" class="bcard${seen ? '' : ' locked'}${this.bookSel === k ? ' sel' : ''}" data-mon="${k}"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><span>${seen ? th.monsters[k].name : B.unknown}</span>${seen ? medalPips(s, k) : ''}</button>`;
     }).join('')}</div>`;
     if (this.bookSel) h += this.bookEntry(s, this.bookSel);
     return h;
@@ -544,6 +546,10 @@ export class Sheet {
       drops.push(`<span class="chipi${m in def.rare ? ' rare' : ''}">${img(materialIconUrl(m as MaterialId), 'ico sm')}${th.materials[m as MaterialId]} ${B.chance(Math.round((ch ?? 0) * 100))}</span>`);
     }
     h += `<h4>${B.drops}</h4><div class="req">${drops.join('')}</div>`;
+    h += `<h4>${B.medals}</h4><ul class="blist medals">${MEDALS.map((md) => {
+      const got = hasMedal(s, k, md);
+      return `<li class="${got ? 'got' : ''}"><i class="medal ${md}${got ? ' got' : ''}"></i><b>${th.medals[md].name}</b> <span class="meta">${th.medals[md].desc}${got ? ` · ${B.medalEarned}` : ''}</span></li>`;
+    }).join('')}</ul>`;
     h += `<div class="goalbox"><b>${B.tip}</b><p>${t.tip}</p></div></div>`;
     return h;
   }
@@ -641,6 +647,8 @@ function sourceText(x: ItemSource): string {
   const pct = (c: number): number => Math.round(c * 100);
   if (x.kind === 'crop') return `${img(materialIconUrl(CROPS[x.crop].seed), 'ico sm')}${S.crop(th.crops[x.crop].name)}`;
   if (x.kind === 'gather') return x.chance >= 1 ? S.gather[x.node] : S.gatherChance(S.gather[x.node], pct(x.chance));
+  if (x.kind === 'veteran') return S.veteran;
+  if (x.kind === 'request') return S.request;
   const mon = th.monsters[x.monster];
   const icon = img(monsterIconUrl(x.monster), 'ico mon');
   if (x.kind === 'part') return `${icon}${S.part((mon.parts as Partial<Record<string, string>>)[x.part] ?? x.part, mon.name)}`;
@@ -652,11 +660,17 @@ function sourceText(x: ItemSource): string {
 function useText(x: ItemUse): string {
   const U = th.menu.use;
   if (x.kind === 'weapon') return `${img(weaponIconUrl(x.weapon), 'ico sm')}${U.weapon(th.weapons[x.weapon].name)}`;
+  if (x.kind === 'armor') return `${img(armorIconUrl(x.armor), 'ico sm')}${U.armor(th.armor[x.armor].name)}`;
   if (x.kind === 'upgrade') return `${img(weaponIconUrl(x.weapon), 'ico sm')}${U.upgrade(th.weapons[x.weapon].name)}`;
   if (x.kind === 'meal') return `${img(mealIconUrl(x.meal), 'ico sm')}${U.meal(th.meals[x.meal].name)}`;
   if (x.kind === 'potion') return `${img(potionIconUrl(), 'ico sm')}${U.potion}`;
   if (x.kind === 'plant') return U.plant(th.crops[x.crop].name);
   return U.fertilizer;
+}
+
+/** Four small medal pips under a bestiary portrait. */
+function medalPips(s: GameState, k: MonsterId): string {
+  return `<span class="pips">${MEDALS.map((md) => `<i class="medal ${md}${hasMedal(s, k, md) ? ' got' : ''}"></i>`).join('')}</span>`;
 }
 
 function escapeHtml(s: string): string {

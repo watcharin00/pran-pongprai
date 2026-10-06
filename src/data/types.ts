@@ -25,6 +25,10 @@ export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon' | 'bamboo' | 'sw
 
 export type ItemBag = Partial<Record<MaterialId, number>>;
 
+/** Bestiary medals: hunted without a scratch, every part broken, with half the hunt timer left, a veteran. */
+export const MEDALS = ['flawless', 'parts', 'swift', 'veteran'] as const;
+export type MedalId = (typeof MEDALS)[number];
+
 /** Procedural icon shape drawn by art/icons.ts; `color` tints it. */
 export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack', 'feather', 'meat', 'stalk', 'grain', 'fish'] as const;
 export type IconShape = (typeof ICON_SHAPES)[number];
@@ -368,6 +372,26 @@ export interface Tuning {
     npcPauseMax: number;
   };
   input: { joystickRadius: number; joystickDeadzone: number; joystickArea: number };
+  /** endgame: tougher "veteran" variants that spawn once the last weapon goal is reached */
+  veteran: {
+    unlockGoal: number;
+    /** chance each spawn is a veteran */
+    chance: number;
+    hpMul: number;
+    partHpMul: number;
+    damageMul: number;
+    speedMul: number;
+    /** telegraphs count down this much faster */
+    telegraphRate: number;
+    /** carcass amounts multiplier; the rare drop is guaranteed */
+    carveMul: number;
+    /** hunter seals per veteran */
+    seals: number;
+  };
+  medals: {
+    /** "swift" medal: killed with at least this share of the hunt timer left */
+    swiftHuntLeft: number;
+  };
   save: { key: string; legacyKey: string; intervalSeconds: number };
   world: { seed: number; tile: number; width: number; height: number };
 }
@@ -390,7 +414,9 @@ export type RequestGoal =
   | { type: 'flawless'; monster: MonsterId; count: number }
   | { type: 'break'; monster: MonsterId; part: PartId; count: number }
   /** gather from nodes or harvest from the farm */
-  | { type: 'collect'; item: MaterialId; count: number };
+  | { type: 'collect'; item: MaterialId; count: number }
+  /** hunt veterans (endgame); any kind when `monster` is left out */
+  | { type: 'veteran'; monster?: MonsterId; count: number };
 
 export interface RequestDef {
   id: string;

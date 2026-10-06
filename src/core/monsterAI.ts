@@ -2,6 +2,7 @@
 // Monsters turn slowly and can only start an attack once facing the player,
 // which opens a window to circle behind them for the tail.
 import { MONSTERS, TUNING } from '../data';
+import { goalIndex } from './inventory';
 import type { AttackDef, MonsterId, PartId } from '../data/types';
 import { aggro, removeMonster, resolveMonsterHit } from './combat';
 import { canStand, moveBody } from './collision';
@@ -12,12 +13,16 @@ const C = TUNING.combat;
 /** Spawn-distance rules measure from the fountain. */
 const VILLAGE_CENTER = { x: PLAZA.x * T + 8, y: PLAZA.y * T + 8 } as const;
 
-export function createMonster(id: number, kind: MonsterId, x: number, y: number, dirX: 1 | -1): MonsterState {
+const V = TUNING.veteran;
+
+export function createMonster(id: number, kind: MonsterId, x: number, y: number, dirX: 1 | -1, vet = false): MonsterState {
   const def = MONSTERS[kind];
   const parts: Partial<Record<PartId, PartState>> = {};
-  for (const [k, pd] of Object.entries(def.parts)) if (pd) parts[k as PartId] = { hp: pd.hp, broken: false };
+  for (const [k, pd] of Object.entries(def.parts)) if (pd) parts[k as PartId] = { hp: Math.round(pd.hp * (vet ? V.partHpMul : 1)), broken: false };
+  const hp = Math.round(def.hp * (vet ? V.hpMul : 1));
   return {
-    id, kind, x, y, hx: x, hy: y, hp: def.hp, parts, mode: 'wander', t: 0, tt: 1, dirX, turnT: 0, wanderT: 0, waypoint: null,
+    vet, maxHp: hp,
+    id, kind, x, y, hx: x, hy: y, hp, parts, mode: 'wander', t: 0, tt: 1, dirX, turnT: 0, wanderT: 0, waypoint: null,
     atkCd: 0, flash: 0, stunMeter: 0, stunT: 0, huntT: null, aggro: false, leash: 0, rage: false, shape: null, attack: null,
     dashLeft: 0, dashHit: false, anim: 0, tipT: 0, hitPlayer: false,
   };
@@ -42,6 +47,11 @@ export function spawnCells(map: WorldMap, kind: MonsterId, zoneCells: readonly (
   return cells;
 }
 
+/** Veterans appear once the player has reached the last weapon goal. */
+export function veteransUnlocked(s: GameState): boolean {
+  return goalIndex(s) >= V.unlockGoal;
+}
+
 /** Places a monster on a random free cell of its zone, away from the player and other monsters. */
 export function spawnMonster(s: GameState, kind: MonsterId): MonsterState | null {
   const def = MONSTERS[kind];
@@ -55,9 +65,12 @@ export function spawnMonster(s: GameState, kind: MonsterId): MonsterState | null
     if (Math.hypot(x - s.player.x, y - s.player.y) < C.monsterSpawnMinPlayerDist) continue;
     if (!canStand(s.map, x, y, def.size * 0.5)) continue;
     if (s.monsters.some((m) => Math.hypot(m.x - x, m.y - y) < C.monsterSpawnMinSpacing)) continue;
-    const m = createMonster(s.nextId++, kind, x, y, s.rng.chance(0.5) ? 1 : -1);
+    const dirX = s.rng.chance(0.5) ? 1 : -1;
+    // only roll for a veteran once they are unlocked, so early-game randomness is unchanged
+    const vet = veteransUnlocked(s) && s.rng.chance(V.chance);
+    const m = createMonster(s.nextId++, kind, x, y, dirX, vet);
     s.monsters.push(m);
-    s.events.emit('monster:spawned', { id: m.id, kind, at: { x, y } });
+    s.events.emit('monster:spawned', { id: m.id, kind, at: { x, y }, vet });
     return m;
   }
   return null;
@@ -146,7 +159,7 @@ function think(s: GameState, m: MonsterState, dt: number): void {
     }
   }
   const rage = m.rage ? def.rage : null;
-  const spd = def.speed * (rage ? rage.speedMul : 1);
+  const spd = def.speed * (rage ? rage.speedMul : 1) * (m.vet ? V.speedMul : 1);
   const r = def.size * 0.5;
   const playerInVillage = s.area === 'home' && inVillagePx(p.x, p.y);
 
@@ -221,7 +234,7 @@ function think(s: GameState, m: MonsterState, dt: number): void {
     }
 
     case 'tele': {
-      m.t -= dt * (rage ? rage.telegraphRate : 1);
+      m.t -= dt * (rage ? rage.telegraphRate : 1) * (m.vet ? V.telegraphRate : 1);
       if (m.t > 0) return;
       const a = m.attack;
       const sh = m.shape;

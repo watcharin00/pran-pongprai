@@ -34,6 +34,7 @@ import { TextLayer, type ScreenMapper } from './TextLayer';
 import { TEX } from './textures';
 import { buildTerrain } from '../art/terrain';
 import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
+import { Music, nextMood } from '../audio/music';
 
 const SIGN_ARROWS = { n: '↑', s: '↓', e: '→', w: '←' } as const;
 
@@ -137,6 +138,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private pad!: ActionPad;
   private sheet!: Sheet;
   private sfx!: Sfx;
+  private music!: Music;
+  /** seconds since a monster last chased the player (battle music lingers a little) */
+  private calm = 0;
   private ctx: ContextAction | null = null;
   private uiT = 0;
   private saveT: number = TUNING.save.intervalSeconds;
@@ -184,6 +188,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.text = new TextLayer(this, this.inUi);
 
     this.sfx = new Sfx(parseSoundSettings(readKey(SOUND_KEY)));
+    this.music = new Music(() => this.sfx.audio());
+    this.applyMusicVolume();
     this.setupUi();
     this.subscribe();
     this.resize();
@@ -317,6 +323,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         get: () => this.sfx.current,
         set: (v) => {
           this.sfx.set(v);
+          this.applyMusicVolume();
           writeKey(SOUND_KEY, JSON.stringify(v));
         },
       },
@@ -458,7 +465,17 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const monName = (k: keyof typeof th.monsters): string => th.monsters[k].name;
     const partName = (k: keyof typeof th.monsters, p: PartId): string => (th.monsters[k].parts as Partial<Record<PartId, string>>)[p] ?? p;
 
-    ev.on('monster:spawned', (e) => fx.burst(e.at.x, e.at.y, '#fff8e0', 8, 40, 'dust'));
+    ev.on('monster:spawned', (e) => {
+      fx.burst(e.at.x, e.at.y, e.vet ? '#ffcf4a' : '#fff8e0', e.vet ? 16 : 8, 40, 'dust');
+      if (e.vet) {
+        hud.toast(th.log.veteranAppeared(monName(e.kind)), 'bad');
+        snd('enrage', undefined, 0.5);
+      }
+    });
+    ev.on('medal:earned', (e) => {
+      hud.toast(th.log.medal(th.medals[e.medal].name, monName(e.kind)), 'gold');
+      snd('harvest');
+    });
     ev.on('player:attack', (e) => {
       const w = WEAPONS[e.weapon];
       const type = WEAPON_TYPES[w.type];
@@ -676,6 +693,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.ctx = contextAction(s);
       this.hud.update(s);
       this.pad.update(s, this.ctx);
+      const hunted = s.monsters.some((m) => m.aggro);
+      this.calm = hunted ? 0 : this.calm + 0.1;
+      const mood = nextMood(this.music.current, { dead: s.player.dead, inVillage: s.player.inVillage, hunted, bossHunted: s.monsters.some((m) => m.aggro && MONSTERS[m.kind].rage !== null) }, this.calm);
+      this.music.play(mood);
     }
     this.sheet.tick(raw);
     this.saveT -= raw;
@@ -683,6 +704,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.saveT = TUNING.save.intervalSeconds;
       this.save();
     }
+  }
+
+  private applyMusicVolume(): void {
+    const v = this.sfx.current;
+    this.music.setVolume(v.on ? v.music : 0);
   }
 
   private collectHuman(): HumanInput {
@@ -907,6 +933,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const feet = MonsterView.feet(m, v.img.height);
       sh.fillStyle(0x142814, 0.3).fillEllipse(m.x, feet, size * 1.9, size * 0.64);
       if (m.rage) sa.fillStyle(0xff501e, 0.14 + 0.08 * Math.sin(time * 10)).fillEllipse(m.x, m.y, (size + 6) * 2, size * 1.6);
+      if (m.vet) {
+        // veteran: a slow golden ring at the feet
+        const k = 0.5 + 0.5 * Math.sin(time * 3 + m.id);
+        sa.lineStyle(1, 0xffcf4a, 0.35 + 0.25 * k).strokeEllipse(m.x, feet, size * 2.3 + k * 3, size * 0.8 + k);
+      }
     }
     for (const [id, v] of this.monsterViews) {
       if (alive.has(id)) continue;
@@ -960,7 +991,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const bw = def.size * 2;
       const yy = Math.round(m.y - v.img.height / 2 - 5);
       g.fillStyle(0x151c2b, 1).fillRect(m.x - bw / 2 - 1, yy - 1, bw + 2, 4);
-      g.fillStyle(0xf08a3c, 1).fillRect(m.x - bw / 2, yy, Math.max(0, Math.round((bw * m.hp) / def.hp)), 2);
+      g.fillStyle(0xf08a3c, 1).fillRect(m.x - bw / 2, yy, Math.max(0, Math.round((bw * m.hp) / m.maxHp)), 2);
     }
   }
 

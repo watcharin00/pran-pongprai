@@ -80,12 +80,12 @@
     ]
   },
   "tiger": {
-    "hp": 700, "speed": 50, "size": 13, "aggroRadius": 64, "zone": "forest", "spawnMinVillageDist": 420, "spawnEastOfRiver": true,
+    "hp": 3000, "speed": 50, "size": 13, "aggroRadius": 64, "zone": "forest", "spawnMinVillageDist": 420, "spawnEastOfRiver": true,
     "huntTime": 180, "turnTime": 0.6, "recover": 0.9, "respawn": 30, "count": 1,
     "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.3, "damageMul": 1.15 },
     "parts": {
-      "head": { "hp": 170, "drop": { "tigerfang": 1 }, "offset": [11, -3] },
-      "tail": { "hp": 120, "drop": { "tigertail": 1 }, "offset": [-14, -4] }
+      "head": { "hp": 730, "drop": { "tigerfang": 1 }, "offset": [11, -3] },
+      "tail": { "hp": 510, "drop": { "tigertail": 1 }, "offset": [-14, -4] }
     },
     "carve": [
       { "item": "tigerpelt", "min": 2, "max": 3 },
@@ -102,11 +102,11 @@
   },
   "macaque": {
     "area": "bamboo",
-    "hp": 140, "speed": 60, "size": 7, "aggroRadius": 70, "zone": "forest",
+    "hp": 720, "speed": 60, "size": 7, "aggroRadius": 70, "zone": "forest",
     "huntTime": 90, "turnTime": 0.25, "recover": 0.7, "respawn": 14, "count": 5,
     "rage": null,
     "parts": {
-      "tail": { "hp": 35, "drop": { "monkeyfur": 2 }, "offset": [-7, -5] }
+      "tail": { "hp": 180, "drop": { "monkeyfur": 2 }, "offset": [-7, -5] }
     },
     "carve": [
       { "item": "monkeyfur", "min": 1, "max": 2 },
@@ -121,12 +121,12 @@
   },
   "cobra": {
     "area": "bamboo",
-    "hp": 240, "speed": 34, "size": 9, "aggroRadius": 56, "zone": "forest", "spawnMinVillageDist": 0,
+    "hp": 1440, "speed": 34, "size": 9, "aggroRadius": 56, "zone": "forest", "spawnMinVillageDist": 0,
     "huntTime": 120, "turnTime": 0.5, "recover": 0.9, "respawn": 20, "count": 2,
     "rage": null,
     "parts": {
-      "head": { "hp": 70, "drop": { "venom": 1 },     "offset": [6, -8] },
-      "tail": { "hp": 50, "drop": { "snakeskin": 1 }, "offset": [-8, 2] }
+      "head": { "hp": 420, "drop": { "venom": 1 },     "offset": [6, -8] },
+      "tail": { "hp": 300, "drop": { "snakeskin": 1 }, "offset": [-8, 2] }
     },
     "carve": [
       { "item": "snakeskin", "min": 2, "max": 3 },
@@ -143,11 +143,11 @@
   },
   "monitor": {
     "area": "swamp",
-    "hp": 260, "speed": 44, "size": 9, "aggroRadius": 58, "zone": "forest",
+    "hp": 1000, "speed": 44, "size": 9, "aggroRadius": 58, "zone": "forest",
     "huntTime": 110, "turnTime": 0.45, "recover": 0.8, "respawn": 16, "count": 3,
     "rage": null,
     "parts": {
-      "tail": { "hp": 60, "drop": { "lizardtail": 1 }, "offset": [-10, 1] }
+      "tail": { "hp": 230, "drop": { "lizardtail": 1 }, "offset": [-10, 1] }
     },
     "carve": [
       { "item": "lizardhide", "min": 2, "max": 3 },
@@ -163,12 +163,12 @@
   },
   "crocodile": {
     "area": "swamp",
-    "hp": 820, "speed": 34, "size": 15, "aggroRadius": 60, "zone": "forest", "spawnMinVillageDist": 0,
+    "hp": 3600, "speed": 34, "size": 15, "aggroRadius": 60, "zone": "forest", "spawnMinVillageDist": 0,
     "huntTime": 180, "turnTime": 0.9, "recover": 1.0, "respawn": 30, "count": 1,
     "rage": { "below": 0.5, "speedMul": 1.15, "telegraphRate": 1.3, "damageMul": 1.15 },
     "parts": {
-      "head": { "hp": 200, "drop": { "crocfang": 2 },  "offset": [14, -1] },
-      "tail": { "hp": 160, "drop": { "croctail": 1 },  "offset": [-15, 0] }
+      "head": { "hp": 880, "drop": { "crocfang": 2 },  "offset": [14, -1] },
+      "tail": { "hp": 700, "drop": { "croctail": 1 },  "offset": [-15, 0] }
     },
     "carve": [
       { "item": "crochide", "min": 3, "max": 4 },
@@ -185,11 +185,11 @@
   },
   "serow": {
     "area": "limestone",
-    "hp": 300, "speed": 52, "size": 9, "aggroRadius": 64, "zone": "forest",
+    "hp": 1150, "speed": 52, "size": 9, "aggroRadius": 64, "zone": "forest",
     "huntTime": 110, "turnTime": 0.4, "recover": 0.8, "respawn": 16, "count": 3,
     "rage": null,
     "parts": {
-      "head": { "hp": 90, "drop": { "serowhorn": 1 }, "offset": [7, -5] }
+      "head": { "hp": 340, "drop": { "serowhorn": 1 }, "offset": [7, -5] }
     },
     "carve": [
       { "item": "serowhide", "min": 2, "max": 3 },
@@ -205,11 +205,11 @@
   },
   "bear": {
     "area": "limestone",
-    "hp": 950, "speed": 42, "size": 14, "aggroRadius": 62, "zone": "forest",
+    "hp": 4100, "speed": 42, "size": 14, "aggroRadius": 62, "zone": "forest",
     "huntTime": 180, "turnTime": 0.7, "recover": 1.0, "respawn": 30, "count": 1,
     "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.3, "damageMul": 1.15 },
     "parts": {
-      "head": { "hp": 220, "drop": { "bearfang": 2 }, "offset": [12, -4] }
+      "head": { "hp": 950, "drop": { "bearfang": 2 }, "offset": [12, -4] }
     },
     "carve": [
       { "item": "bearpelt", "min": 3, "max": 4 },
@@ -226,11 +226,11 @@
   },
   "muntjac": {
     "area": "deepwild",
-    "hp": 180, "speed": 58, "size": 7, "aggroRadius": 50, "zone": "forest",
+    "hp": 1050, "speed": 58, "size": 7, "aggroRadius": 50, "zone": "forest",
     "huntTime": 80, "turnTime": 0.3, "recover": 0.7, "respawn": 14, "count": 4,
     "rage": null,
     "parts": {
-      "head": { "hp": 50, "drop": { "deerantler": 1 }, "offset": [6, -6] }
+      "head": { "hp": 290, "drop": { "deerantler": 1 }, "offset": [6, -6] }
     },
     "carve": [
       { "item": "deermeat", "min": 1, "max": 2 },
@@ -245,12 +245,12 @@
   },
   "elephant": {
     "area": "deepwild",
-    "hp": 1500, "speed": 38, "size": 18, "aggroRadius": 64, "zone": "forest",
+    "hp": 8000, "speed": 38, "size": 18, "aggroRadius": 64, "zone": "forest",
     "huntTime": 240, "turnTime": 1.0, "recover": 1.1, "respawn": 40, "count": 1,
     "rage": { "below": 0.5, "speedMul": 1.15, "telegraphRate": 1.3, "damageMul": 1.2 },
     "parts": {
-      "head": { "hp": 320, "drop": { "trunkhide": 2 }, "offset": [18, -2] },
-      "tail": { "hp": 220, "drop": { "tailhair": 1 },  "offset": [-18, -4] }
+      "head": { "hp": 1710, "drop": { "trunkhide": 2 }, "offset": [18, -2] },
+      "tail": { "hp": 1170, "drop": { "tailhair": 1 },  "offset": [-18, -4] }
     },
     "carve": [
       { "item": "elephanthide", "min": 3, "max": 5 },

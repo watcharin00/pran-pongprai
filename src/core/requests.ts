@@ -40,6 +40,10 @@ export function trackRequests(s: GameState): void {
     if (g.type === 'flawless' && !e.flawless) return;
     advance(s, 1);
   });
+  ev.on('monster:killed', (e) => {
+    const g = currentRequest(s)?.goal;
+    if (g?.type === 'veteran' && e.vet && (g.monster === undefined || g.monster === e.kind)) advance(s, 1);
+  });
   ev.on('part:broken', (e) => {
     const g = currentRequest(s)?.goal;
     if (g?.type === 'break' && g.monster === e.kind && g.part === e.part) advance(s, 1);

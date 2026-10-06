@@ -32,9 +32,11 @@ export interface SoundSettings {
   on: boolean;
   /** 0..1 */
   volume: number;
+  /** background music level 0..1 (0 = no music) */
+  music: number;
 }
 
-export const DEFAULT_SOUND: SoundSettings = { on: true, volume: 0.7 };
+export const DEFAULT_SOUND: SoundSettings = { on: true, volume: 0.7, music: 0.5 };
 
 /** Parses stored settings; anything malformed falls back to the defaults. */
 export function parseSoundSettings(raw: string | null): SoundSettings {
@@ -43,7 +45,8 @@ export function parseSoundSettings(raw: string | null): SoundSettings {
     const v = JSON.parse(raw) as Partial<SoundSettings>;
     const on = typeof v.on === 'boolean' ? v.on : DEFAULT_SOUND.on;
     const volume = typeof v.volume === 'number' && Number.isFinite(v.volume) ? Math.min(1, Math.max(0, v.volume)) : DEFAULT_SOUND.volume;
-    return { on, volume };
+    const music = typeof v.music === 'number' && Number.isFinite(v.music) ? Math.min(1, Math.max(0, v.music)) : DEFAULT_SOUND.music;
+    return { on, volume, music };
   } catch {
     return { ...DEFAULT_SOUND };
   }
@@ -76,6 +79,7 @@ type Wave = OscillatorType;
 export class Sfx {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private comp: DynamicsCompressorNode | null = null;
   private noiseBuf: AudioBuffer | null = null;
   private voices = 0;
   private readonly last = new Map<SfxName, number>();
@@ -120,6 +124,11 @@ export class Sfx {
     RECIPES[name](this, now, gain);
   }
 
+  /** The running context and the mix bus, for the music player; null until the first tap. */
+  audio(): { ctx: AudioContext; dest: AudioNode } | null {
+    return this.ctx && this.comp ? { ctx: this.ctx, dest: this.comp } : null;
+  }
+
   private level(): number {
     // perceptual curve: the slider feels linear
     return this.settings.volume * this.settings.volume * 0.9;
@@ -144,6 +153,7 @@ export class Sfx {
         for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
         this.ctx = ctx;
         this.master = master;
+        this.comp = comp;
         this.noiseBuf = buf;
       }
       if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);

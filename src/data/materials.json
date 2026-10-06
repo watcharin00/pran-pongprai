@@ -39,6 +39,7 @@
   "trunkhide":       { "color": "#9a9aa0", "category": "material", "icon": "tail", "rarity": 1 },
   "tailhair":        { "color": "#2a2a2a", "category": "material", "icon": "feather", "rarity": 1 },
   "forestspirit":    { "color": "#7cf0b0", "category": "material", "icon": "orb", "rarity": 2 },
+  "seal":            { "color": "#ffcf4a", "category": "material", "icon": "orb", "rarity": 2 },
   "ginger":          { "color": "#e8c070", "category": "material", "icon": "root" },
   "fish":            { "color": "#7a8a9a", "category": "material", "icon": "fish" },
   "lotus":           { "color": "#f2a0c0", "category": "material", "icon": "bulb" },

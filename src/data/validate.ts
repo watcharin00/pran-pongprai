@@ -383,17 +383,19 @@ export function loadRequests(v: unknown, materials: readonly string[], monsters:
     if (seen.has(id)) throw new DataError(`${p}.id`, `duplicate id ${id}`);
     seen.add(id);
     const g = obj(r.goal, `${p}.goal`);
-    const type = oneOf(g.type, `${p}.goal.type`, ['kill', 'flawless', 'break', 'collect'] as const);
+    const type = oneOf(g.type, `${p}.goal.type`, ['kill', 'flawless', 'break', 'collect', 'veteran'] as const);
     const count = num(g.count, `${p}.goal.count`, 1);
     let goal: RequestGoal;
     if (type === 'collect') goal = { type, item: oneOf(g.item, `${p}.goal.item`, materials) as MaterialId, count };
-    else {
+    else if (type === 'veteran') {
+      goal = g.monster === undefined ? { type, count } : { type, monster: oneOf(g.monster, `${p}.goal.monster`, Object.keys(monsters)) as MonsterId, count };
+    } else {
       const monster = oneOf(g.monster, `${p}.goal.monster`, Object.keys(monsters)) as MonsterId;
       if (type === 'break') {
         const part = oneOf(g.part, `${p}.goal.part`, PART_IDS);
         if (!monsters[monster]?.parts[part]) throw new DataError(`${p}.goal.part`, `${monster} has no ${part}`);
         goal = { type, monster, part, count };
-      } else goal = { type, monster, count };
+      } else goal = type === 'kill' ? { type, monster, count } : { type, monster, count };
     }
     const rw = obj(r.reward, `${p}.reward`);
     const potions = optional(rw, 'potions', (x) => num(x, `${p}.reward.potions`, 0, 9));

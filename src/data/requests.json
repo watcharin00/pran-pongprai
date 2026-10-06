@@ -14,6 +14,11 @@
     { "id": "croctail",   "unlockGoal": 5, "goal": { "type": "break",    "monster": "crocodile", "part": "tail", "count": 1 }, "reward": { "items": { "ore": 5, "seed_lotus": 1 } } },
     { "id": "serows",     "unlockGoal": 6, "goal": { "type": "kill",     "monster": "serow", "count": 3 },      "reward": { "items": { "ore": 4, "seed_ginger": 1 } } },
     { "id": "tigerclean", "unlockGoal": 7, "goal": { "type": "flawless", "monster": "tiger", "count": 1 },      "reward": { "items": { "ore": 6 }, "potions": 2 } },
-    { "id": "trunk",      "unlockGoal": 8, "goal": { "type": "break",    "monster": "elephant", "part": "head", "count": 1 }, "reward": { "items": { "ore": 8, "fert": 3 } } }
+    { "id": "trunk",      "unlockGoal": 8, "goal": { "type": "break",    "monster": "elephant", "part": "head", "count": 1 }, "reward": { "items": { "ore": 8, "fert": 3 } } },
+    { "id": "vetfirst",   "unlockGoal": 8, "goal": { "type": "veteran",  "count": 2 },                         "reward": { "items": { "seal": 1, "ore": 6 }, "potions": 1 } },
+    { "id": "vettiger",   "unlockGoal": 8, "goal": { "type": "veteran",  "monster": "tiger", "count": 1 },     "reward": { "items": { "seal": 2, "ore": 6 } } },
+    { "id": "vetcroc",    "unlockGoal": 8, "goal": { "type": "veteran",  "monster": "crocodile", "count": 1 }, "reward": { "items": { "seal": 2, "ore": 8 }, "potions": 1 } },
+    { "id": "vetbear",    "unlockGoal": 8, "goal": { "type": "veteran",  "monster": "bear", "count": 1 },      "reward": { "items": { "seal": 2, "ore": 8 } } },
+    { "id": "vetelephant","unlockGoal": 8, "goal": { "type": "veteran",  "monster": "elephant", "count": 1 },  "reward": { "items": { "seal": 3, "ore": 10, "fert": 3 }, "potions": 2 } }
   ]
 }

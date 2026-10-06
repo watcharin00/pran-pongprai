@@ -7,6 +7,7 @@ import { fmtItems } from './format';
 export function requestText(r: RequestDef): string {
   const g = r.goal;
   if (g.type === 'collect') return th.request.collect(th.materials[g.item], g.count);
+  if (g.type === 'veteran') return th.request.veteran(g.monster ? th.monsters[g.monster].name : null, g.count);
   const mon = th.monsters[g.monster].name;
   if (g.type === 'kill') return th.request.kill(mon, g.count);
   if (g.type === 'flawless') return th.request.flawless(mon);

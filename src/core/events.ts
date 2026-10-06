@@ -1,6 +1,6 @@
 // Typed event bus. Game logic emits; rendering, audio and UI subscribe.
 // Pure TypeScript so the same logic can later run on a server.
-import type { AreaId, CropId, MaterialId, MealId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
+import type { AreaId, CropId, MaterialId, MealId, MedalId, MonsterId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 
 export interface Vec2 {
   x: number;
@@ -17,7 +17,7 @@ export interface CorpseInfo {
 }
 
 export interface GameEvents {
-  'monster:spawned': { id: number; kind: MonsterId; at: Vec2 };
+  'monster:spawned': { id: number; kind: MonsterId; at: Vec2; vet: boolean };
   /** `tip` = first hit on this part recently: show the part name */
   'monster:hit': { id: number; kind: MonsterId; part: PartId | 'body'; damage: number; at: Vec2; gold: boolean; big: boolean; tip: boolean; color: string };
   'part:broken': { id: number; kind: MonsterId; part: PartId; at: Vec2; drops: Drops };
@@ -27,7 +27,15 @@ export interface GameEvents {
   /** a circle attack resolved (hit or miss) */
   'monster:strike': { id: number; kind: MonsterId; at: Vec2; radius: number };
   'monster:dashEnd': { id: number; kind: MonsterId; at: Vec2 };
-  'monster:killed': { id: number; kind: MonsterId; at: Vec2; drops: Drops; rare: MaterialId | null; corpse: CorpseInfo; /** it never hit the player */ flawless: boolean };
+  'monster:killed': { id: number; kind: MonsterId; at: Vec2; drops: Drops; rare: MaterialId | null; corpse: CorpseInfo;
+    /** it never hit the player */
+    flawless: boolean;
+    vet: boolean;
+    /** every part it has was broken */
+    allParts: boolean;
+    /** share of the hunt timer left (0..1) */
+    huntLeft: number;
+  };
   'monster:fled': { id: number; kind: MonsterId; at: Vec2 };
   'player:attack': { weapon: WeaponId; at: Vec2 };
   'player:hurt': { damage: number; at: Vec2; heavy: boolean };
@@ -55,6 +63,7 @@ export interface GameEvents {
   'request:progress': { id: string; progress: number; count: number };
   'request:ready': { id: string };
   'request:claimed': { id: string; items: Drops; potions: number };
+  'medal:earned': { kind: MonsterId; medal: MedalId };
 }
 
 type Handler<T> = (payload: T) => void;

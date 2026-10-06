@@ -67,6 +67,20 @@
     "joystickDeadzone": 0.18,
     "joystickArea": 0.55
   },
+  "veteran": {
+    "unlockGoal": 8,
+    "chance": 0.3,
+    "hpMul": 2.2,
+    "partHpMul": 1.6,
+    "damageMul": 1.45,
+    "speedMul": 1.1,
+    "telegraphRate": 1.15,
+    "carveMul": 2,
+    "seals": 1
+  },
+  "medals": {
+    "swiftHuntLeft": 0.5
+  },
   "save": {
     "key": "pranpongprai-v2",
     "legacyKey": "pranpongprai-v1",

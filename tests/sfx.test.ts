@@ -9,7 +9,7 @@ describe('sound settings', () => {
   });
 
   it('round-trips and clamps the volume', () => {
-    expect(parseSoundSettings(JSON.stringify({ on: false, volume: 0.3 }))).toEqual({ on: false, volume: 0.3 });
+    expect(parseSoundSettings(JSON.stringify({ on: false, volume: 0.3 }))).toEqual({ on: false, volume: 0.3, music: 0.5 });
     expect(parseSoundSettings(JSON.stringify({ on: true, volume: 5 })).volume).toBe(1);
     expect(parseSoundSettings(JSON.stringify({ on: true, volume: -1 })).volume).toBe(0);
   });

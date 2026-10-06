@@ -1,6 +1,6 @@
 // Plain-data game state. Everything the simulation needs lives here so that a
 // server could own it and clients could render it.
-import type { AreaId, ArmorId, ArmorSlot, AttackDef, CropBed, CropId, MaterialId, MealId, MonsterId, NpcId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
+import type { AreaId, ArmorId, ArmorSlot, AttackDef, CropBed, CropId, MaterialId, MealId, MedalId, MonsterId, NpcId, PartId, SkillId, WeaponId, ZoneId } from '../data/types';
 import type { EventBus, Vec2 } from './events';
 import type { WorldMap } from './mapgen';
 import type { TilePath } from './pathfinding';
@@ -156,6 +156,10 @@ export interface MonsterState {
   tipT: number;
   /** this monster has landed a hit on the player (spoils "flawless" requests) */
   hitPlayer: boolean;
+  /** endgame "veteran" variant: tougher, better drops (tuning.veteran) */
+  vet: boolean;
+  /** starting HP (higher for veterans); rage and HP bars measure against it */
+  maxHp: number;
 }
 
 export interface GatherNode {
@@ -266,4 +270,6 @@ export interface GameState {
   /** separate stream so villagers strolling never shifts combat randomness */
   readonly npcRng: Rng;
   requests: RequestState;
+  /** bestiary medals earned per monster kind */
+  medals: Partial<Record<MonsterId, MedalId[]>>;
 }

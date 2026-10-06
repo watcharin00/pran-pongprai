@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "balance": "BALANCE=1 vitest run tests/balance.sim.test.ts"
   },
   "dependencies": {
     "phaser": "^3.90.0"

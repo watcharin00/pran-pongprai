@@ -136,7 +136,9 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
 .chk input{width:20px;height:20px;accent-color:var(--atk)}
 .sound{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap}
-.sound input[type=range]{flex:1;min-width:140px;max-width:280px;height:44px;accent-color:var(--atk)}
+.sound .vol{display:flex;align-items:center;gap:10px;flex:1 1 100%;max-width:440px}
+.sound .vol span{min-width:52px;font-size:13px;opacity:.85}
+.sound input[type=range]{flex:1;min-width:120px;height:44px;accent-color:var(--atk)}
 .sound input[type=range]:disabled{opacity:.4}
 .plotgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .plot{background:#3a2716;border:2px solid #5a3a1e;border-radius:8px;padding:6px;font-size:11.5px;min-height:60px;display:flex;flex-direction:column;gap:4px;text-align:left}
@@ -233,6 +235,13 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .bcard{min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;padding:8px 4px;background:linear-gradient(180deg,#2c3a55,#202a3e);border:2px solid var(--line2);border-radius:10px;font:500 12.5px var(--display);color:var(--cream)}
 .bcard .mport{max-width:100%}
+.medalcount{font:500 13px var(--display);color:var(--gold)}
+.pips{display:flex;gap:3px}
+.medal{display:inline-block;width:9px;height:9px;border-radius:50%;background:#3a4560;border:1px solid #151c2b;flex:none}
+.medal.got{background:radial-gradient(circle at 35% 35%,#fff3b0,#ffcf4a 55%,#b8862a);box-shadow:0 0 4px rgba(255,207,74,.5)}
+.medal.got.veteran{background:radial-gradient(circle at 35% 35%,#ffe0d0,#ff8a5a 55%,#a8441e)}
+.blist.medals .medal{width:14px;height:14px;margin-right:6px;vertical-align:-2px}
+.blist.medals li:not(.got){opacity:.7}
 .bcard.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,209,102,.25)}
 .locked .mport{filter:brightness(0);opacity:.45}
 .bcard.locked span{color:var(--muted)}

@@ -117,7 +117,7 @@ export function hitMonster(s: GameState, m: MonsterState, mult: number, o: HitOp
   m.hp -= dmg;
   m.flash = 0.09;
   aggro(m);
-  if (def.rage && !m.rage && m.hp > 0 && m.hp / def.hp < def.rage.below) {
+  if (def.rage && !m.rage && m.hp > 0 && m.hp / m.maxHp < def.rage.below) {
     m.rage = true;
     s.events.emit('monster:enraged', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
   }
@@ -139,21 +139,26 @@ export function rollCarve(s: GameState, m: MonsterState): { drops: ItemBag; rare
   const add = (k: MaterialId, n: number): void => {
     drops[k] = (drops[k] ?? 0) + n;
   };
-  for (const c of def.carve) add(c.item, s.rng.int(c.min, c.max));
+  const V = TUNING.veteran;
+  const mul = m.vet ? V.carveMul : 1;
+  for (const c of def.carve) add(c.item, s.rng.int(c.min, c.max) * mul);
   for (const [k, p] of Object.entries(def.bonus)) if (s.rng.next() < (p ?? 0)) add(k as MaterialId, 1);
   let rare: MaterialId | null = null;
   for (const [k, p] of Object.entries(def.rare)) {
-    if (s.rng.next() < (p ?? 0)) {
+    // a veteran always gives its rare drop
+    if (m.vet || s.rng.next() < (p ?? 0)) {
       add(k as MaterialId, 1);
       rare = k as MaterialId;
     }
   }
+  if (m.vet && V.seals > 0) add('seal', V.seals);
   const nonZero: ItemBag = {};
   for (const [k, n] of Object.entries(drops)) if (n) nonZero[k as MaterialId] = n;
   return { drops: nonZero, rare };
 }
 
 export function killMonster(s: GameState, m: MonsterState): void {
+  const def = MONSTERS[m.kind];
   const { drops, rare } = rollCarve(s, m);
   give(s, drops);
   s.kills[m.kind] = (s.kills[m.kind] ?? 0) + 1;
@@ -166,6 +171,9 @@ export function killMonster(s: GameState, m: MonsterState): void {
     rare,
     corpse: { dirX: m.dirX, frame: Math.floor(m.anim) % MONSTER_FRAME_COUNT, headBroken: !!m.parts.head?.broken, tailBroken: !!m.parts.tail?.broken },
     flawless: !m.hitPlayer,
+    vet: m.vet,
+    allParts: Object.values(m.parts).every((ps) => ps.broken),
+    huntLeft: m.huntT === null ? 1 : Math.max(0, m.huntT / def.huntTime),
   });
 }
 
@@ -186,7 +194,7 @@ export function resolveMonsterHit(s: GameState, m: MonsterState, a: AttackDef): 
   }
   if (p.hurtIF > 0) return;
   const rage = MONSTERS[m.kind].rage;
-  hurtPlayer(s, a.damage * (m.rage && rage ? rage.damageMul : 1), m);
+  hurtPlayer(s, a.damage * (m.rage && rage ? rage.damageMul : 1) * (m.vet ? TUNING.veteran.damageMul : 1), m);
 }
 
 export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void {

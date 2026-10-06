@@ -1,8 +1,8 @@
 // Where an item comes from and what it is used for, derived from the content
 // JSON so new monsters/recipes show up in the bag without extra wiring.
-import { CROPS, MEALS, MONSTERS, MONSTER_IDS, TUNING, WEAPONS } from '../data';
+import { ARMOR, CROPS, MEALS, MONSTERS, MONSTER_IDS, REQUESTS, TUNING, WEAPONS } from '../data';
 import * as th from '../i18n/th';
-import type { CropId, MaterialId, MealId, MonsterId, PartId, WeaponId } from '../data/types';
+import type { ArmorId, CropId, MaterialId, MealId, MonsterId, PartId, WeaponId } from '../data/types';
 
 export type ItemSource =
   | { kind: 'part'; monster: MonsterId; part: PartId }
@@ -10,10 +10,15 @@ export type ItemSource =
   | { kind: 'bonus'; monster: MonsterId; chance: number }
   | { kind: 'rare'; monster: MonsterId; chance: number }
   | { kind: 'crop'; crop: CropId }
-  | { kind: 'gather'; node: 'herb' | 'ore'; chance: number };
+  | { kind: 'gather'; node: 'herb' | 'ore'; chance: number }
+  /** any veteran (endgame) */
+  | { kind: 'veteran' }
+  /** reward from an elder's hunt request */
+  | { kind: 'request' };
 
 export type ItemUse =
   | { kind: 'weapon'; weapon: WeaponId }
+  | { kind: 'armor'; armor: ArmorId }
   | { kind: 'upgrade'; weapon: WeaponId }
   | { kind: 'meal'; meal: MealId }
   | { kind: 'potion' }
@@ -39,12 +44,16 @@ export function itemSources(id: MaterialId): ItemSource[] {
   for (const crop of Object.keys(CROPS) as CropId[]) if (CROPS[crop].yield.item === id) out.push({ kind: 'crop', crop });
   for (const node of ['herb', 'ore'] as const) if (NODE_ITEMS[node] === id) out.push({ kind: 'gather', node, chance: 1 });
   if (id === 'seed_herb') out.push({ kind: 'gather', node: 'herb', chance: TUNING.gather.herbSeedChance });
+  if (id === 'seal' && TUNING.veteran.seals > 0) out.push({ kind: 'veteran' });
+  // request rewards only count for items nothing else gives (ore etc. would just add noise)
+  if (out.length === 0 || id === 'seal') if (REQUESTS.some((r) => (r.reward.items[id] ?? 0) > 0)) out.push({ kind: 'request' });
   return out;
 }
 
 export function itemUses(id: MaterialId): ItemUse[] {
   const out: ItemUse[] = [];
   for (const weapon of Object.keys(WEAPONS) as WeaponId[]) if ((WEAPONS[weapon].recipe?.[id] ?? 0) > 0) out.push({ kind: 'weapon', weapon });
+  for (const armor of Object.keys(ARMOR) as ArmorId[]) if ((ARMOR[armor].recipe[id] ?? 0) > 0) out.push({ kind: 'armor', armor });
   for (const weapon of Object.keys(WEAPONS) as WeaponId[]) {
     const { per, final } = WEAPONS[weapon].upgrade;
     if ((per[id] ?? 0) > 0 || (final[id] ?? 0) > 0) out.push({ kind: 'upgrade', weapon });

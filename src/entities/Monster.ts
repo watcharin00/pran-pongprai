@@ -41,10 +41,16 @@ export class MonsterView {
     } else if (m.mode === 'recover') sy = 1 + 0.05 * Math.sin(m.t * 12);
     else if (m.mode === 'stun') rot = Math.sin(time * 6) * 0.14;
     else sy = 1 + Math.sin(time * 4 + m.id) * 0.03;
+    // veterans stand a little taller with a warm golden cast
+    if (m.vet) {
+      sx *= 1.12;
+      sy *= 1.12;
+    }
     const feet = MonsterView.feet(m, h);
     img.setOrigin(Math.round(w / 2) / w, (h - 2) / h);
     img.setPosition(Math.round(m.x + ox), Math.round(feet)).setRotation(rot).setScale(m.dirX * sx, sy).setDepth(ENTITY_DEPTH + m.y);
     if (m.flash > 0) img.setTintFill(0xffffff);
+    else if (m.vet) img.setTint(0xffe6bc);
     else img.clearTint();
   }
 

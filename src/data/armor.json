@@ -21,6 +21,9 @@
     "bearcoat":       {"slot": "body", "defense": 20, "maxHp": 35, "stamina": 0, "color": "#24242a", "recipe": {"bearpelt": 4, "serowhide": 2}},
     "elehelm":        {"slot": "head", "defense": 22, "maxHp": 35, "stamina": 0, "color": "#8a8a90", "recipe": {"elephanthide": 3, "trunkhide": 1}},
     "elecoat":        {"slot": "body", "defense": 26, "maxHp": 45, "stamina": 0, "color": "#7a7a80", "recipe": {"elephanthide": 5, "tailhair": 1}},
-    "spiritcharm":    {"slot": "charm", "defense": 8, "maxHp": 30, "stamina": 30, "color": "#7cf0b0", "recipe": {"forestspirit": 1, "deerantler": 1}}
+    "spiritcharm":    {"slot": "charm", "defense": 8, "maxHp": 30, "stamina": 30, "color": "#7cf0b0", "recipe": {"forestspirit": 1, "deerantler": 1}},
+    "masterhood":     {"slot": "head", "defense": 26, "maxHp": 40, "stamina": 10, "color": "#c8a040", "recipe": {"seal": 3, "elephanthide": 2, "bearpelt": 2}},
+    "mastercoat":     {"slot": "body", "defense": 30, "maxHp": 55, "stamina": 5, "color": "#b08a34", "recipe": {"seal": 4, "crochide": 3, "tigerpelt": 3}},
+    "mastercharm":    {"slot": "charm", "defense": 10, "maxHp": 40, "stamina": 40, "color": "#ffcf4a", "recipe": {"seal": 3, "forestspirit": 1, "tigereye": 1}}
   }
 }

@@ -6,6 +6,7 @@ import type {
   CropId,
   MaterialId,
   MealId,
+  MedalId,
   MonsterId,
   NpcId,
   PartId,
@@ -58,6 +59,7 @@ export const materials = {
   trunkhide: 'หนังงวงช้าง',
   tailhair: 'ขนหางช้าง',
   forestspirit: 'แก่นไพร',
+  seal: 'ตราพรานเอก',
   yam: 'มันหวาน',
   pepper: 'พริกเพลิง',
   lemongrass: 'ตะไคร้',
@@ -208,6 +210,9 @@ export const armor = {
   elehelm: { name: 'หมวกหนังช้าง', desc: 'หนักที่สุด ป้องกันสูงที่สุด' },
   elecoat: { name: 'เกราะหนังช้าง', desc: 'เกราะของพรานใหญ่แห่งพงไพร' },
   spiritcharm: { name: 'เครื่องรางแก่นไพร', desc: 'แก่นของป่า เพิ่มทุกอย่าง' },
+  masterhood: { name: 'หมวกพรานเอก', desc: 'หมวกที่ผู้ใหญ่บ้านมอบให้พรานที่ล่าตัวเก๋าได้ แข็งที่สุดในหมู่บ้าน' },
+  mastercoat: { name: 'เสื้อพรานเอก', desc: 'ประดับตราพรานเอก ป้องกันสูงสุด' },
+  mastercharm: { name: 'เครื่องรางพรานเอก', desc: 'ตราพรานเอกร้อยกับแก่นไพร เพิ่มทุกอย่าง' },
   tigereyecharm: { name: 'เครื่องรางตาเสือ', desc: 'ตาเสือเรืองแสงสีเขียว เพิ่มทุกอย่าง' },
 } satisfies Record<ArmorId, { name: string; desc: string }>;
 
@@ -298,6 +303,7 @@ export const hud = {
   attack: 'โจมตี',
   dodge: 'กลิ้ง',
   enraged: ' · โกรธ',
+  veteran: (name: string) => `${name}ตัวเก๋า`,
   stunned: ' · มึน',
   partBroken: ' แตกแล้ว',
   knockedOut: 'หมดสติ... กำลังกลับหมู่บ้าน',
@@ -349,7 +355,7 @@ export const menu = {
   cooldown: (s: number) => `คูลดาวน์ ${s} วิ`,
   materials: 'วัสดุ',
   log: 'บันทึก',
-  sound: { title: 'เสียง', on: 'เปิดเสียง', volume: 'ระดับเสียง' },
+  sound: { title: 'เสียง', on: 'เปิดเสียง', volume: 'เอฟเฟกต์', music: 'เพลง' },
   // bag
   filters: { all: 'ทั้งหมด', gear: 'อุปกรณ์', material: 'วัสดุ', seed: 'เมล็ด' },
   slots: { weapon: 'อาวุธ', head: 'หมวก', body: 'เสื้อ', charm: 'เครื่องราง' },
@@ -381,9 +387,12 @@ export const menu = {
     crop: (crop: string) => `ปลูก${crop}`,
     gather: { herb: 'เก็บสมุนไพรในป่า', ore: 'ขุดแร่ (หินประกายฟ้า)' },
     gatherChance: (what: string, pct: number) => `${what} (${pct}%)`,
+    veteran: 'ล่ามอนตัวเก๋า (หลังตีอาวุธขั้นสุดท้าย)',
+    request: 'รางวัลงานล่าจากผู้ใหญ่บ้าน',
   },
   use: {
     weapon: (w: string) => `ตี${w}`,
+    armor: (a: string) => `ตี${a}`,
     upgrade: (w: string) => `อัปเกรด${w}`,
     meal: (m: string) => m,
     potion: 'ปรุงยาฟื้นพลัง',
@@ -423,6 +432,9 @@ export const menu = {
   // bestiary
   book: {
     progress: (n: number, total: number) => `บันทึกแล้ว ${n}/${total} ชนิด`,
+    medalsProgress: (n: number, total: number) => `เหรียญ ${n}/${total}`,
+    medals: 'เหรียญพราน',
+    medalEarned: 'ได้แล้ว',
     help: 'ล่าสำเร็จครั้งแรกเพื่อปลดล็อกข้อมูล แตะรูปเพื่อดูรายละเอียด',
     unknown: '???',
     lockedHint: (where: string) => `ยังไม่เคยล่า · พบได้ที่${where}`,
@@ -511,9 +523,19 @@ export const goals: readonly { title: string; desc: string }[] = [
 ];
 
 /** Toast / log messages. */
+/** Bestiary medals. */
+export const medals = {
+  flawless: { name: 'ไร้รอยข่วน', desc: 'ล่าโดยไม่โดนตีเลย' },
+  parts: { name: 'หักครบ', desc: 'ทำลายชิ้นส่วนครบทุกชิ้นก่อนล่าสำเร็จ' },
+  swift: { name: 'ล่าไว', desc: 'ล่าสำเร็จโดยเหลือเวลาล่าครึ่งหนึ่งขึ้นไป' },
+  veteran: { name: 'ล้มตัวเก๋า', desc: 'ล่าตัวเก๋าได้ (ปรากฏหลังตีอาวุธขั้นสุดท้าย)' },
+} satisfies Record<MedalId, { name: string; desc: string }>;
+
 export const log = {
   welcome: 'ลากนิ้วด้านซ้ายเพื่อเดิน กดปุ่มส้มเพื่อตี',
   loaded: 'โหลดความคืบหน้าเดิมแล้ว',
+  veteranAppeared: (name: string) => `มี${name}ตัวเก๋าปรากฏในแถบนี้ ระวังให้ดี`,
+  medal: (medal: string, name: string) => `ได้เหรียญ "${medal}" ของ${name}`,
   autoHint: 'AUTO เดินและตีให้ แต่การหลบท่าเป็นหน้าที่คุณ',
   itemCount: (name: string, n: number) => `${name} ×${n}`,
   stunned: (mon: string) => `${mon} มึนงง! รีบตีเลย`,
@@ -575,6 +597,8 @@ export const npcSay = {
     'ธนูยิงข้ามต้นไม้ได้ แต่ข้ามหินไม่ได้',
     'อยู่ในหมู่บ้าน เลือดจะค่อยๆ เต็ม',
     'มอนโกรธแล้วจะเร็วขึ้น ระวังด้วย',
+    'ล่าแบบไม่โดนตีเลย ได้เหรียญในสมุดภาพนะ',
+    'หักให้ครบทุกชิ้นก่อนล้ม ก็ได้เหรียญเหมือนกัน',
   ],
 };
 
@@ -584,6 +608,7 @@ export const request = {
   flawless: (monster: string) => `ล่า${monster}โดยไม่โดนตีเลย`,
   break: (part: string, monster: string) => `ทำลาย${part}${monster}`,
   collect: (item: string, n: number) => `เก็บ${item} ${n} ชิ้น`,
+  veteran: (monster: string | null, n: number) => (monster ? `ล่า${monster}ตัวเก๋า` : `ล่ามอนตัวเก๋าตัวไหนก็ได้ ${n} ตัว`),
   title: 'งานล่าจากผู้ใหญ่บ้าน',
   reward: 'รางวัล',
   potions: (n: number) => `ยา ×${n}`,
