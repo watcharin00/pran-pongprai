@@ -12,6 +12,10 @@ interface GroundPalette {
   dark: readonly string[];
   sand: readonly string[];
   water: readonly string[];
+  /** line between grass and paths (default dark green) */
+  edge?: string;
+  /** ground specks: [floor dark, wall dark, highlight, highlight 2] (default grass tufts) */
+  tuft?: readonly [string, string, string, string];
 }
 
 /** Ground colours per biome; every area stays bright (no dark/night areas). */
@@ -40,6 +44,15 @@ const PALETTES: Record<Biome, GroundPalette> = {
     sand: ['#c9c4b4', '#d3cebf', '#ddd8ca', '#e6e2d5'],
     water: ['#2a9aa8', '#30a4b2', '#38aebc'],
   },
+  cave: {
+    // bright limestone cave (no dark areas): cream floor, pale walls, clear blue pools
+    grass: ['#cdc3a8', '#d6cdb3', '#ded6be', '#e6dfca'],
+    dark: ['#a99e85', '#b4a990', '#beb49b'],
+    sand: ['#ece3ca', '#f0e8d2', '#f4eddb', '#f8f2e4'],
+    water: ['#2a9cb8', '#31a8c3', '#3ab4ce'],
+    edge: '#8f846c',
+    tuft: ['#b9ae93', '#958a71', '#f6f0de', '#fffaee'],
+  },
   deepwild: {
     grass: ['#3f8a35', '#47933b', '#509c41', '#59a548'],
     dark: ['#2a6626', '#30702b', '#377a31'],
@@ -53,9 +66,10 @@ let GRASS = PALETTES.home.grass;
 let GRASS_DARK = PALETTES.home.dark;
 let SAND = PALETTES.home.sand;
 let WATER = PALETTES.home.water;
+let TUFT: readonly [string, string, string, string] = ['#4e8a2e', '#356a26', '#a8dc6a', '#9ad460'];
 const CANYON = ['#d6a35e', '#dfb06c', '#e7bd7a', '#eec98a'];
 const PLAZA_STONE = ['#cfc7ab', '#d8d0b6', '#e1dac2'];
-const EDGE_LINE = '#3f7a2c';
+let EDGE_LINE = '#3f7a2c';
 
 const isGrassTile = (t: number): boolean => t === Tile.GRASS || t === Tile.FLOWER || t === Tile.TREE || t === Tile.BUSH || t === Tile.WALL || t === Tile.FENCE;
 const pick = (a: readonly string[], v: number): string => a[Math.max(0, Math.min(a.length - 1, Math.floor(v * a.length)))] ?? a[0] ?? '#ff00ff';
@@ -71,7 +85,10 @@ function paintBase(map: WorldMap, rows = MH): { mb: PixelBuffer; cb: PixelBuffer
   const lights: StaticLight[] = [];
   const mb = createBuffer(MW * T, rows * T);
   const cb = createBuffer(MW * T, rows * T);
-  ({ grass: GRASS, dark: GRASS_DARK, sand: SAND, water: WATER } = PALETTES[map.biome]);
+  const pal = PALETTES[map.biome];
+  ({ grass: GRASS, dark: GRASS_DARK, sand: SAND, water: WATER } = pal);
+  EDGE_LINE = pal.edge ?? '#3f7a2c';
+  TUFT = pal.tuft ?? ['#4e8a2e', '#356a26', '#a8dc6a', '#9ad460'];
   paintGround(map, mb);
   paintDetails(map, mb, lights);
   paintTrees(map, mb, cb);
@@ -163,12 +180,15 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
         if (up && map.biome === 'swamp' && ly < 3) {
           // muddy bank instead of a cliff face
           c = ly === 0 ? EDGE_LINE : ly === 1 ? '#6a5a34' : '#4a6a4a';
-        } else if (up && map.biome !== 'swamp' && ly < 6) {
+        } else if (up && map.biome === 'cave' && ly < 3) {
+          // smooth stone rim of a cave pool
+          c = ly === 0 ? EDGE_LINE : ly === 1 ? '#b9ae93' : '#5fb4c8';
+        } else if (up && map.biome !== 'swamp' && map.biome !== 'cave' && ly < 6) {
           // cliff face dropping into the water
           const above = tileAt(map, tx, ty - 1);
           c = ly === 0 ? (isGrassTile(above) ? EDGE_LINE : '#f3dca0') : ly === 5 ? '#5a3418' : (lx + (ly >> 1)) % 5 === 0 ? '#9a5a2a' : ly < 3 ? '#d4914a' : '#bf7a3a';
-        } else if (lf && lx < 2) c = lx === 0 ? '#7a4420' : '#bf7a3a';
-        else if (rt && lx > 13) c = lx === 15 ? '#7a4420' : '#bf7a3a';
+        } else if (lf && lx < 2) c = map.biome === 'cave' ? (lx === 0 ? EDGE_LINE : '#b9ae93') : lx === 0 ? '#7a4420' : '#bf7a3a';
+        else if (rt && lx > 13) c = map.biome === 'cave' ? (lx === 15 ? EDGE_LINE : '#b9ae93') : lx === 15 ? '#7a4420' : '#bf7a3a';
         else if (dn && ly > 13) c = ly === 15 ? '#e8fff8' : '#8fe6d4';
         else {
           let dd = 99;
@@ -249,14 +269,20 @@ function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): vo
         for (let i = 0; i < (t === Tile.WALL ? 3 : 2); i++) {
           const x = X + 1 + Math.floor(hash(tx * 7 + i, ty * 3) * 12);
           const y = Y + 2 + Math.floor(hash(tx * 5, ty * 11 + i) * 12);
-          const dk = t === Tile.WALL ? '#356a26' : '#4e8a2e';
+          const dk = t === Tile.WALL ? TUFT[1] : TUFT[0];
           sp(mb, x, y, dk);
           sp(mb, x + 2, y, dk);
           sp(mb, x + 1, y + 1, dk);
         }
         if (t === Tile.GRASS && h2 < 0.5) {
-          sp(mb, X + Math.floor(h * 15), Y + (Math.floor(h2 * 30) % 16), '#a8dc6a');
-          sp(mb, X + Math.floor(h2 * 15), Y + Math.floor(h * 16), '#9ad460');
+          sp(mb, X + Math.floor(h * 15), Y + (Math.floor(h2 * 30) % 16), TUFT[2]);
+          sp(mb, X + Math.floor(h2 * 15), Y + Math.floor(h * 16), TUFT[3]);
+        }
+        // cave: sunlight falling through holes in the roof (additive glow, never darkens the screen)
+        if (t === Tile.GRASS && map.biome === 'cave' && hash(tx * 13 + 5, ty * 7 + 3) > 0.985 && map.reach[ty * MW + tx]) {
+          ell(mb, X + 8, Y + 9, 9, 5, '#fff8e4', 0.55);
+          ell(mb, X + 8, Y + 9, 5, 2.6, '#ffffff', 0.5);
+          lights.push({ x: X + 8, y: Y + 6, r: 30, c: '255,246,214', ga: 0.2 });
         }
       }
       if (t === Tile.WATER && map.biome === 'swamp' && h < 0.35) {
@@ -332,7 +358,12 @@ function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): vo
       }
       if (t === Tile.ROCK) {
         const can = inCanyon(map, tx, ty);
-        const P = can ? ['#7a2e18', '#a8462a', '#cc6a3c', '#ec9a62', '#4a1a0e'] : ['#4c4e58', '#6c6e78', '#8d9098', '#b8bbc2', '#24252b'];
+        const cave = map.biome === 'cave';
+        const P = can
+          ? ['#7a2e18', '#a8462a', '#cc6a3c', '#ec9a62', '#4a1a0e']
+          : cave
+            ? ['#8a8068', '#a89e84', '#c8bfa6', '#ece6d4', '#4a4436']
+            : ['#4c4e58', '#6c6e78', '#8d9098', '#b8bbc2', '#24252b'];
         ell(mb, X + 9, Y + 13.5, 7, 2.3, '#000000', 0.25);
         const rx = 6 + h;
         const ry = 5;
@@ -344,7 +375,7 @@ function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): vo
             if (q > 1) continue;
             const l = -(dx * 0.6 + dy * 0.8) + (hash(x, y) - 0.5) * 0.3;
             let c = (q > 0.78 ? P[4] : l > 0.55 ? P[3] : l > 0.05 ? P[2] : l > -0.45 ? P[1] : P[0]) ?? '#6c6e78';
-            if (!can && dy < -0.35 && q <= 0.78 && hash(x, y + 5) < 0.45) c = '#78b35c';
+            if (!can && !cave && dy < -0.35 && q <= 0.78 && hash(x, y + 5) < 0.45) c = '#78b35c';
             sp(mb, x, y, c);
           }
         }
@@ -404,6 +435,10 @@ function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
         paintBamboo(mb, cb, tx, ty);
         continue;
       }
+      if (map.biome === 'cave') {
+        paintStalagmites(mb, cb, tx, ty);
+        continue;
+      }
       const cx = tx * 16 + 8;
       const cy = ty * 16 - 3;
       const v = hash(tx * 3, ty * 5);
@@ -454,6 +489,34 @@ function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
         }
       }
     }
+  }
+}
+
+/** One to three limestone stalagmites: the base on the ground layer, the tall tips on the canopy. */
+function paintStalagmites(mb: PixelBuffer, cb: PixelBuffer, tx: number, ty: number): void {
+  const X = tx * 16;
+  const base = ty * 16 + 14;
+  ell(mb, X + 9, base, 8, 2.6, '#000000', 0.2);
+  const n = 1 + Math.floor(hash(tx * 7, ty * 3) * 3);
+  for (let i = 0; i < n; i++) {
+    const cx = X + 4 + Math.floor(hash(tx * 3 + i, ty * 2) * 9);
+    const h = 14 + Math.floor(hash(tx, ty * 5 + i) * 14) - i * 3;
+    const w = 3.5 + hash(tx + i, ty + 9) * 2.5;
+    const by = base - (i === 0 ? 0 : 1);
+    for (let k = 0; k <= h; k++) {
+      const y = by - k;
+      const half = Math.max(0.6, w * (1 - k / h) ** 0.8);
+      const layer = k < 6 ? mb : cb;
+      for (let dx = Math.floor(-half); dx <= Math.ceil(half); dx++) {
+        const edge = Math.abs(dx) >= half - 0.5;
+        const ring = (k + Math.floor(hash(tx + i, k) * 2)) % 5 === 0;
+        // lit from the upper left: cream highlight, pale stone, warm shade, dark outline
+        let c = dx < -half * 0.35 ? '#fbf6e8' : dx < half * 0.3 ? '#ddd3ba' : '#b3a68a';
+        if (ring && !edge) c = dx < 0 ? '#e9e0c8' : '#a3967a';
+        sp(layer, cx + dx, y, edge ? '#5a5240' : c);
+      }
+    }
+    sp(cb, cx, by - h - 1, '#5a5240');
   }
 }
 

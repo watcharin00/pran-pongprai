@@ -60,6 +60,14 @@ export const materials = {
   trunkhide: 'หนังงวงช้าง',
   tailhair: 'ขนหางช้าง',
   forestspirit: 'แก่นไพร',
+  batwing: 'หนังปีกค้างคาว',
+  batfang: 'เขี้ยวค้างคาว',
+  porcupinehide: 'หนังเม่น',
+  quill: 'ขนเม่น',
+  kingskin: 'หนังจงอาง',
+  kinghood: 'เกล็ดแม่เบี้ยจงอาง',
+  kingtail: 'หางจงอาง',
+  nagagem: 'เพชรพญานาค',
   seal: 'ตราพรานเอก',
   yam: 'มันหวาน',
   pepper: 'พริกเพลิง',
@@ -146,6 +154,24 @@ export const monsters = {
     attacks: { kick: 'ดีด', dart: 'พุ่งหนี' },
     tip: 'ตัวเล็กแต่เร็ว หักเขาจากด้านหน้าเพื่อทำธนูพญาไพร เนื้อเก้งทำอาหารเพิ่มพลังโจมตี',
   },
+  flyingfox: {
+    name: 'ค้างคาวแม่ไก่',
+    parts: { head: 'หัว' },
+    attacks: { bite: 'กัด', swoop: 'โฉบ' },
+    tip: 'บินเร็วและมาเป็นฝูง โฉบเป็นเส้นตรงมาหา ธนูยิงโดนง่ายที่สุด ซากให้ขี้ค้างคาวเป็นปุ๋ยชั้นดีสำหรับแปลงผัก',
+  },
+  porcupine: {
+    name: 'เม่นใหญ่',
+    parts: { tail: 'แผงขน' },
+    attacks: { nudge: 'ดัน', quillback: 'ถอยแทงขน', quillring: 'สะบัดขน' },
+    tip: 'กลับกับมอนตัวอื่น ด้านหลังอันตรายกว่าด้านหน้า ถอยแทงขนใส่คนที่อ้อมไปข้างหลัง ตีหน้าให้ปลอดภัย แล้วค่อยหาจังหวะอ้อมไปตัดแผงขน',
+  },
+  kingcobra: {
+    name: 'งูจงอาง',
+    parts: { head: 'แม่เบี้ย', tail: 'หาง' },
+    attacks: { strike: 'ฉก', longstrike: 'ฉกไกล', spit: 'พ่นพิษ', tailwhip: 'ฟาดหาง', hoodrise: 'ชูคอแผ่แม่เบี้ย' },
+    tip: 'ราชาแห่งถ้ำ ฉกได้ไกลมาก พ่นพิษเป็นแนวโดยไม่ขยับตัว ชูคอแผ่แม่เบี้ยเป็นวงใหญ่ ฟาดหางใส่คนที่อยู่ด้านหลัง ค้อนทุบหัวได้ผลที่สุด เพชรพญานาคดรอป 25%',
+  },
   elephant: {
     name: 'ช้างป่า',
     parts: { head: 'งวง', tail: 'หาง' },
@@ -187,6 +213,9 @@ export const weapons = {
   kingblade: { name: 'ดาบพญาไพร', desc: 'ดาบที่ดีที่สุด เร็วและแรง ต้องใช้แก่นไพร' },
   kingbow: { name: 'ธนูพญาไพร', desc: 'ธนูที่ดีที่สุด ลูกศรทะลุได้ 2 ตัว' },
   cobrafang: { name: 'ดาบเขี้ยวงูเห่า', desc: 'ดาบเร็ว ท่าประจำฉกไกลเหมือนงู' },
+  nagamaul: { name: 'กระบองเกล็ดจงอาง', desc: 'ค้อนหนักที่สุด ทุบหัวจนมึนเร็ว ท่าประจำทุบลงพื้นวงใหญ่' },
+  batbow: { name: 'ธนูปีกค้างคาว', desc: 'ธนูเบาและเร็ว ลูกศรทะลุได้ 1 ตัว ท่าประจำยิงกระจายเป็นฝูง' },
+  nagablade: { name: 'ดาบใหญ่พญานาค', desc: 'ดาบที่แรงที่สุดในพงไพร ต้องใช้เพชรพญานาค ฟันซ้ำสามครั้งเป็นแนวยาว' },
 } satisfies Record<WeaponId, { name: string; desc: string }>;
 
 export const armor = {
@@ -215,6 +244,10 @@ export const armor = {
   mastercoat: { name: 'เสื้อพรานเอก', desc: 'ประดับตราพรานเอก ป้องกันสูงสุด' },
   mastercharm: { name: 'เครื่องรางพรานเอก', desc: 'ตราพรานเอกร้อยกับแก่นไพร เพิ่มทุกอย่าง' },
   tigereyecharm: { name: 'เครื่องรางตาเสือ', desc: 'ตาเสือเรืองแสงสีเขียว เพิ่มทุกอย่าง' },
+  nagahelm: { name: 'หมวกเกล็ดจงอาง', desc: 'ประดับเกล็ดแม่เบี้ย เบาแต่แข็ง' },
+  nagamail: { name: 'เกราะเกล็ดจงอาง', desc: 'หนังจงอางซ้อนกับขนเม่น ยืดหยุ่นและทนทาน' },
+  batcharm: { name: 'เครื่องรางเขี้ยวค้างคาว', desc: 'เบาเหมือนปีก วิ่งกลิ้งได้ไม่รู้เหนื่อย' },
+  nagacharm: { name: 'เครื่องรางเพชรพญานาค', desc: 'เพชรสีฟ้าจากท้องจงอาง เพิ่มทุกอย่าง' },
 } satisfies Record<ArmorId, { name: string; desc: string }>;
 
 /** Armor perks: set bonuses (head + body of one set) and single-piece bonuses. */
@@ -229,6 +262,7 @@ export const perks = {
   mastery: { name: 'ชำนาญ', desc: 'กลิ้งหลบอมตะนานขึ้น 0.06 วิ' },
   nimble: { name: 'คล่องแคล่ว', desc: 'กลิ้งใช้ความอึดน้อยลง 3' },
   slither: { name: 'ลื่นไหล', desc: 'เดินเร็วขึ้น 5%' },
+  nagascale: { name: 'เกล็ดพญานาค', desc: 'ทำลายชิ้นส่วนเร็วขึ้น 10% กลิ้งหลบอมตะนานขึ้น 0.04 วิ' },
 } satisfies Record<PerkId, { name: string; desc: string }>;
 
 export const skills = {
@@ -254,6 +288,9 @@ export const skills = {
   bearmaul: { name: 'ทุบหมีควาย', desc: 'ง้างนานแล้วทุบวงใหญ่ มึนเร็วมาก (×4.5)' },
   forestwrath: { name: 'โทสะพงไพร', desc: 'หมุนฟันวงใหญ่ด้วยพลังป่า ทำลายชิ้นส่วนดี (×3.6)' },
   stripestorm: { name: 'พายุพาดกลอน', desc: 'หมุนฟันวงใหญ่ ทำลายชิ้นส่วนดี (×3)' },
+  kingcrush: { name: 'ทุบหัวพญานาค', desc: 'ง้างแล้วทุบวงใหญ่ มึนเร็วมาก (×5)' },
+  batstorm: { name: 'ฝูงค้างคาว', desc: 'ยิงลูกศร 7 ดอกกระจายเป็นพัด ทะลุได้ (×1.6 ต่อดอก)' },
+  nagafury: { name: 'โทสะพญานาค', desc: 'ง้างแล้วฟันเป็นแนวยาว 3 ครั้ง (×3.2)' },
 } satisfies Record<SkillId, { name: string; desc: string }>;
 
 export const crops = {
@@ -289,6 +326,7 @@ export const areas = {
   swamp: 'บึงจระเข้',
   limestone: 'ดอยหินปูน',
   deepwild: 'ป่าลึกช้างป่า',
+  cave: 'ถ้ำหินปูน',
 } satisfies Record<AreaId, string>;
 
 export const zones = {
@@ -300,6 +338,7 @@ export const zones = {
   swamp: 'บึงจระเข้',
   limestone: 'ดอยหินปูน',
   deepwild: 'ป่าลึกช้างป่า',
+  cave: 'ถ้ำหินปูน',
 } satisfies Record<ZoneId, string>;
 
 export const game = {
@@ -540,6 +579,10 @@ export const goals: readonly { title: string; desc: string }[] = [
   {
     title: 'ล่าช้างป่าในป่าลึก',
     desc: 'ป่าลึกอยู่เหนือป่าไผ่ ช้างป่าคือเจ้าป่าตัวใหญ่ที่สุด ตัดงวงจากด้านหน้า ตัดหางจากด้านหลังแต่ระวังเตะหลัง แก่นไพรทำอาวุธพญาไพร',
+  },
+  {
+    title: 'ลงถ้ำหินปูน ล่างูจงอาง',
+    desc: 'ถ้ำอยู่ขอบเหนือของดอยหินปูน ค้างคาวแม่ไก่มาเป็นฝูง เม่นใหญ่ถอยแทงขนใส่คนที่อ้อมไปข้างหลัง งูจงอางแพ้ค้อน ทำกระบองเกล็ดจงอาง ธนูปีกค้างคาว หรือดาบใหญ่พญานาค',
   },
   { title: 'พรานใหญ่แห่งพงไพร', desc: 'ลองล่าช้างป่าโดยไม่โดนตีเลยสักครั้ง' },
 ];

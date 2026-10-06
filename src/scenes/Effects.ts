@@ -101,10 +101,13 @@ export class Effects {
     this.push({ x: x + rr(-4, 4), y, vx: rr(-15, 15), vy: rr(-25, -5), t: 0.4, max: 0.4, col: col(color), kind: 'dust' });
   }
 
-  /** Butterflies and falling leaves in green zones, rising embers in the canyon, smoke from chimney and pot. */
+  /** Butterflies and falling leaves in green zones, rising embers in the canyon, dust motes in the cave, smoke from chimney and pot. */
   ambient(dt: number, view: Phaser.Geom.Rectangle, zone: string, player: Vec2): void {
     const { x: cx, y: cy, width: VW, height: VH } = view;
-    if (zone !== 'canyon') {
+    if (zone === 'cave') {
+      // dust motes drifting slowly in the light from the roof holes
+      if (Math.random() < dt * 3) this.push({ x: cx + rr(0, VW), y: cy + rr(0, VH), vx: rr(-3, 3), vy: rr(-6, -2), t: rr(3, 5), max: 5, col: Math.random() < 0.7 ? 0xfff6d8 : 0xffffff, kind: 'ember' });
+    } else if (zone !== 'canyon') {
       if (Math.random() < dt * 0.9) {
         const c = [0xffffff, 0xffb040, 0x8ac8ff, 0xffd84a][ri(0, 3)] ?? 0xffffff;
         this.push({ x: cx + rr(0, VW), y: cy + rr(0, VH), vx: rr(-10, 10), vy: rr(-10, 10), t: rr(5, 8), max: 8, col: c, kind: 'fly', ph: rr(0, 9) });

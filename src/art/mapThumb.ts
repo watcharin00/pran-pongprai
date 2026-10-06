@@ -18,6 +18,7 @@ const PAL: Record<Biome, ThumbPalette> = {
   swamp: { ground: '#7fb06a', woods: '#3d7841', path: '#c8ae7e' },
   limestone: { ground: '#a6c47f', woods: '#4f8a46', path: '#ebe7da' },
   deepwild: { ground: '#6cb85a', woods: '#2f6a2c', path: '#e8ca8e' },
+  cave: { ground: '#e2d8bf', woods: '#9a8f78', path: '#f4ecd8' },
 };
 
 const isWoodsTile = (t: number): boolean => t === Tile.TREE || t === Tile.WALL || t === Tile.BUSH;

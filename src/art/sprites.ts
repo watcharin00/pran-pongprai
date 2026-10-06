@@ -505,7 +505,126 @@ function buildElephant(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   return finish(b);
 }
 
+/** ค้างคาวแม่ไก่ (flying fox): dark leathery wings that flap, golden mantle, fox face. Head part = fangs. */
+function buildFlyingfox(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(27, 19);
+  const o = 1;
+  const W = '#4a3238';
+  const WD = '#2e1e24';
+  const B = '#3a2a2a';
+  const M = '#d89a3a';
+  // wings: four flap poses, membrane with finger ribs
+  const lift = [-4, -1, 3, -1][f % 4] ?? 0;
+  for (const side of [-1, 1] as const) {
+    const sx = 12 + side * 2;
+    for (let k = 1; k <= 9; k++) {
+      const x = sx + side * k;
+      const top = 8 + Math.round((lift * k) / 9) - (k < 5 ? 1 : 0);
+      const bot = 11 + Math.round((lift * k) / 18) - Math.floor(k / 4);
+      for (let y = top; y <= bot; y++) sp(b, x + o, y + o, y === top ? WD : (k % 3 === 0 ? WD : W));
+    }
+  }
+  // body, golden mantle, small feet
+  ell(b, 12 + o, 10 + o, 3.4, 3, B);
+  ell(b, 13 + o, 8.5 + o, 2.6, 1.8, M);
+  sp(b, 11 + o, 13 + o, WD);
+  sp(b, 13 + o, 13 + o, WD);
+  // fox-like head with pointed ears
+  ell(b, 16 + o, 7.5 + o, 2.4, 2, '#5a3a2a');
+  sp(b, 15 + o, 5 + o, WD);
+  sp(b, 17 + o, 5 + o, WD);
+  rect(b, 18 + o, 7 + o, 2, 2, '#6a4a34');
+  sp(b, 20 + o, 7 + o, '#221a2a');
+  sp(b, 17 + o, 7 + o, '#ffd84a');
+  if (!hb) sp(b, 19 + o, 9 + o, '#ffffff');
+  return finish(b);
+}
+
+/** เม่นใหญ่ (porcupine): stocky brown body under a fan of long black-and-white quills. Tail part = quill crest. */
+function buildPorcupine(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(29, 21);
+  const o = 1;
+  const B = '#5a4636';
+  const D = '#3a2c22';
+  legs(b, f, [[9 + o, 0], [11 + o, 1], [17 + o, 0], [19 + o, 1]], 15 + o, 2, 2, B, D, '#2a1e16');
+  ell(b, 14 + o, 12 + o, 7.4, 4, B);
+  // quills fan up and back (toward -x); broken crest leaves short stubs
+  const len = tb ? 3 : 9;
+  for (let i = 0; i < 9; i++) {
+    const ang = Math.PI * (0.55 + i * 0.07);
+    const bx = 9 + i * 1.3;
+    const by = 9 + Math.abs(i - 4) * 0.3;
+    const l = len - Math.abs(i - 3) * (tb ? 0.2 : 0.5);
+    for (let k = 0; k < l; k++) {
+      const x = Math.round(bx + Math.cos(ang) * k);
+      const y = Math.round(by - Math.sin(ang) * k * 0.9);
+      sp(b, x + o, y + o, k > l - 3 ? '#f4efe0' : k % 3 === 1 ? '#2a2420' : '#e8e0cc');
+    }
+  }
+  // blunt head, small round ear, dark snout
+  ell(b, 22 + o, 12 + o, 3.2, 2.6, B);
+  sp(b, 21 + o, 9 + o, D);
+  rect(b, 24 + o, 12 + o, 2, 2, '#7a6450');
+  sp(b, 26 + o, 12 + o, '#221a2a');
+  sp(b, 22 + o, 11 + o, '#221a2a');
+  return finish(b);
+}
+
+/** งูจงอาง (king cobra): big olive coils with pale bands, tall neck, long narrow hood, long tail. Head part = hood. */
+function buildKingcobra(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(41, 33);
+  const o = 1;
+  const B = '#5a6a3a';
+  const D = '#3e4a28';
+  const L = '#e8d890';
+  const sway = Math.round(Math.sin((f * Math.PI) / 2) * 1.4);
+  // tail trailing behind the coils; broken = cut short
+  const tail: [number, number][] = tb
+    ? [[8, 27], [9, 27], [10, 26]]
+    : [[1, 28], [2, 28], [3, 28], [4, 27], [5, 27], [6, 27], [7, 27], [8, 27], [9, 27], [10, 26]];
+  for (const [x, y] of tail) {
+    sp(b, x + o, y + o, D);
+    sp(b, x + o, y - 1 + o, B);
+  }
+  // coils with pale bands
+  ell(b, 17 + o, 25 + o, 10, 4.2, B);
+  ell(b, 17 + o, 22.5 + o, 7.6, 3, D);
+  ell(b, 17 + o, 21.2 + o, 5.4, 2, B);
+  for (let x = 9; x <= 25; x += 4) {
+    sp(b, x + o, 27 + o, L);
+    sp(b, x + o, 28 + o, L);
+  }
+  // neck rising, banded belly
+  rect(b, 22 + o + sway, 9 + o, 4, 13, B);
+  for (let y = 10; y < 22; y += 3) rect(b, 23 + o + sway, y + o, 2, 1, L);
+  // long narrow hood with pale chevrons
+  const hx = 24 + sway;
+  if (!hb) {
+    ell(b, hx + o, 9 + o, 4.6, 6, B);
+    ell(b, hx + o, 9.5 + o, 2.4, 4.4, '#8a9a5a');
+    for (let y = 6; y <= 13; y += 3) {
+      sp(b, hx - 1 + o, y + o, L);
+      sp(b, hx + 1 + o, y + o, L);
+    }
+  } else {
+    ell(b, hx + o, 9 + o, 2.6, 4, B);
+  }
+  // head with yellow throat, eye and forked tongue
+  ell(b, hx + 2 + o, 3 + o, 3.2, 2.2, D);
+  rect(b, hx + 2 + o, 4 + o, 3, 1, '#d8c060');
+  sp(b, hx + 3 + o, 2 + o, '#ffd84a');
+  if (!hb) {
+    sp(b, hx + 6 + o, 3 + o, '#e0302a');
+    sp(b, hx + 7 + o, 2 + o, '#e0302a');
+    sp(b, hx + 7 + o, 4 + o, '#e0302a');
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  flyingfox: (f, hb) => buildFlyingfox(f, hb),
+  porcupine: (f, _hb, tb) => buildPorcupine(f, tb),
+  kingcobra: (f, hb, tb) => buildKingcobra(f, hb, tb),
   muntjac: (f, hb) => buildMuntjac(f, hb),
   elephant: (f, hb, tb) => buildElephant(f, hb, tb),
   serow: (f, hb) => buildSerow(f, hb),

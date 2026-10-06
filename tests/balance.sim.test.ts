@@ -34,7 +34,8 @@ const STAGES: Stage[] = [
   { goal: 5, weapon: 'cobrafang', level: 2, armor: ['tigerhood', 'tigercoat', 'tigereyecharm'], targets: ['monitor', 'crocodile'], next: ['crocmaul', 'lizardbow'] },
   { goal: 6, weapon: 'crocmaul', level: 2, armor: ['crochelm', 'crocmail', 'tigereyecharm'], targets: ['serow', 'bear'], next: ['serowspear', 'bearblade'] },
   { goal: 7, weapon: 'bearblade', level: 2, armor: ['bearhood', 'bearcoat', 'serowcharm'], targets: ['muntjac', 'elephant'], next: ['kingblade', 'kingbow'] },
-  { goal: 8, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['tiger', 'crocodile', 'bear', 'elephant'], next: [], vet: true },
+  { goal: 8, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['flyingfox', 'porcupine', 'kingcobra'], next: ['nagamaul', 'batbow', 'nagablade'] },
+  { goal: 9, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['tiger', 'crocodile', 'bear', 'elephant'], next: [], vet: true },
 ];
 
 /** How often the stand-in player reacts to a telegraph in time. */

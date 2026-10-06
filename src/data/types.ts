@@ -21,8 +21,8 @@ export type ArmorSlot = (typeof ARMOR_SLOTS)[number];
 export type MealId = keyof (typeof mealsJson)['meals'];
 export type SkillId = keyof (typeof skillsJson)['skills'];
 export type PartId = 'head' | 'tail';
-export type AreaId = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild';
-export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild';
+export type AreaId = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave';
+export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave';
 
 export type ItemBag = Partial<Record<MaterialId, number>>;
 

@@ -8,6 +8,7 @@
     "bearmight":  {"stunMul": 1.3},
     "forestking": {"partDamageMul": 1.2},
     "mastery":    {"rollIframeBonus": 0.06},
+    "nagascale":  {"partDamageMul": 1.1, "rollIframeBonus": 0.04},
     "nimble":     {"dodgeCostDelta": -3},
     "slither":    {"walkSpeedMul": 1.05}
   },
@@ -36,6 +37,10 @@
     "spiritcharm":    {"slot": "charm", "defense": 8, "maxHp": 30, "stamina": 30, "color": "#7cf0b0", "recipe": {"forestspirit": 1, "deerantler": 2}},
     "masterhood":     {"slot": "head", "defense": 26, "maxHp": 40, "stamina": 10, "color": "#c8a040", "set": "mastery", "recipe": {"seal": 3, "elephanthide": 2, "bearpelt": 2}},
     "mastercoat":     {"slot": "body", "defense": 30, "maxHp": 55, "stamina": 5, "color": "#b08a34", "set": "mastery", "recipe": {"seal": 4, "crochide": 3, "tigerpelt": 3}},
-    "mastercharm":    {"slot": "charm", "defense": 10, "maxHp": 40, "stamina": 40, "color": "#ffcf4a", "recipe": {"seal": 3, "forestspirit": 1, "tigereye": 1}}
+    "mastercharm":    {"slot": "charm", "defense": 10, "maxHp": 40, "stamina": 40, "color": "#ffcf4a", "recipe": {"seal": 3, "forestspirit": 1, "tigereye": 1}},
+    "nagahelm":       {"slot": "head", "defense": 24, "maxHp": 38, "stamina": 5, "color": "#6a7a42", "set": "nagascale", "recipe": {"kingskin": 4, "kinghood": 1, "quill": 2}},
+    "nagamail":       {"slot": "body", "defense": 28, "maxHp": 50, "stamina": 5, "color": "#5a6a3a", "set": "nagascale", "recipe": {"kingskin": 6, "kingtail": 1, "porcupinehide": 3}},
+    "batcharm":       {"slot": "charm", "defense": 4, "maxHp": 10, "stamina": 40, "color": "#5a4048", "recipe": {"batfang": 2, "batwing": 3}},
+    "nagacharm":      {"slot": "charm", "defense": 10, "maxHp": 40, "stamina": 35, "color": "#5ad8ff", "recipe": {"nagagem": 1, "kinghood": 1}}
   }
 }

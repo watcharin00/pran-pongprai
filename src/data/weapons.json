@@ -29,6 +29,10 @@
     "bearblade":   { "type": "greatsword", "damage": 96, "rate": 0.7,  "range": 22, "partMul": { "head": 1.6, "tail": 1.4 }, "stun": 20, "color": "#3a3a44", "signature": "bearmaul",  "upgrade": { "per": { "bearpelt": 1, "serowhide": 1 }, "final": { "bearclaw": 1 } }, "recipe": { "bearclaw": 1, "bearfang": 4, "bearpelt": 4 } },
     "kingblade":   { "type": "sword",      "damage": 84, "rate": 0.4,  "range": 18, "partMul": { "head": 1.3, "tail": 1.6 }, "stun": 6,  "color": "#7cf0b0", "signature": "forestwrath", "upgrade": { "per": { "elephanthide": 1, "deermeat": 1 }, "final": { "forestspirit": 1 } }, "recipe": { "forestspirit": 1, "tailhair": 2, "elephanthide": 4, "tigerfang": 1 } },
     "kingbow":     { "type": "bow",        "damage": 52, "rate": 0.38, "range": 85, "partMul": { "head": 1, "tail": 1 }, "stun": 0,  "color": "#5ac890", "signature": "bolt",      "upgrade": { "per": { "elephanthide": 1, "feather": 3 }, "final": { "forestspirit": 1 } }, "recipe": { "forestspirit": 1, "trunkhide": 4, "deerantler": 4 },
-                     "projectile": { "speed": 360, "range": 115, "pierce": 2 } }
+                     "projectile": { "speed": 360, "range": 115, "pierce": 2 } },
+    "nagamaul":    { "type": "hammer",     "damage": 130, "rate": 0.85, "range": 18, "partMul": { "head": 1.9, "tail": 0.8 }, "stun": 44, "color": "#8a9a5a", "signature": "kingcrush", "upgrade": { "per": { "kingskin": 2, "porcupinehide": 1 }, "final": { "kinghood": 2 } }, "recipe": { "kinghood": 2, "kingtail": 1, "kingskin": 5, "quill": 2 } },
+    "batbow":      { "type": "bow",        "damage": 66,  "rate": 0.36, "range": 85, "partMul": { "head": 1, "tail": 1 }, "stun": 0,  "color": "#5a4048", "signature": "batstorm",  "upgrade": { "per": { "batwing": 2, "quill": 1 }, "final": { "batfang": 3 } }, "recipe": { "batwing": 6, "batfang": 4, "quill": 3 },
+                     "projectile": { "speed": 380, "range": 120, "pierce": 1 } },
+    "nagablade":   { "type": "greatsword", "damage": 160, "rate": 0.68, "range": 22, "partMul": { "head": 1.7, "tail": 1.6 }, "stun": 22, "color": "#5ad8ff", "signature": "nagafury",  "upgrade": { "per": { "kingskin": 2, "batwing": 1 }, "final": { "nagagem": 1 } }, "recipe": { "nagagem": 1, "kinghood": 2, "kingskin": 6, "quill": 3 } }
   }
 }

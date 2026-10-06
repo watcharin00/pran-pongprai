@@ -53,14 +53,14 @@ describe('wildlife content', () => {
 
   it('has a goal line for every progress step', () => {
     const s = game();
-    const steps: WeaponId[][] = [[], ['bamboobow'], ['cleaver'], ['coreblade'], ['tigerspear'], ['cobrafang'], ['lizardbow'], ['bearblade'], ['kingbow']];
+    const steps: WeaponId[][] = [[], ['bamboobow'], ['cleaver'], ['coreblade'], ['tigerspear'], ['cobrafang'], ['lizardbow'], ['bearblade'], ['kingbow'], ['nagamaul']];
     const seen: number[] = [];
     for (const add of steps) {
       add.forEach((w) => s.owned.add(w));
       seen.push(goalIndex(s));
     }
-    expect(seen).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(th.goals).toHaveLength(9);
+    expect(seen).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(th.goals).toHaveLength(10);
   });
 
   it('breaks the boar mane from behind and the tusks from the front', () => {

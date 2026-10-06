@@ -7,7 +7,7 @@ import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampEastFields,
 import { parkMiller, vnoise } from './rng';
 import { openTrails } from './trails';
 
-export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild'];
+export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave'];
 
 interface AreaSpec {
   seed: number;
@@ -22,7 +22,8 @@ const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   bamboo: { seed: 7101, biome: 'bamboo', zone: 'bamboo', exits: [{ edge: 's', at: 30, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'deepwild' }] },
   deepwild: { seed: 7404, biome: 'deepwild', zone: 'deepwild', exits: [{ edge: 's', at: 30, width: 3, to: 'bamboo' }] },
   swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }] },
-  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }] },
+  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }] },
+  cave: { seed: 7505, biome: 'cave', zone: 'cave', exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
 };
 
 /** Home exits line up with the existing village roads / canyon floor. */
@@ -164,6 +165,13 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
           if (n > 0.6) set(x, y, Tile.SAND);
           if (r < 0.09) set(x, y, Tile.ROCK);
           else if (r < 0.17 && n < 0.45) set(x, y, Tile.TREE);
+          break;
+        case 'cave':
+          // clear pools in the low spots, stalagmite clumps (TREE tiles, painted as stone) on the rest
+          if (n > 0.68) set(x, y, Tile.WATER);
+          else if (n < 0.4 && r < 0.3) set(x, y, Tile.TREE);
+          else if (r < 0.05) set(x, y, Tile.ROCK);
+          else if (n > 0.55 && r > 0.9) set(x, y, Tile.SAND);
           break;
         default:
           break;

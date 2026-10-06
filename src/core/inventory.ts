@@ -263,5 +263,6 @@ export function goalIndex(s: GameState): number {
   if (!has('crocmaul', 'lizardbow')) return 5;
   if (!has('serowspear', 'bearblade')) return 6;
   if (!has('kingblade', 'kingbow')) return 7;
-  return 8;
+  if (!has('nagamaul', 'batbow', 'nagablade')) return 8;
+  return 9;
 }
