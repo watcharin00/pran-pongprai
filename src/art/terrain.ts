@@ -127,17 +127,17 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
 }
 
-/** Rows of dense forest painted above the map's north edge (seen when the portrait camera overscrolls). */
-export const NORTH_FILL_ROWS = 12;
+/** Rows of dense forest painted beyond the map's north and south edges (seen when the portrait camera overscrolls). */
+export const EDGE_FILL_ROWS = 12;
 
 /**
- * Paints the strip above the map: a copy of the map shifted down by NORTH_FILL_ROWS with solid
+ * Paints the strip above the map: a copy of the map shifted down by EDGE_FILL_ROWS with solid
  * forest on top, so the edge row's tree crowns, shadows and grass borders join up seamlessly.
  * Columns that are open at the edge (north exit road, river) carry on up through the forest.
- * Only the top NORTH_FILL_ROWS rows are painted.
+ * Only the top EDGE_FILL_ROWS rows are painted.
  */
 export function buildNorthFill(map: WorldMap): { ground: HTMLCanvasElement; canopy: HTMLCanvasElement } {
-  const r = NORTH_FILL_ROWS;
+  const r = EDGE_FILL_ROWS;
   const tiles = new Uint8Array(MW * MH);
   const riverX = new Int16Array(MH);
   for (let y = 0; y < MH; y++) {
@@ -150,6 +150,26 @@ export function buildNorthFill(map: WorldMap): { ground: HTMLCanvasElement; cano
   }
   const shifted: WorldMap = { ...map, exits: [], tiles, riverX, reach: new Uint8Array(MW * MH), bridgeEast: map.bridgeEast + r, bridgeNorth: map.bridgeNorth + r };
   const { mb, cb } = paintBase(shifted, r);
+  return { ground: toCanvas(mb), canopy: toCanvas(cb) };
+}
+
+/**
+ * Paints the strip below the map, EDGE_FILL_ROWS + 1 rows tall. Row 0 lines up with the map's
+ * last row: it is painted without trees or rocks (the real row is drawn by the map itself) so
+ * that only the crowns of the forest below poke up into it. Show the ground from row 1 and the
+ * canopy from row 0. Columns open at the edge (south exit road, river) carry on down.
+ */
+export function buildSouthFill(map: WorldMap): { ground: HTMLCanvasElement; canopy: HTMLCanvasElement } {
+  const r = EDGE_FILL_ROWS;
+  const tiles = new Uint8Array(MW * MH);
+  const blocking = (t: number): boolean => t === Tile.TREE || t === Tile.WALL || t === Tile.BUSH || t === Tile.ROCK;
+  for (let x = 0; x < MW; x++) {
+    const edge = tileAt(map, x, MH - 1);
+    tiles[x] = blocking(edge) ? Tile.GRASS : edge;
+    for (let y = 1; y < MH; y++) tiles[y * MW + x] = blocking(edge) ? Tile.TREE : edge;
+  }
+  const strip: WorldMap = { ...map, exits: [], tiles, riverX: new Int16Array(MH).fill(map.riverX[MH - 1] ?? -100), reach: new Uint8Array(MW * MH), bridgeEast: -10, bridgeNorth: -10 };
+  const { mb, cb } = paintBase(strip, r + 1);
   return { ground: toCanvas(mb), canopy: toCanvas(cb) };
 }
 

@@ -32,7 +32,7 @@ import { lineText, requestText } from '../ui/talk';
 import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
 import { TEX } from './textures';
-import { buildNorthFill, buildTerrain, NORTH_FILL_ROWS } from '../art/terrain';
+import { buildNorthFill, buildSouthFill, buildTerrain, EDGE_FILL_ROWS } from '../art/terrain';
 import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
 import { Music, nextMood } from '../audio/music';
 
@@ -69,13 +69,15 @@ interface SceneData {
 }
 
 /**
- * Portrait screens stack HP, goal, minimap, monster bar and toasts down the top-left column.
- * Near the map's north edge the clamped camera would push the player up under that column, so
- * the camera may scroll this fraction of the view past the top edge (filled by NORTH_FILL).
+ * Portrait screens stack HP, goal, minimap, monster bar and toasts down the top-left column,
+ * and the joystick + action pad along the bottom. Near the map's north / south edge the clamped
+ * camera would push the player under them, so the camera may scroll this fraction of the view
+ * past the edge (filled by a forest strip).
  */
 const PORTRAIT_TOP_OVERSCROLL = 0.3;
-/** height (px) of the forest strip painted above the map to fill the overscroll */
-const NORTH_FILL = NORTH_FILL_ROWS * T;
+const PORTRAIT_BOTTOM_OVERSCROLL = 0.25;
+/** height (px) of the forest strips painted beyond the north and south edges */
+const EDGE_FILL = EDGE_FILL_ROWS * T;
 
 const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** localStorage key for the sound on/off + volume (kept out of the game save) */
@@ -136,9 +138,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   /** forest strip drawn above the map, seen only when the camera overscrolls north */
   private northGround!: Phaser.GameObjects.Image;
   private northCanopy!: Phaser.GameObjects.Image;
-  private gNorthShade!: Phaser.GameObjects.Graphics;
-  /** area whose forest strip is on the north images (painted lazily: only portrait screens need it) */
-  private northArea: AreaId | null = null;
+  private southGround!: Phaser.GameObjects.Image;
+  private southCanopy!: Phaser.GameObjects.Image;
+  private gEdgeShade!: Phaser.GameObjects.Graphics;
+  /** area whose forest strips are on the edge images (painted lazily: only portrait screens need them) */
+  private edgeArea: AreaId | null = null;
   /** static lights per area, filled when an area's terrain is first built */
   private areaLights = new Map<AreaId, StaticLight[]>();
 
@@ -184,8 +188,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
     const w = this.inWorld;
     this.groundImg = w(this.add.image(0, 0, TEX.ground).setOrigin(0).setDepth(D.ground));
-    // hidden until syncNorthFill() paints the strip (the placeholder texture is the whole map)
-    this.northGround = w(this.add.image(0, -NORTH_FILL, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
+    // hidden until syncEdgeFills() paints the strips (the placeholder texture is the whole map)
+    this.northGround = w(this.add.image(0, -EDGE_FILL, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
+    this.southGround = w(this.add.image(0, (MH - 1) * T, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
     this.areaLights.set('home', data.lights);
     this.signs = signposts(this.s.map);
     this.gGround = w(this.add.graphics().setDepth(D.groundFx));
@@ -197,9 +202,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.playerView = new PlayerView(this, w);
     for (const n of this.s.npcs) this.npcViews.set(n.id, new NpcView(this, w, n));
     this.canopyImg = w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
-    this.northCanopy = w(this.add.image(0, -NORTH_FILL, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
-    this.gNorthShade = w(this.add.graphics().setDepth(D.canopy + 0.5));
-    this.shadeNorthFill();
+    this.northCanopy = w(this.add.image(0, -EDGE_FILL, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
+    this.southCanopy = w(this.add.image(0, (MH - 1) * T, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
+    this.gEdgeShade = w(this.add.graphics().setDepth(D.canopy + 0.5));
+    this.shadeEdgeFills();
     this.gBars = w(this.add.graphics().setDepth(D.bars));
     this.effects = new Effects(this, w, { fx: D.fx, particles: D.particles });
     this.gClouds = w(this.add.graphics().setDepth(D.clouds));
@@ -748,40 +754,56 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
   /** How far (px) the camera may scroll above the map's north edge: portrait screens only. */
   private topOverscroll(): number {
-    return this.VH > this.VW ? Math.min(NORTH_FILL, Math.round(this.VH * PORTRAIT_TOP_OVERSCROLL)) : 0;
+    return this.VH > this.VW ? Math.min(EDGE_FILL, Math.round(this.VH * PORTRAIT_TOP_OVERSCROLL)) : 0;
+  }
+
+  /** How far (px) the camera may scroll below the map's south edge: portrait screens only. */
+  private bottomOverscroll(): number {
+    return this.VH > this.VW ? Math.min(EDGE_FILL, Math.round(this.VH * PORTRAIT_BOTTOM_OVERSCROLL)) : 0;
   }
 
   private clampCamY(v: number): number {
     const maxY = MH * T - this.VH;
-    return maxY < 0 ? maxY / 2 : Phaser.Math.Clamp(v, -this.topOverscroll(), maxY);
+    return maxY < 0 ? maxY / 2 : Phaser.Math.Clamp(v, -this.topOverscroll(), maxY + this.bottomOverscroll());
   }
 
-  /** Points the north strip at the current area's forest fill, painting it on first use. */
-  private syncNorthFill(): void {
+  /** Points the edge strips at the current area's forest fill, painting them on first use. */
+  private syncEdgeFills(): void {
     const area = this.s.area;
-    if (this.northArea === area) return;
-    this.northArea = area;
+    if (this.edgeArea === area) return;
+    this.edgeArea = area;
     const key = `${TEX.ground}:north:${area}`;
+    const south = `${TEX.ground}:south:${area}`;
     if (!this.textures.exists(key)) {
       const art = buildNorthFill(this.s.map);
       this.textures.addCanvas(key, art.ground);
       this.textures.addCanvas(`${key}:canopy`, art.canopy);
+      const sa = buildSouthFill(this.s.map);
+      this.textures.addCanvas(south, sa.ground);
+      this.textures.addCanvas(`${south}:canopy`, sa.canopy);
     }
     this.northGround.setTexture(key).setVisible(true);
     this.northCanopy.setTexture(`${key}:canopy`).setVisible(true);
+    // south strip row 0 overlaps the map's last row: ground from row 1, canopy (crowns poking up) from row 0
+    this.southGround.setTexture(south).setCrop(0, T, MW * T, EDGE_FILL).setVisible(true);
+    this.southCanopy.setTexture(`${south}:canopy`).setVisible(true);
   }
 
-  /** Darkens the strip toward the top so it reads as deep forest beyond the area, not open ground. */
-  private shadeNorthFill(): void {
-    const g = this.gNorthShade.clear();
+  /** Darkens both strips away from the map so they read as deep forest beyond the area, not open ground. */
+  private shadeEdgeFills(): void {
+    const g = this.gEdgeShade.clear();
     const steps = 12;
-    const h = NORTH_FILL / steps;
-    for (let i = 0; i < steps; i++) g.fillStyle(0x16202e, 0.5 * (1 - (i + 1) / steps)).fillRect(0, -NORTH_FILL + i * h, MW * T, h);
+    const h = EDGE_FILL / steps;
+    for (let i = 0; i < steps; i++) {
+      const a = 0.5 * ((i + 1) / steps);
+      g.fillStyle(0x16202e, a).fillRect(0, -(i + 1) * h, MW * T, h);
+      g.fillStyle(0x16202e, a).fillRect(0, MH * T + i * h, MW * T, h);
+    }
   }
 
   private updateCamera(rdt: number): void {
     const p = this.s.player;
-    if (this.topOverscroll() > 0) this.syncNorthFill();
+    if (this.topOverscroll() > 0) this.syncEdgeFills();
     const maxX = MW * T - this.VW;
     const clampX = (v: number): number => (maxX < 0 ? maxX / 2 : Phaser.Math.Clamp(v, 0, maxX));
     const clampY = (v: number): number => this.clampCamY(v);
