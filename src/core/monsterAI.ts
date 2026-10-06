@@ -6,7 +6,7 @@ import { goalIndex } from './inventory';
 import type { AttackDef, MonsterId, PartId } from '../data/types';
 import { aggro, removeMonster, resolveMonsterHit } from './combat';
 import { canStand, moveBody } from './collision';
-import { inVillagePx, PLAZA, T, type WorldMap } from './mapgen';
+import { inCampPx, inVillagePx, PLAZA, T, type WorldMap } from './mapgen';
 import type { GameState, MonsterState, PartState, Shape } from './state';
 
 const C = TUNING.combat;
@@ -171,7 +171,9 @@ function think(s: GameState, m: MonsterState, dt: number): void {
   const rage = m.rage ? def.rage : null;
   const spd = def.speed * (rage ? rage.speedMul : 1) * (m.vet ? V.speedMul : 1) * (m.alpha ? A.speedMul : 1);
   const r = def.size * 0.5;
-  const playerInVillage = s.area === 'home' && inVillagePx(p.x, p.y);
+  // the village and hunter camps are safe ground: monsters do not follow the player in
+  const playerInCamp = inCampPx(s.map, p.x, p.y, TUNING.camp.safeRadius);
+  const playerInVillage = (s.area === 'home' && inVillagePx(p.x, p.y)) || playerInCamp;
 
   switch (m.mode) {
     case 'stun':
@@ -209,6 +211,12 @@ function think(s: GameState, m: MonsterState, dt: number): void {
       break;
   }
 
+  // A camp is small: a chaser stops at once (no new attacks) and gives up after the same short wait.
+  if (playerInCamp && m.mode === 'chase') {
+    m.leash += dt;
+    if (m.leash > C.monsterLeashVillage) calmDown(s, m);
+    return;
+  }
   // Monsters never follow into the village; they give up after a short wait.
   if (p.dead || (playerInVillage && m.mode === 'chase' && d > C.monsterVillageChaseDistance)) {
     m.leash += dt;

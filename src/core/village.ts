@@ -13,6 +13,8 @@ export type ContextAction =
   | { kind: 'kitchen' }
   | { kind: 'plant'; plot: number }
   | { kind: 'farm' }
+  /** brew a potion at a hunter camp's fire */
+  | { kind: 'brew' }
   /** talk to a villager; what that does depends on their role */
   | { kind: 'npc'; npc: NpcId };
 
@@ -23,6 +25,8 @@ export function contextAction(s: GameState): ContextAction | null {
   const near = (o: { x: number; y: number }, r: number): boolean => Math.hypot(o.x - p.x, o.y - p.y) < r;
   const npc = npcNear(s, V.npcTalkRadius);
   if (npc) return { kind: 'npc', npc: npc.id };
+  const camp = s.map.camp;
+  if (camp && near(camp.fire, TUNING.camp.fireRadius)) return { kind: 'brew' };
   if (s.area !== 'home') return null;
   if (near(ANVIL, V.stationRadius)) return { kind: 'forge' };
   if (near(POT, V.stationRadius)) return { kind: 'kitchen' };

@@ -206,6 +206,26 @@ export interface WorldMap {
   readonly reach: Uint8Array;
   readonly forestCells: readonly (readonly [number, number])[];
   readonly canyonCells: readonly (readonly [number, number])[];
+  /** hunter camp in a wild area (safe ground, campfire, tent) */
+  readonly camp?: Camp;
+}
+
+export interface Camp {
+  /** centre of the camp clearing (px) */
+  x: number;
+  y: number;
+  /** campfire (px); a one-tile rock in the tile grid */
+  fire: { x: number; y: number };
+  /** tent footprint in tiles (HOUSE tiles) */
+  tent: Rect;
+  /** where fast travel and a knockout put the player (px) */
+  rest: { x: number; y: number };
+}
+
+/** Is (px, py) inside the safe ground of this map's camp? */
+export function inCampPx(map: Pick<WorldMap, 'camp'>, px: number, py: number, radius: number): boolean {
+  const c = map.camp;
+  return !!c && Math.hypot(px - c.x, py - c.y) <= radius;
 }
 
 export const riverXAt = (y: number): number => 34 + Math.round(Math.sin(y * 0.16) * 2 + Math.sin(y * 0.06 + 1) * 1.5);

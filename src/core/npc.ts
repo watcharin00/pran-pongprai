@@ -33,12 +33,13 @@ export function npcActive(s: GameState, id: NpcId): boolean {
  */
 export function placeNpcs(s: GameState): void {
   if (s.area === 'home') return;
-  // the player has just been placed at the way in
-  const arrive = { x: s.player.x, y: s.player.y };
+  // the ranger keeps the camp fire when the area has one; otherwise waits near the way in
+  const camp = s.map.camp;
+  const arrive = camp ? { x: camp.fire.x + T, y: camp.fire.y - T } : { x: s.player.x, y: s.player.y };
   for (const n of s.npcs) {
     if (NPCS[n.id].area !== 'wild') continue;
     let spot = { x: arrive.x, y: arrive.y };
-    search: for (let r = 3; r <= 8; r++) {
+    search: for (let r = camp ? 0 : 3; r <= 8; r++) {
       for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
         const x = arrive.x + dx * r * T;
         const y = arrive.y + dy * r * T;

@@ -3,7 +3,7 @@
 import { hash, vnoise } from '../core/rng';
 import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
 import { signposts } from '../core/signs';
-import { drawAnvil, drawBoard, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
+import { drawAnvil, drawBoard, drawCamp, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
 import { drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
@@ -123,6 +123,7 @@ function paintBase(map: WorldMap, rows = MH): { mb: PixelBuffer; cb: PixelBuffer
   paintDetails(map, mb, lights);
   paintTrees(map, mb, cb);
   for (const sg of signposts(map)) drawSignpost(mb, sg.x, sg.y, sg.arms.map((a) => a.edge));
+  if (map.camp) drawCamp(mb, map.camp, lights);
   return { mb, cb, lights };
 }
 

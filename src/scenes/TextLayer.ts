@@ -168,7 +168,9 @@ export class TextLayer {
     this.floats = this.floats.filter((f) => f.t > 0);
   }
 
-  setDead(dead: boolean, w: number, h: number, dpr: number): void {
+  setDead(dead: boolean, w: number, h: number, dpr: number, camp = false): void {
+    const msg = camp ? th.hud.knockedOutCamp : th.hud.knockedOut;
+    if (this.deathText.text !== msg) this.deathText.setText(msg);
     if (this.deathShade.visible === dead && !dead) return;
     this.deathShade.setVisible(dead).setSize(w, h);
     this.deathText.setVisible(dead).setPosition(w / 2, h / 2);

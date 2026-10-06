@@ -231,7 +231,8 @@ export function unequipArmor(s: GameState, id: ArmorId): ActionResult {
 }
 
 export function brewPotion(s: GameState): ActionResult {
-  if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };
+  // potions are the one thing a hunter can also make at a camp's fire
+  if (!s.player.inVillage && !s.player.inCamp) return { ok: false, reason: 'notInVillage' };
   const recipe = { herb: TUNING.player.potion.herbCost };
   if (!canAfford(s.inv, recipe)) return { ok: false, reason: 'cannotAfford' };
   spend(s.inv, recipe);

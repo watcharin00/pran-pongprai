@@ -170,9 +170,9 @@ describe('travel', () => {
     expect(s.player.inVillage).toBe(false);
   });
 
-  it('getting knocked out in another area carries the hunter back to the village', () => {
+  it('getting knocked out in an area without a camp carries the hunter back to the village', () => {
     const s = home();
-    changeArea(s, 'bamboo');
+    changeArea(s, 'swamp');
     const fake = { x: s.player.x + 10, y: s.player.y, kind: 'dhole' } as Parameters<typeof hurtPlayer>[2];
     hurtPlayer(s, 9999, fake);
     expect(s.player.dead).toBe(true);

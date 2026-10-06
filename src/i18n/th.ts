@@ -494,6 +494,7 @@ export const hud = {
   stunned: ' · มึน',
   partBroken: ' แตกแล้ว',
   knockedOut: 'หมดสติ... กำลังกลับหมู่บ้าน',
+  knockedOutCamp: 'หมดสติ... กำลังกลับแค้มป์',
   keyboardHint: { move: 'เดิน', attack: 'ตี', skills: 'สกิล', dodge: 'กลิ้ง', potion: 'ยา', auto: 'AUTO', menu: 'เมนู' },
 };
 
@@ -510,6 +511,7 @@ export const context = {
 
 /** World-space name labels shown near village stations. */
 export const places = {
+  camp: 'แค้มป์พราน',
   forge: 'โรงตีเหล็ก',
   kitchen: 'โรงครัว',
   farm: 'แปลงผัก',
@@ -623,6 +625,10 @@ export const menu = {
     goHomeHelp: 'เดินทางด่วนกลับหมู่บ้าน ใช้ได้เมื่อไม่มีสัตว์ไล่ตามอยู่',
     inFight: 'มีสัตว์ไล่ตามอยู่ หนีให้พ้นก่อนจึงจะกลับได้',
     traveled: 'กลับถึงหมู่บ้านแล้ว',
+    goCamp: 'ไปแค้มป์พราน',
+    campHelp: 'มีแค้มป์ของพรานเดินป่า: พักฟื้น ปรุงยา และเดินทางด่วนมาได้ ใช้ได้เมื่อไม่มีสัตว์ไล่ตามอยู่',
+    campLocked: 'มีแค้มป์ของพรานเดินป่าอยู่ใกล้ทางเข้า ไปถึงครั้งแรกแล้วจะเดินทางด่วนมาได้',
+    traveledCamp: (area: string) => `ถึงแค้มป์พราน${area}แล้ว`,
     goalNow: 'เป้าหมายตอนนี้',
     goal: 'เป้าหมาย',
     locked: 'ยังไม่เคยไป',
@@ -839,6 +845,7 @@ export const log = {
   rareDrop: (item: string) => `โชคดี! ได้ ${item}`,
   huntTimeout: (mon: string) => `หมดเวลา ${mon} หนีไปแล้ว`,
   knockedOut: 'หมดสติ! ชาวบ้านหามกลับหมู่บ้าน',
+  knockedOutCamp: 'หมดสติ! พรานเดินป่าลากกลับแค้มป์',
   noPotion: 'ยาหมด ปรุงเพิ่มที่โรงตีเหล็ก (สมุนไพร 2)',
   noSeed: (seed: string, source: string) => `ไม่มี${seed} หาได้จากการ${source}`,
   harvested: (crop: string, got: string) => `เก็บ${crop} ได้ ${got}`,
@@ -852,6 +859,8 @@ export const log = {
   armorOff: (piece: string) => `ถอด${piece}`,
   armorCrafted: (piece: string) => `ตี${piece}สำเร็จ`,
   brewed: 'ปรุงยา 1 ขวด',
+  brewNeedHerbs: (n: number) => `ต้องใช้สมุนไพร ${n} ต้นต่อยา 1 ขวด`,
+  revivedCamp: 'พรานเดินป่าลากเจ้ากลับมาที่แค้มป์',
   ate: (meal: string, desc: string) => `กิน${meal} ${desc}`,
   mealExpired: (meal: string) => `ฤทธิ์${meal}หมดแล้ว`,
 };

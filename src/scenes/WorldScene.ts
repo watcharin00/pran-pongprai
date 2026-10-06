@@ -404,7 +404,18 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     if (c.kind === 'plant') {
       if (plant(this.s, c.plot)) this.save();
     } else if (c.kind === 'npc') this.talkTo(c.npc);
-    else this.sheet.open(c.kind);
+    else if (c.kind === 'brew') {
+      // one tap at the camp fire brews one potion from herbs
+      if (brewPotion(this.s).ok) {
+        this.hud.toast(th.log.brewed);
+        this.sfx.play('cook');
+        this.save();
+      } else {
+        this.hud.toast(th.log.brewNeedHerbs(TUNING.player.potion.herbCost), 'bad');
+        this.sfx.play('error');
+      }
+      this.hud.update(this.s);
+    } else this.sheet.open(c.kind);
   }
 
   /** The context button next to a villager. */
@@ -615,11 +626,12 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       hud.toast(th.log.noPotion, 'bad');
       snd('error');
     });
-    ev.on('player:knockedOut', () => hud.toast(th.log.knockedOut, 'bad'));
+    ev.on('player:knockedOut', () => hud.toast(this.s.map.camp ? th.log.knockedOutCamp : th.log.knockedOut, 'bad'));
     ev.on('area:changed', () => this.enterArea());
     ev.on('player:revived', (e) => {
       this.camFX = e.at.x - this.VW / 2;
       this.camFY = e.at.y - this.VH / 2;
+      if (e.camp) hud.toast(th.log.revivedCamp, 'gold');
     });
     ev.on('skill:cast', (e) => {
       const def = SKILLS[e.skill];
@@ -745,7 +757,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.pad.update(s, this.ctx);
       const hunted = s.monsters.some((m) => m.aggro);
       this.calm = hunted ? 0 : this.calm + 0.1;
-      const mood = nextMood(this.music.current, { dead: s.player.dead, inVillage: s.player.inVillage, hunted, bossHunted: s.monsters.some((m) => m.aggro && MONSTERS[m.kind].rage !== null) }, this.calm);
+      const mood = nextMood(this.music.current, { dead: s.player.dead, inVillage: s.player.inVillage || s.player.inCamp, hunted, bossHunted: s.monsters.some((m) => m.aggro && MONSTERS[m.kind].rage !== null) }, this.calm);
       this.music.play(mood);
     }
     this.sheet.tick(raw);
@@ -879,6 +891,16 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         const o = (xx * 7 + yy * 13) % 16;
         if (Math.sin(time * 2 + o) > 0.3) px(xx * T + 3 + ((o + Math.floor(time * 4)) % 9), yy * T + 7 + ((o * 5) % 6), this.s.map.biome === 'peat' ? 0xfff0c8 : 0xc8fff0, 2, 1);
       }
+    }
+    const camp = this.s.map.camp;
+    if (camp && this.inView(camp.fire.x, camp.fire.y, 40)) {
+      // campfire flames, same flicker as the kitchen pot
+      for (let i = 0; i < 5; i++) {
+        const ox = i - 2;
+        const hg = Math.max(1, Math.round((4 - Math.abs(ox)) * 1.4 + Math.sin(time * 11 + i * 1.9)));
+        for (let k = 0; k < hg; k++) px(camp.fire.x + ox, camp.fire.y + 1 - k, k / hg < 0.45 ? 0xffd35c : 0xff6a2a);
+      }
+      if (Math.floor(time * 6) % 3 === 0) px(camp.fire.x + Math.round(Math.sin(time * 3) * 2), camp.fire.y - 7, 0xffe08a, 1, 1);
     }
     if (this.s.area !== 'home') {
       // field crop images live in world space: hide them or they show up on every other map
@@ -1159,6 +1181,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     if (s.area === 'home' && p.inVillage && !p.dead && !roleTalking('requests') && Math.hypot(BOARD.x * T + 8 - p.x, BOARD.y * T + 8 - p.y) < 90) {
       t.label(this, requestReady(s) ? th.places.boardReady : th.places.board, BOARD.x * T + 8, BOARD.y * T - 6, requestReady(s) ? '#ffe08a' : '#ffe7a6');
     }
+    if (s.map.camp && !p.dead && !roleTalking('ranger') && Math.hypot(s.map.camp.x - p.x, s.map.camp.y - p.y) < 110) {
+      const c = s.map.camp;
+      t.label(this, th.places.camp, c.tent.x * T + c.tent.w * 8, c.tent.y * T - 8, '#ffe7a6');
+    }
     if (!p.dead) {
       // signposts: one label per arm, stacked above the post in the order the arms are painted
       for (const sg of this.signs) {
@@ -1183,7 +1209,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       if (m.mode === 'tele' && v) t.warning(this, m.id, m.x, m.y - v.img.height / 2 - 10, time);
     }
     t.endWarnings();
-    t.setDead(p.dead, this.scale.width, this.scale.height, this.dpr);
+    t.setDead(p.dead, this.scale.width, this.scale.height, this.dpr, !!this.s.map.camp);
   }
 }
 

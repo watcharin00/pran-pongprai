@@ -47,7 +47,8 @@ export interface GameEvents {
   'player:drink': { heal: number; at: Vec2 };
   'player:noPotion': Record<string, never>;
   'player:knockedOut': Record<string, never>;
-  'player:revived': { at: Vec2 };
+  /** `camp`: woke at the area's hunter camp instead of the village */
+  'player:revived': { at: Vec2; camp: boolean };
   'skill:cast': { skill: SkillId; at: Vec2 };
   /** `line` is set for strikes along a direction (thrust, cleave) */
   'skill:impact': { skill: SkillId; at: Vec2; radius: number; line?: { ux: number; uy: number; len: number; wd: number; from: Vec2 } };

@@ -49,6 +49,12 @@
     "herbSeedChance": 0.4, "nodeSeed": 777,
     "nodes": { "forestHerb": 10, "forestOre": 3, "canyonOre": 6 }
   },
+  "camp": {
+    "inset": 9,
+    "side": 5,
+    "safeRadius": 52,
+    "fireRadius": 30
+  },
   "village": {
     "contextMonsterClear": 80,
     "stationRadius": 26,

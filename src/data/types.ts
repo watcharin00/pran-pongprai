@@ -392,6 +392,17 @@ export interface Tuning {
     nodeSeed: number;
     nodes: { forestHerb: number; forestOre: number; canyonOre: number };
   };
+  /** hunter camps in the wild areas (which areas have one: `camp` in core/areas.ts SPECS) */
+  camp: {
+    /** tiles in from the map edge along the road back home */
+    inset: number;
+    /** tiles to the side of that road */
+    side: number;
+    /** px around the camp centre where monsters give up and HP regenerates */
+    safeRadius: number;
+    /** px from the campfire for the brew button */
+    fireRadius: number;
+  };
   village: {
     contextMonsterClear: number;
     stationRadius: number;

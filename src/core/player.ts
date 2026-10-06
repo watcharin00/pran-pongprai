@@ -5,7 +5,7 @@ import type { Vec2 } from './events';
 import { moveBody } from './collision';
 import { harvest, isRipe, plotReach } from './farm';
 import { give, dodgeCost, maxHpFor, maxStaminaFor, rollIframe, staminaRegenMul, walkSpeed } from './inventory';
-import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
+import { inCampPx, inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
 import { clearShot, fireShot } from './shots';
 import { castSkill, updateDash, updateWindup } from './skills';
@@ -182,10 +182,12 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   if (p.dead) {
     p.deadT -= dt;
     if (p.deadT <= 0) {
-      // villagers carry the hunter home from any area
-      if (s.area !== 'home') changeArea(s, 'home', SPAWN);
-      Object.assign(p, { dead: false, x: SPAWN.x, y: SPAWN.y, hp: p.maxHp, st: p.maxSt, roll: 0, hurtIF: 1 });
-      s.events.emit('player:revived', { at: { x: p.x, y: p.y } });
+      // the ranger drags the hunter back to this area's camp; with no camp, villagers carry them home
+      const camp = s.map.camp;
+      if (!camp && s.area !== 'home') changeArea(s, 'home', SPAWN);
+      const at = camp ? camp.rest : SPAWN;
+      Object.assign(p, { dead: false, x: at.x, y: at.y, hp: p.maxHp, st: p.maxSt, roll: 0, hurtIF: 1, path: [] });
+      s.events.emit('player:revived', { at: { x: p.x, y: p.y }, camp: !!camp });
     }
     return;
   }
@@ -196,7 +198,8 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   if (p.st > p.maxSt) p.st = p.maxSt;
   if (p.stDelay <= 0) p.st = Math.min(p.maxSt, p.st + P.staminaRegen * staminaRegenMul(s) * dt);
   p.inVillage = s.area === 'home' && inVillagePx(p.x, p.y);
-  if (p.inVillage && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + P.villageRegen * dt);
+  p.inCamp = inCampPx(s.map, p.x, p.y, TUNING.camp.safeRadius);
+  if ((p.inVillage || p.inCamp) && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + P.villageRegen * dt);
   const zone = zoneAtPx(s.map, p.x, p.y);
   if (zone !== p.zone) {
     if (p.zone !== null) s.events.emit('zone:entered', { zone });

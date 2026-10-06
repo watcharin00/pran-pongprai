@@ -9,7 +9,7 @@ import { ELDER_HOUSE, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH
 import { allRequestsDone, currentRequest } from '../core/requests';
 import { hasMedal, medalCount } from '../core/medals';
 import { requestText, rewardText } from './talk';
-import { fastTravelHome, inFight } from '../core/travel';
+import { fastTravelCamp, fastTravelHome, inFight } from '../core/travel';
 import { areaThumbUrl } from '../art/mapThumb';
 import { activeMeal, activePerks, attackMul, upgradeCost, upgradeWeapon, weaponLevel, weaponPower, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
 import type { GameState } from '../core/state';
@@ -840,9 +840,18 @@ export class Sheet {
       const marks = [M.forge, M.kitchen, M.farm, M.elder, M.paddy, M.pond].map((n) => `<span>${n}</span>`).join('');
       h += `<h4>${M.landmarks}</h4><div class="wmarks">${marks}</div>`;
     }
+    const fight = inFight(s);
+    // a hunter camp in this area: say so, and once found offer fast travel to it
+    let noted = false;
+    if (areaMap(id).camp) {
+      if (seen) {
+        noted = true;
+        h += `<p class="note${fight ? ' warn' : ''}">${fight ? M.inFight : M.campHelp}</p><button type="button" class="fbtn primary" data-travel="${id}" ${fight || s.player.dead ? 'disabled' : ''}>${ICONS.tab_map}${M.goCamp}</button>`;
+      } else h += `<p class="note">${M.campLocked}</p>`;
+    }
     if (s.area !== 'home') {
-      const fight = inFight(s);
-      h += `<p class="note${fight ? ' warn' : ''}">${fight ? M.inFight : M.goHomeHelp}</p><button type="button" class="fbtn primary" data-travel="home" ${fight || s.player.dead ? 'disabled' : ''}>${ICONS.tab_map}${M.goHome}</button>`;
+      if (!noted) h += `<p class="note${fight ? ' warn' : ''}">${fight ? M.inFight : M.goHomeHelp}</p>`;
+      h += `<button type="button" class="fbtn" data-travel="home" ${fight || s.player.dead ? 'disabled' : ''}>${ICONS.tab_map}${M.goHome}</button>`;
     }
     return `${h}</aside>`;
   }
@@ -981,8 +990,10 @@ export class Sheet {
       return;
     }
     if (d.travel) {
-      if (fastTravelHome(s).ok) {
-        this.hud.toast(th.menu.map.traveled, 'gold');
+      const camp = d.travel !== 'home' && (AREA_IDS as readonly string[]).includes(d.travel);
+      const r = camp ? fastTravelCamp(s, d.travel as AreaId) : fastTravelHome(s);
+      if (r.ok) {
+        this.hud.toast(camp ? th.menu.map.traveledCamp(th.areas[d.travel as AreaId]) : th.menu.map.traveled, 'gold');
         this.close();
       }
       return;

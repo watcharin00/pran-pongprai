@@ -31,7 +31,7 @@ export function createNodes(map: WorldMap): GatherNode[] {
   return nodes;
 }
 
-export type TravelResult = { ok: true } | { ok: false; reason: 'atHome' | 'inFight' | 'dead' };
+export type TravelResult = { ok: true } | { ok: false; reason: 'atHome' | 'inFight' | 'dead' | 'noCamp' };
 
 /** Map-tab fast travel back to the village; refused while a monster is chasing you. */
 export function fastTravelHome(s: GameState): TravelResult {
@@ -39,6 +39,25 @@ export function fastTravelHome(s: GameState): TravelResult {
   if (s.area === 'home') return { ok: false, reason: 'atHome' };
   if (inFight(s)) return { ok: false, reason: 'inFight' };
   changeArea(s, 'home', SPAWN);
+  return { ok: true };
+}
+
+/** Areas whose hunter camp the player can travel to: visited areas that have a camp. */
+export function knownCamps(s: GameState): AreaId[] {
+  return [...s.visited].filter((a) => a !== 'home' && !!areaMap(a).camp);
+}
+
+/** Map-tab fast travel to a hunter camp the player has found; same rules as going home. */
+export function fastTravelCamp(s: GameState, to: AreaId): TravelResult {
+  if (s.player.dead) return { ok: false, reason: 'dead' };
+  if (inFight(s)) return { ok: false, reason: 'inFight' };
+  const camp = areaMap(to).camp;
+  if (!camp || !s.visited.has(to)) return { ok: false, reason: 'noCamp' };
+  if (s.area === to) {
+    Object.assign(s.player, { x: camp.rest.x, y: camp.rest.y, path: [], lockId: null });
+    return { ok: true };
+  }
+  changeArea(s, to, camp.rest);
   return { ok: true };
 }
 

@@ -101,6 +101,8 @@ export interface PlayerState {
   moving: boolean;
   walkT: number;
   inVillage: boolean;
+  /** on the safe ground of a hunter camp (wild areas) */
+  inCamp: boolean;
   zone: ZoneId | null;
 }
 

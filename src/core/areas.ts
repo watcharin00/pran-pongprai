@@ -3,7 +3,7 @@
 // generated from its own seed. Pure and deterministic: no Math.random.
 import type { AreaId, ZoneId } from '../data/types';
 import { TUNING } from '../data';
-import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampEastFields, stampVillageQuarter, T, Tile, VILLAGE, walkable, type AreaExit, type Biome, type Edge, type WorldMap } from './mapgen';
+import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampEastFields, stampVillageQuarter, T, Tile, VILLAGE, walkable, type AreaExit, type Biome, type Camp, type Edge, type WorldMap } from './mapgen';
 import { parkMiller, vnoise } from './rng';
 import { exitSignTile } from './signs';
 import { openTrails } from './trails';
@@ -14,13 +14,15 @@ interface AreaSpec {
   seed: number;
   biome: Biome;
   zone: ZoneId;
-  /** exits: edge, first tile along that edge, width in tiles, destination */
+  /** exits: edge, first tile along that edge, width in tiles, destination. The first one leads back toward the village. */
   exits: readonly { edge: Edge; at: number; width: number; to: AreaId }[];
+  /** a hunter camp beside the road in from the village (rolled out one area at a time) */
+  camp?: true;
 }
 
 /** Layout of the world (see CLAUDE.md "โลก"). */
 const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
-  bamboo: { seed: 7101, biome: 'bamboo', zone: 'bamboo', exits: [{ edge: 's', at: 30, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'deepwild' }] },
+  bamboo: { seed: 7101, biome: 'bamboo', zone: 'bamboo', camp: true, exits: [{ edge: 's', at: 30, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'deepwild' }] },
   deepwild: { seed: 7404, biome: 'deepwild', zone: 'deepwild', exits: [{ edge: 's', at: 30, width: 3, to: 'bamboo' }, { edge: 'w', at: 22, width: 3, to: 'peat' }] },
   peat: { seed: 7707, biome: 'peat', zone: 'peat', exits: [{ edge: 'e', at: 22, width: 3, to: 'deepwild' }] },
   swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }, { edge: 's', at: 30, width: 3, to: 'mangrove' }] },
@@ -217,6 +219,7 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
     carvePath(tiles, [ex, ey], centre, Math.max(2, e.width - 1), i % 2 === 0 ? e.edge === 'e' || e.edge === 'w' : !(e.edge === 'e' || e.edge === 'w'));
     for (const [x, y] of exitTiles(e, 4)) set(x, y, Tile.SAND);
   });
+  const camp = spec.camp ? stampCamp(tiles, spec.exits[0]) : undefined;
   // every exit road gets a signpost: if water or trees fill both roadsides, clear one spot for it
   for (const e of spec.exits) {
     if (exitSignTile({ tiles }, e)) continue;
@@ -244,10 +247,60 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
       const t = get(x, y);
       if (t !== Tile.GRASS && t !== Tile.FLOWER && t !== Tile.SAND) continue;
       if (exits.some((e) => Math.hypot(e.arrive.x / T - x, e.arrive.y / T - y) < 8)) continue;
+      if (camp && Math.hypot(camp.x / T - x, camp.y / T - y) < 9) continue;
       forestCells.push([x, y]);
     }
   }
-  return { ...partial, reach, forestCells, area: id, zone: spec.zone, biome: spec.biome, exits };
+  return { ...partial, reach, forestCells, area: id, zone: spec.zone, biome: spec.biome, exits, ...(camp ? { camp } : {}) };
+}
+
+/**
+ * Clears a hunter camp beside the road that comes in from `e`: a 7×5 clearing a few tiles off the
+ * road with a path to it, a 2×2 tent on the far side and a campfire (one rock tile) near the road.
+ */
+function stampCamp(tiles: Uint8Array, e: { edge: Edge; at: number; width: number } | undefined): Camp | undefined {
+  if (!e) return undefined;
+  const C = TUNING.camp;
+  const get = (x: number, y: number): number => tiles[y * MW + x] ?? Tile.WALL;
+  const set = (x: number, y: number, t: number): void => {
+    if (x >= 3 && y >= 3 && x < MW - 3 && y < MH - 3) tiles[y * MW + x] = t;
+  };
+  const vertical = e.edge === 'n' || e.edge === 's';
+  const road = e.at + Math.floor(e.width / 2);
+  const depth = e.edge === 'n' || e.edge === 'w' ? C.inset : (vertical ? MH : MW) - 1 - C.inset;
+  // side axis points away from the road; `a` runs along it
+  const at = (side: number, along: number): [number, number] => (vertical ? [road + side, depth + along] : [depth + along, road + side]);
+  const blocked = (dir: number): number => {
+    let n = 0;
+    for (let i = C.side - 3; i <= C.side + 3; i++) for (let j = -2; j <= 2; j++) {
+      const [x, y] = at(dir * i, j);
+      if (x < 3 || y < 3 || x >= MW - 3 || y >= MH - 3) n += 10;
+      else if (get(x, y) === Tile.WATER || get(x, y) === Tile.CLIFF) n++;
+    }
+    return n;
+  };
+  const dir = blocked(1) <= blocked(-1) ? 1 : -1;
+  for (let i = C.side - 3; i <= C.side + 3; i++) for (let j = -2; j <= 2; j++) set(...at(dir * i, j), Tile.GRASS);
+  // a two-tile path from the road
+  for (let i = 1; i < C.side - 3; i++) for (const j of [0, 1]) {
+    const [x, y] = at(dir * i, j);
+    if (get(x, y) !== Tile.SAND) set(x, y, Tile.GRASS);
+  }
+  const tentCells = [1, 2].flatMap((i) => [-1, 0].map((j) => at(dir * (C.side + i), j)));
+  for (const [x, y] of tentCells) set(x, y, Tile.HOUSE);
+  const [fx, fy] = at(dir * (C.side - 1), 0);
+  set(fx, fy, Tile.ROCK);
+  const [cx, cy] = at(dir * C.side, 0);
+  const [rx, ry] = at(dir * (C.side - 1), 1);
+  const xs = tentCells.map(([x]) => x);
+  const ys = tentCells.map(([, y]) => y);
+  return {
+    x: cx * T + 8,
+    y: cy * T + 8,
+    fire: { x: fx * T + 8, y: fy * T + 8 },
+    tent: { x: Math.min(...xs), y: Math.min(...ys), w: 2, h: 2 },
+    rest: { x: rx * T + 8, y: ry * T + 8 },
+  };
 }
 
 /** The generation seed of a wild area (its trails and obstacles derive from it). */
