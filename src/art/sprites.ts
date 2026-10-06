@@ -586,16 +586,23 @@ function buildKingcobra(f: number, hb: boolean, tb: boolean): HTMLCanvasElement 
     sp(b, x + o, y + o, D);
     sp(b, x + o, y - 1 + o, B);
   }
-  // coils with pale bands
-  ell(b, 17 + o, 25 + o, 10, 4.2, B);
-  ell(b, 17 + o, 22.5 + o, 7.6, 3, D);
-  ell(b, 17 + o, 21.2 + o, 5.4, 2, B);
-  for (let x = 9; x <= 25; x += 4) {
-    sp(b, x + o, 27 + o, L);
-    sp(b, x + o, 28 + o, L);
-  }
-  // neck rising, banded belly
-  rect(b, 22 + o + sway, 9 + o, 4, 13, B);
+  // two stacked coil loops (rings with a gap in the middle, so they read as a body, not a shell)
+  const coil = (cx: number, cy: number, rx: number, ry: number, th: number): void => {
+    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
+      for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+        const q = ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2;
+        const qi = ((x + 0.5 - cx) / (rx - th)) ** 2 + ((y + 0.5 - cy) / Math.max(0.8, ry - th * 0.55)) ** 2;
+        if (q > 1 || qi <= 1) continue;
+        // pale bands across the body, lit from above
+        const band = Math.floor(x - cx + 40) % 5 === 0;
+        sp(b, x + o, y + o, band ? L : y < cy ? B : D);
+      }
+    }
+  };
+  coil(16, 25.5, 10.5, 4.6, 3);
+  coil(19, 21.5, 6.8, 3.2, 2.6);
+  // neck rising from the top coil, banded belly
+  rect(b, 22 + o + sway, 9 + o, 4, 11, B);
   for (let y = 10; y < 22; y += 3) rect(b, 23 + o + sway, y + o, 2, 1, L);
   // long narrow hood with pale chevrons
   const hx = 24 + sway;
