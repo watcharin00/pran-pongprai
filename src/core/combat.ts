@@ -2,7 +2,7 @@
 import { MONSTERS, TUNING, WEAPONS } from '../data';
 import type { AttackDef, ItemBag, MaterialId, PartId } from '../data/types';
 import type { Vec2 } from './events';
-import { attackMul, damageReduction, give, weaponPower } from './inventory';
+import { attackMul, damageReduction, gearPerk, give, weaponPower } from './inventory';
 import { moveBody } from './collision';
 import { MONSTER_FRAME_COUNT, type GameState, type MonsterState } from './state';
 
@@ -83,14 +83,17 @@ export function hitMonster(s: GameState, m: MonsterState, mult: number, o: HitOp
   const w = WEAPONS[s.player.weapon];
   const def = MONSTERS[m.kind];
   const part = partFor(m, s.player.x);
-  const dmg = Math.round(weaponPower(s, s.player.weapon) * mult * s.rng.range(C.damageJitter.min, C.damageJitter.max) * attackMul(s));
+  const perk = gearPerk(s);
+  const weak = def.weakTo === w.type ? C.weakMul : 1;
+  const tail = part === 'tail' ? (perk.tailDamageMul ?? 1) : 1;
+  const dmg = Math.round(weaponPower(s, s.player.weapon) * mult * s.rng.range(C.damageJitter.min, C.damageJitter.max) * attackMul(s) * weak * tail);
   let gold = false;
   let big = !!o.big;
   let tip = false;
   if (part !== 'body') {
     const ps = m.parts[part];
     const pm = w.partMul[part] * (o.partMul ?? 1);
-    if (ps) ps.hp -= dmg * pm;
+    if (ps) ps.hp -= dmg * pm * (perk.partDamageMul ?? 1);
     if (pm >= C.goldPartMul) {
       gold = true;
       big = true;
@@ -103,7 +106,7 @@ export function hitMonster(s: GameState, m: MonsterState, mult: number, o: HitOp
   s.events.emit('monster:hit', { id: m.id, kind: m.kind, part, damage: dmg, at: partPoint(m, part), gold, big, tip, color: w.color });
   if (part !== 'body' && (m.parts[part]?.hp ?? 1) <= 0) breakPart(s, m, part);
 
-  const stun = (part === 'head' ? w.stun : 0) + (o.stun ?? 0);
+  const stun = ((part === 'head' ? w.stun : 0) + (o.stun ?? 0)) * (perk.stunMul ?? 1);
   if (stun && m.mode !== 'stun') {
     m.stunMeter += stun;
     if (m.stunMeter >= C.stunThreshold) {
@@ -194,7 +197,8 @@ export function resolveMonsterHit(s: GameState, m: MonsterState, a: AttackDef): 
   }
   if (p.hurtIF > 0) return;
   const rage = MONSTERS[m.kind].rage;
-  hurtPlayer(s, a.damage * (m.rage && rage ? rage.damageMul : 1) * (m.vet ? TUNING.veteran.damageMul : 1), m);
+  const dash = a.shape === 'line' && a.dash ? (gearPerk(s).dashDamageMul ?? 1) : 1;
+  hurtPlayer(s, a.damage * (m.rage && rage ? rage.damageMul : 1) * (m.vet ? TUNING.veteran.damageMul : 1) * dash, m);
 }
 
 export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void {
@@ -205,11 +209,14 @@ export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void 
   m.hitPlayer = true;
   p.hurt = H.flash;
   p.hurtIF = H.iframe;
-  p.cast = null; // getting hit cancels a skill wind-up
-  const dx = p.x - m.x;
-  const dy = p.y - m.y;
-  const d = Math.hypot(dx, dy) || 1;
-  moveBody(s.map, p, (dx / d) * H.knockback, (dy / d) * H.knockback, TUNING.player.radius);
+  const perk = gearPerk(s);
+  if (!perk.castSuperArmor) p.cast = null; // getting hit cancels a skill wind-up
+  if (!perk.noKnockback) {
+    const dx = p.x - m.x;
+    const dy = p.y - m.y;
+    const d = Math.hypot(dx, dy) || 1;
+    moveBody(s.map, p, (dx / d) * H.knockback, (dy / d) * H.knockback, TUNING.player.radius);
+  }
   s.events.emit('player:hurt', { damage: dmg, at: { x: p.x, y: p.y }, heavy: MONSTERS[m.kind].size >= 12 });
   if (p.hp <= 0) {
     p.hp = 0;

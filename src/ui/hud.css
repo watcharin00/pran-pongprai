@@ -122,6 +122,7 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .rc h3{margin:0;font:500 14.5px var(--display);display:flex;gap:8px;align-items:center}
 .sw{width:12px;height:12px;flex:none;border:1px solid rgba(0,0,0,.5);border-radius:3px;display:inline-block}
 .meta{font-size:12px;color:var(--muted)}
+.perk{font-size:12px;color:var(--muted);margin:4px 0 0}.perk b{color:var(--cream);font-weight:600}.perk.on,.perk.on b{color:var(--ok)}
 .req{display:flex;flex-wrap:wrap;gap:4px}
 .req span{font-size:11.5px;border:1px solid var(--line2);border-radius:4px;padding:0 5px;background:#1a2030}
 .req .have{border-color:#3f7a46;color:#b8e8a8}.req .miss{color:#f0a89c}

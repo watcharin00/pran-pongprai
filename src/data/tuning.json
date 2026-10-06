@@ -31,7 +31,8 @@
     "telegraphMul": 1.2,
     "monsterAggroAtkDelay": 0.9,
     "monsterSpawnMinPlayerDist": 150,
-    "monsterSpawnMinSpacing": 60
+    "monsterSpawnMinSpacing": 60,
+    "weakMul": 1.3
   },
   "auto": {
     "searchRange": 340,

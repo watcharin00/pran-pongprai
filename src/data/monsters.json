@@ -80,6 +80,7 @@
     ]
   },
   "tiger": {
+    "weakTo": "spear",
     "hp": 3000, "speed": 50, "size": 13, "aggroRadius": 64, "zone": "forest", "spawnMinVillageDist": 420, "spawnEastOfRiver": true,
     "huntTime": 180, "turnTime": 0.6, "recover": 0.9, "respawn": 30, "count": 1,
     "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.3, "damageMul": 1.15 },
@@ -101,6 +102,7 @@
     ]
   },
   "macaque": {
+    "weakTo": "bow",
     "area": "bamboo",
     "hp": 720, "speed": 60, "size": 7, "aggroRadius": 70, "zone": "forest",
     "huntTime": 90, "turnTime": 0.25, "recover": 0.7, "respawn": 14, "count": 5,
@@ -120,6 +122,7 @@
     ]
   },
   "cobra": {
+    "weakTo": "greatsword",
     "area": "bamboo",
     "hp": 1440, "speed": 34, "size": 9, "aggroRadius": 56, "zone": "forest", "spawnMinVillageDist": 0,
     "huntTime": 120, "turnTime": 0.5, "recover": 0.9, "respawn": 20, "count": 2,
@@ -142,6 +145,7 @@
     ]
   },
   "monitor": {
+    "weakTo": "spear",
     "area": "swamp",
     "hp": 1000, "speed": 44, "size": 9, "aggroRadius": 58, "zone": "forest",
     "huntTime": 110, "turnTime": 0.45, "recover": 0.8, "respawn": 16, "count": 3,
@@ -162,6 +166,7 @@
     ]
   },
   "crocodile": {
+    "weakTo": "hammer",
     "area": "swamp",
     "hp": 3600, "speed": 34, "size": 15, "aggroRadius": 60, "zone": "forest", "spawnMinVillageDist": 0,
     "huntTime": 180, "turnTime": 0.9, "recover": 1.0, "respawn": 30, "count": 1,
@@ -184,6 +189,7 @@
     ]
   },
   "serow": {
+    "weakTo": "bow",
     "area": "limestone",
     "hp": 1150, "speed": 52, "size": 9, "aggroRadius": 64, "zone": "forest",
     "huntTime": 110, "turnTime": 0.4, "recover": 0.8, "respawn": 16, "count": 3,
@@ -204,6 +210,7 @@
     ]
   },
   "bear": {
+    "weakTo": "spear",
     "area": "limestone",
     "hp": 4100, "speed": 42, "size": 14, "aggroRadius": 62, "zone": "forest",
     "huntTime": 180, "turnTime": 0.7, "recover": 1.0, "respawn": 30, "count": 1,
@@ -225,6 +232,7 @@
     ]
   },
   "muntjac": {
+    "weakTo": "sword",
     "area": "deepwild",
     "hp": 1050, "speed": 58, "size": 7, "aggroRadius": 50, "zone": "forest",
     "huntTime": 80, "turnTime": 0.3, "recover": 0.7, "respawn": 14, "count": 4,
@@ -244,6 +252,7 @@
     ]
   },
   "elephant": {
+    "weakTo": "bow",
     "area": "deepwild",
     "hp": 8000, "speed": 38, "size": 18, "aggroRadius": 64, "zone": "forest",
     "huntTime": 240, "turnTime": 1.0, "recover": 1.1, "respawn": 40, "count": 1,

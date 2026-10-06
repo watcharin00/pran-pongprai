@@ -15,6 +15,7 @@ export type WeaponId = keyof (typeof weaponsJson)['weapons'];
 export type WeaponType = keyof (typeof weaponsJson)['types'];
 export type CropId = keyof (typeof cropsJson)['crops'];
 export type ArmorId = keyof (typeof armorJson)['armor'];
+export type PerkId = keyof (typeof armorJson)['perks'];
 export const ARMOR_SLOTS = ['head', 'body', 'charm'] as const;
 export type ArmorSlot = (typeof ARMOR_SLOTS)[number];
 export type MealId = keyof (typeof mealsJson)['meals'];
@@ -116,6 +117,8 @@ export interface MonsterDef {
   bonus: Partial<Record<MaterialId, number>>;
   /** rare drop with a chance; announced to the player */
   rare: Partial<Record<MaterialId, number>>;
+  /** weapon type that deals `combat.weakMul` extra damage to this monster */
+  weakTo: WeaponType | null;
   attacks: AttackDef[];
 }
 
@@ -250,7 +253,37 @@ export interface ArmorDef {
   /** added to max stamina */
   stamina: number;
   color: string;
+  /** set bonus: active while the head and body pieces of the same set are both worn */
+  set: PerkId | null;
+  /** bonus this piece gives on its own */
+  perk: PerkId | null;
   recipe: ItemBag;
+}
+
+/** Gear bonuses from armor sets / single pieces. Missing fields mean "no effect". */
+export interface ArmorPerk {
+  /** multiplies stamina regeneration */
+  staminaRegenMul?: number;
+  /** getting hit does not push the player back */
+  noKnockback?: boolean;
+  /** multiplies damage taken from monster dash (charging line) attacks */
+  dashDamageMul?: number;
+  /** attack multiplier while HP is below half */
+  lowHpAttackMul?: number;
+  /** multiplies damage of hits that land on the tail */
+  tailDamageMul?: number;
+  /** getting hit no longer cancels a skill wind-up */
+  castSuperArmor?: boolean;
+  /** multiplies stun build-up */
+  stunMul?: number;
+  /** multiplies damage dealt to breakable parts */
+  partDamageMul?: number;
+  /** seconds added to the roll's i-frames */
+  rollIframeBonus?: number;
+  /** added to the roll's stamina cost (negative = cheaper) */
+  dodgeCostDelta?: number;
+  /** multiplies walking speed */
+  walkSpeedMul?: number;
 }
 
 export interface CropDef {
@@ -332,6 +365,8 @@ export interface Tuning {
     monsterAggroAtkDelay: number;
     monsterSpawnMinPlayerDist: number;
     monsterSpawnMinSpacing: number;
+    /** damage multiplier against a monster's `weakTo` weapon type */
+    weakMul: number;
   };
   auto: {
     searchRange: number;

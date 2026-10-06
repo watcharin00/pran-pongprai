@@ -10,7 +10,7 @@ import tuningJson from './tuning.json';
 import armorJson from './armor.json';
 import npcsJson from './npcs.json';
 import requestsJson from './requests.json';
-import { DataError, loadArmor, loadCrops, loadMaterials, loadMonsters, loadNpcs, loadRequests, loadSkills, loadWeapons } from './validate';
+import { DataError, loadArmor, loadArmorPerks, loadCrops, loadMaterials, loadMonsters, loadNpcs, loadRequests, loadSkills, loadWeapons } from './validate';
 import type { ArmorId, MaterialId, MealsData, MonsterDef, MonsterId, NpcId, SkillId, Tuning } from './types';
 
 export type * from './types';
@@ -28,7 +28,8 @@ export const WEAPONS_DATA = loadWeapons(weaponsJson, MATERIAL_IDS, SKILL_IDS);
 export const WEAPONS = WEAPONS_DATA.weapons;
 export const WEAPON_TYPES = WEAPONS_DATA.types;
 
-export const ARMOR = loadArmor(armorJson, MATERIAL_IDS);
+export const ARMOR_PERKS = loadArmorPerks(armorJson);
+export const ARMOR = loadArmor(armorJson, MATERIAL_IDS, Object.keys(ARMOR_PERKS));
 export const ARMOR_IDS = Object.keys(ARMOR) as ArmorId[];
 
 export const NPCS = loadNpcs(npcsJson);
@@ -48,6 +49,9 @@ for (const [id, meal] of Object.entries(MEALS)) {
   for (const k of Object.keys(meal.recipe)) {
     if (!(k in MATERIALS)) throw new DataError(`meals.meals.${id}.recipe.${k}`, 'unknown material');
   }
+}
+for (const [id, m] of Object.entries(MONSTERS)) {
+  if (m.weakTo && !(m.weakTo in WEAPON_TYPES)) throw new DataError(`monsters.${id}.weakTo`, `unknown weapon type ${m.weakTo}`);
 }
 for (const k of Object.keys(TUNING.player.startInventory)) {
   if (!(k in MATERIALS)) throw new DataError(`tuning.player.startInventory.${k}`, 'unknown material');

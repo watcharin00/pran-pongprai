@@ -1,6 +1,6 @@
 // Materials, crafting, potions and meals.
-import { ARMOR, MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
-import { ARMOR_SLOTS, type ArmorId, type ItemBag, type MealEffect, type MealId, type WeaponId } from '../data/types';
+import { ARMOR, ARMOR_PERKS, MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
+import { ARMOR_SLOTS, type ArmorId, type ArmorPerk, type ItemBag, type PerkId, type MealEffect, type MealId, type WeaponId } from '../data/types';
 import type { GameState, Inventory } from './state';
 
 export function startingInventory(): Inventory {
@@ -34,15 +34,25 @@ export function mealEffect(s: GameState): MealEffect {
 }
 
 export function attackMul(s: GameState): number {
-  return mealEffect(s).attackMul ?? 1;
+  const p = s.player;
+  const low = p.hp < p.maxHp * 0.5 ? (gearPerk(s).lowHpAttackMul ?? 1) : 1;
+  return (mealEffect(s).attackMul ?? 1) * low;
 }
 
 export function dodgeCost(s: GameState): number {
-  return mealEffect(s).dodgeCost ?? TUNING.player.roll.staminaCost;
+  return Math.max(1, (mealEffect(s).dodgeCost ?? TUNING.player.roll.staminaCost) + (gearPerk(s).dodgeCostDelta ?? 0));
 }
 
 export function staminaRegenMul(s: GameState): number {
-  return mealEffect(s).staminaRegenMul ?? 1;
+  return (mealEffect(s).staminaRegenMul ?? 1) * (gearPerk(s).staminaRegenMul ?? 1);
+}
+
+export function rollIframe(s: GameState): number {
+  return TUNING.player.roll.iframe + (gearPerk(s).rollIframeBonus ?? 0);
+}
+
+export function walkSpeed(s: GameState): number {
+  return TUNING.player.walkSpeed * (gearPerk(s).walkSpeedMul ?? 1);
 }
 
 // ----- armor -----
@@ -55,6 +65,42 @@ function armorSum(s: GameState, stat: 'defense' | 'maxHp' | 'stamina'): number {
     if (id) n += ARMOR[id][stat];
   }
   return n;
+}
+
+/** Perks switched on by the worn armor: each complete head + body set, plus single-piece perks. */
+export function activePerks(s: GameState): PerkId[] {
+  const out: PerkId[] = [];
+  const head = s.armor.head ? ARMOR[s.armor.head] : null;
+  const body = s.armor.body ? ARMOR[s.armor.body] : null;
+  if (head?.set && head.set === body?.set) out.push(head.set);
+  for (const slot of ARMOR_SLOTS) {
+    const id = s.armor[slot];
+    const perk = id ? ARMOR[id].perk : null;
+    if (perk && !out.includes(perk)) out.push(perk);
+  }
+  return out;
+}
+
+/** All active perks folded into one: multipliers multiply, flags OR, additive fields add. */
+export function gearPerk(s: GameState): ArmorPerk {
+  const out: ArmorPerk = {};
+  const mul = (a: number | undefined, b: number | undefined): number | undefined => (b === undefined ? a : (a ?? 1) * b);
+  const add = (a: number | undefined, b: number | undefined): number | undefined => (b === undefined ? a : (a ?? 0) + b);
+  for (const id of activePerks(s)) {
+    const k = ARMOR_PERKS[id];
+    out.staminaRegenMul = mul(out.staminaRegenMul, k.staminaRegenMul);
+    out.dashDamageMul = mul(out.dashDamageMul, k.dashDamageMul);
+    out.lowHpAttackMul = mul(out.lowHpAttackMul, k.lowHpAttackMul);
+    out.tailDamageMul = mul(out.tailDamageMul, k.tailDamageMul);
+    out.stunMul = mul(out.stunMul, k.stunMul);
+    out.partDamageMul = mul(out.partDamageMul, k.partDamageMul);
+    out.walkSpeedMul = mul(out.walkSpeedMul, k.walkSpeedMul);
+    out.rollIframeBonus = add(out.rollIframeBonus, k.rollIframeBonus);
+    out.dodgeCostDelta = add(out.dodgeCostDelta, k.dodgeCostDelta);
+    if (k.noKnockback) out.noKnockback = true;
+    if (k.castSuperArmor) out.castSuperArmor = true;
+  }
+  return out;
 }
 
 export function defenseOf(s: GameState): number {

@@ -4,7 +4,7 @@ import { chooseTarget, findMonster, hitMonster, reachOf } from './combat';
 import type { Vec2 } from './events';
 import { moveBody } from './collision';
 import { harvest, isRipe, plotReach } from './farm';
-import { give, dodgeCost, maxHpFor, maxStaminaFor, staminaRegenMul } from './inventory';
+import { give, dodgeCost, maxHpFor, maxStaminaFor, rollIframe, staminaRegenMul, walkSpeed } from './inventory';
 import { inVillagePx, SPAWN, T, zoneAtPx } from './mapgen';
 import { findPath } from './pathfinding';
 import { clearShot, fireShot } from './shots';
@@ -96,7 +96,7 @@ export function dodge(s: GameState, move: Vec2 | null): boolean {
   p.rdx = dir.x / d;
   p.rdy = dir.y / d;
   p.roll = P.roll.duration;
-  p.rollIF = P.roll.iframe;
+  p.rollIF = rollIframe(s);
   p.dodgeCd = P.roll.cooldown;
   p.st -= cost;
   p.stDelay = P.staminaDelay;
@@ -108,7 +108,7 @@ export function dodge(s: GameState, move: Vec2 | null): boolean {
 
 export function stepMove(s: GameState, ux: number, uy: number, dt: number): void {
   const p = s.player;
-  const sp = P.walkSpeed * dt;
+  const sp = walkSpeed(s) * dt;
   moveBody(s.map, p, ux * sp, uy * sp, P.radius);
   if (Math.abs(ux) > 0.15) p.face = ux > 0 ? 1 : -1;
   p.fx = ux;

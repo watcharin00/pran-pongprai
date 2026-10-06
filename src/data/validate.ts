@@ -4,6 +4,8 @@
 // Every loader here takes `unknown`, checks it, and returns the typed value.
 import type {
   ArmorDef,
+  ArmorPerk,
+  PerkId,
   ArmorId,
   AttackDef,
   CarveDef,
@@ -204,6 +206,8 @@ export function loadMonsters(v: unknown, materials: readonly string[]): Record<s
       carve,
       bonus: itemBag(m.bonus, `${p}.bonus`, materials, 1),
       rare: itemBag(m.rare, `${p}.rare`, materials, 1),
+      // the type itself is checked against weapons.json in data/index.ts (loaded after monsters)
+      weakTo: optional(m, 'weakTo', (x) => str(x, `${p}.weakTo`) as WeaponType) ?? null,
       attacks,
     };
   }
@@ -309,20 +313,56 @@ export function loadSkills(v: unknown): SkillsData {
   return out as SkillsData;
 }
 
-export function loadArmor(v: unknown, materials: readonly string[]): Record<ArmorId, ArmorDef> {
+const PERK_NUMBERS = ['staminaRegenMul', 'dashDamageMul', 'lowHpAttackMul', 'tailDamageMul', 'stunMul', 'partDamageMul', 'walkSpeedMul'] as const;
+
+export function loadArmorPerks(v: unknown): Record<PerkId, ArmorPerk> {
+  const o = obj(obj(v, 'armor').perks, 'armor.perks');
+  const out: Record<string, ArmorPerk> = {};
+  for (const [k, raw] of Object.entries(o)) {
+    const p = `armor.perks.${k}`;
+    const d = obj(raw, p);
+    const perk: ArmorPerk = {};
+    for (const [field, val] of Object.entries(d)) {
+      const fp = `${p}.${field}`;
+      if ((PERK_NUMBERS as readonly string[]).includes(field)) perk[field as (typeof PERK_NUMBERS)[number]] = num(val, fp, 0.1, 3);
+      else if (field === 'noKnockback' || field === 'castSuperArmor') perk[field] = bool(val, fp);
+      else if (field === 'rollIframeBonus') perk.rollIframeBonus = num(val, fp, 0, 0.3);
+      else if (field === 'dodgeCostDelta') perk.dodgeCostDelta = num(val, fp, -15, 15);
+      else throw new DataError(fp, 'unknown perk field');
+    }
+    if (Object.keys(perk).length === 0) throw new DataError(p, 'needs at least one effect');
+    out[k] = perk;
+  }
+  return out as Record<PerkId, ArmorPerk>;
+}
+
+export function loadArmor(v: unknown, materials: readonly string[], perks: readonly string[]): Record<ArmorId, ArmorDef> {
   const o = obj(obj(v, 'armor').armor, 'armor.armor');
   const out: Record<string, ArmorDef> = {};
+  const setSlots = new Map<string, string[]>();
   for (const [k, raw] of Object.entries(o)) {
     const p = `armor.armor.${k}`;
     const a = obj(raw, p);
+    const slot = oneOf(a.slot, `${p}.slot`, ARMOR_SLOTS);
+    const set = optional(a, 'set', (x) => oneOf(x, `${p}.set`, perks as readonly PerkId[])) ?? null;
+    if (set) {
+      if (slot === 'charm') throw new DataError(`${p}.set`, 'sets are head + body pieces');
+      setSlots.set(set, [...(setSlots.get(set) ?? []), slot]);
+    }
     out[k] = {
-      slot: oneOf(a.slot, `${p}.slot`, ARMOR_SLOTS),
+      slot,
       defense: num(a.defense, `${p}.defense`, 0),
       maxHp: num(a.maxHp, `${p}.maxHp`, 0),
       stamina: num(a.stamina, `${p}.stamina`, 0),
       color: color(a.color, `${p}.color`),
+      set,
+      perk: optional(a, 'perk', (x) => oneOf(x, `${p}.perk`, perks as readonly PerkId[])) ?? null,
       recipe: itemBag(a.recipe, `${p}.recipe`, materials),
     };
+  }
+  // a set needs exactly one head and one body piece, or its bonus could never (or too easily) turn on
+  for (const [set, slots] of setSlots) {
+    if (slots.length !== 2 || !slots.includes('head') || !slots.includes('body')) throw new DataError(`armor set ${set}`, 'needs exactly one head and one body piece');
   }
   return out as Record<ArmorId, ArmorDef>;
 }

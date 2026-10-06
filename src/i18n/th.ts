@@ -10,6 +10,7 @@ import type {
   MonsterId,
   NpcId,
   PartId,
+  PerkId,
   SkillId,
   WeaponId,
   WeaponType,
@@ -216,6 +217,20 @@ export const armor = {
   tigereyecharm: { name: 'เครื่องรางตาเสือ', desc: 'ตาเสือเรืองแสงสีเขียว เพิ่มทุกอย่าง' },
 } satisfies Record<ArmorId, { name: string; desc: string }>;
 
+/** Armor perks: set bonuses (head + body of one set) and single-piece bonuses. */
+export const perks = {
+  pack: { name: 'ฝูงล่า', desc: 'ความอึดฟื้นเร็วขึ้น 15%' },
+  thickhide: { name: 'หนังหนา', desc: 'ไม่กระเด็นเมื่อโดนตี ท่าพุ่งชนดาเมจ −15%' },
+  emberheart: { name: 'ใจเพลิง', desc: 'HP ต่ำกว่าครึ่ง พลังโจมตี +15%' },
+  stalker: { name: 'ย่องหลัง', desc: 'ตีโดนหางแรงขึ้น 20%' },
+  scaleguard: { name: 'เกล็ดหนา', desc: 'โดนตีระหว่างง้างท่า ท่าไม่ถูกยกเลิก' },
+  bearmight: { name: 'กำลังหมี', desc: 'ทำให้มอนมึนเร็วขึ้น 30%' },
+  forestking: { name: 'พญาไพร', desc: 'ทำลายชิ้นส่วนเร็วขึ้น 20%' },
+  mastery: { name: 'ชำนาญ', desc: 'กลิ้งหลบอมตะนานขึ้น 0.06 วิ' },
+  nimble: { name: 'คล่องแคล่ว', desc: 'กลิ้งใช้ความอึดน้อยลง 3' },
+  slither: { name: 'ลื่นไหล', desc: 'เดินเร็วขึ้น 5%' },
+} satisfies Record<PerkId, { name: string; desc: string }>;
+
 export const skills = {
   whirl: { name: 'หมุนฟัน', desc: 'ฟันรอบตัว โดนทุกตัวที่อยู่ใกล้ (×1.5)' },
   dash: { name: 'พุ่งแทง', desc: 'พุ่งทะลุไปข้างหน้า อมตะระหว่างพุ่ง (×2)' },
@@ -366,6 +381,12 @@ export const menu = {
   armorMeta: (slot: string, def: number, hp: number, st: number) =>
     [slot, def ? `ป้องกัน ${def}` : '', hp ? `HP +${hp}` : '', st ? `ความอึด +${st}` : ''].filter(Boolean).join(' · '),
   reduction: (pct: number) => `ลดดาเมจ ${pct}%`,
+  setBonus: (name: string) => `โบนัสชุด ${name}`,
+  setHint: 'สวมหมวกกับเสื้อชุดเดียวกัน',
+  pieceBonus: (name: string) => `ติดตัว ${name}`,
+  perkOn: 'ใช้งานอยู่',
+  activePerks: 'โบนัสเกราะ',
+  strongVs: (names: string) => `ได้เปรียบ: ${names}`,
   unequip: 'ถอด',
   wear: 'สวมใส่',
   craftArmor: 'ตีชุดเกราะ',
@@ -446,6 +467,7 @@ export const menu = {
     size: 'ขนาด',
     sizes: { small: 'เล็ก', medium: 'กลาง', large: 'ใหญ่' },
     rage: 'โกรธเมื่อเลือดเหลือครึ่ง',
+    weakNote: (type: string) => `แพ้${type}: ดาเมจจาก${type}แรงขึ้น 30%`,
     parts: 'ชิ้นส่วน',
     partHow: { head: 'ตีจากด้านหน้า', tail: 'อ้อมไปตีด้านหลัง' },
     attacks: 'ท่าโจมตี',

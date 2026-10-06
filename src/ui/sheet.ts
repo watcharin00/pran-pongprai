@@ -1,7 +1,7 @@
 // The single menu: bottom sheet on phones, side drawer on wide screens.
 // The game pauses while it is open.
 import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
-import { ARMOR_SLOTS, MEDALS, type AreaId, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type WeaponId } from '../data/types';
+import { ARMOR_SLOTS, MEDALS, type AreaId, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS } from '../core/areas';
@@ -11,7 +11,7 @@ import { hasMedal, medalCount } from '../core/medals';
 import { requestText, rewardText } from './talk';
 import { fastTravelHome, inFight } from '../core/travel';
 import { areaThumbUrl } from '../art/mapThumb';
-import { activeMeal, attackMul, upgradeCost, upgradeWeapon, weaponLevel, weaponPower, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
+import { activeMeal, activePerks, attackMul, upgradeCost, upgradeWeapon, weaponLevel, weaponPower, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
 import type { GameState } from '../core/state';
 import { armorIconUrl, armorSlotIconUrl, materialIconUrl, mealIconUrl, monsterIconUrl, monsterPortrait, playerIconUrl, potionIconUrl, weaponIconUrl } from '../art/icons';
 import * as th from '../i18n/th';
@@ -39,6 +39,25 @@ interface BagItem {
 }
 
 const img = (src: string, cls = 'ico'): string => `<img class="${cls}" src="${src}" alt="" draggable="false">`;
+
+/** Set / single-piece bonus lines for an armor piece, marked when currently active. */
+function perkLines(s: GameState, id: ArmorId): string {
+  const a = ARMOR[id];
+  const on = activePerks(s);
+  const M = th.menu;
+  const line = (perk: PerkId, label: string, hint: string): string => {
+    const active = on.includes(perk) && s.armor[a.slot] === id;
+    return `<p class="perk${active ? ' on' : ''}"><b>${label}</b> ${th.perks[perk].desc}${active ? ` · ${M.perkOn}` : hint ? ` · ${hint}` : ''}</p>`;
+  };
+  return (a.set ? line(a.set, M.setBonus(th.perks[a.set].name), M.setHint) : '') + (a.perk ? line(a.perk, M.pieceBonus(th.perks[a.perk].name), '') : '');
+}
+
+/** "Strong against" line for a weapon: monsters weak to its type that the player has already hunted. */
+function strongVs(s: GameState, id: WeaponId): string {
+  const type = WEAPONS[id].type;
+  const names = MONSTER_IDS.filter((k) => MONSTERS[k].weakTo === type && (s.kills[k] ?? 0) > 0).map((k) => th.monsters[k].name);
+  return names.length ? `<p class="perk">${th.menu.strongVs(names.join(' '))}</p>` : '';
+}
 
 export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm' | 'book' | 'map';
 export const TABS: readonly Tab[] = ['bag', 'forge', 'kitchen', 'farm', 'book', 'map'];
@@ -244,6 +263,8 @@ export class Sheet {
     const atk = Math.round(weaponPower(s, p.weapon) * attackMul(s));
     const def = defenseOf(s);
     h += `<div class="stats"><div><span>${M.stats.attack}</span><b>${atk}</b></div><div title="${M.reduction(Math.round(damageReduction(s) * 100))}"><span>${M.stats.defense}</span><b>${def}</b></div><div><span>${M.stats.hp}</span><b>${p.maxHp}</b></div><div><span>${M.stats.stamina}</span><b>${p.maxSt}</b></div></div>`;
+    const perksOn = activePerks(s);
+    if (perksOn.length) h += `<p class="perk on"><b>${M.activePerks}</b> ${perksOn.map((k) => th.perks[k].name).join(' · ')}</p>`;
 
     // filters, detail card, item grid
     h += `</div><div class="bagR"><div class="filters">${FILTERS.map((f) => `<button type="button" class="chipbtn${this.filter === f ? ' on' : ''}" data-filter="${f}">${M.filters[f]}</button>`).join('')}</div>`;
@@ -323,14 +344,14 @@ export class Sheet {
         s.player.weapon === id
           ? `<button type="button" class="btn" disabled>${M.equipped}</button>`
           : `<button type="button" class="btn" data-equip="${id}" ${s.player.inVillage ? '' : 'disabled'}>${M.equip}</button>`;
-      return `<div class="detail">${img(weaponIconUrl(id), 'ico lg')}<div><b>${th.weaponName(id, weaponLevel(s, id))}</b><p class="meta">${M.weaponStats(th.weaponTypes[w.type], Math.round(weaponPower(s, id)), speed)} · ${th.weapons[id].desc}</p>${btn}</div></div>`;
+      return `<div class="detail">${img(weaponIconUrl(id), 'ico lg')}<div><b>${th.weaponName(id, weaponLevel(s, id))}</b><p class="meta">${M.weaponStats(th.weaponTypes[w.type], Math.round(weaponPower(s, id)), speed)} · ${th.weapons[id].desc}</p>${strongVs(s, id)}${btn}</div></div>`;
     }
     if (key.startsWith('a:')) {
       const id = key.slice(2) as ArmorId;
       const a = ARMOR[id];
       const on = s.armor[a.slot] === id;
       const btn = `<button type="button" class="btn" ${on ? `data-unequip="${id}"` : `data-wear="${id}"`} ${s.player.inVillage ? '' : 'disabled'}>${on ? M.unequip : M.wear}</button>`;
-      return `<div class="detail">${img(armorIconUrl(id), 'ico lg')}<div><b>${th.armor[id].name}</b><p class="meta">${M.armorMeta(M.slots[a.slot], a.defense, a.maxHp, a.stamina)} · ${th.armor[id].desc}</p>${btn}</div></div>`;
+      return `<div class="detail">${img(armorIconUrl(id), 'ico lg')}<div><b>${th.armor[id].name}</b><p class="meta">${M.armorMeta(M.slots[a.slot], a.defense, a.maxHp, a.stamina)} · ${th.armor[id].desc}</p>${perkLines(s, id)}${btn}</div></div>`;
     }
     const id = key.slice(2) as MaterialId;
     const m = MATERIALS[id];
@@ -360,7 +381,7 @@ export class Sheet {
           ? `<div class="req">${this.req(s, cost)}</div><button type="button" class="primary" data-upgrade="${k}" ${iv && canAfford(s.inv, cost) ? '' : 'disabled'}>${th.menu.upgrade(lv + 1)}</button>`
           : `<p class="note ok">${th.menu.maxLevel}</p>`;
       }
-      h += `<div class="rc${eq ? ' eq' : ''}"><h3>${img(weaponIconUrl(k))}${th.weaponName(k, weaponLevel(s, k))}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], Math.round(weaponPower(s, k)), speed, th.weapons[k].desc)}</div>${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}<div class="rcbtns">${btn}</div>${up}</div>`;
+      h += `<div class="rc${eq ? ' eq' : ''}"><h3>${img(weaponIconUrl(k))}${th.weaponName(k, weaponLevel(s, k))}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], Math.round(weaponPower(s, k)), speed, th.weapons[k].desc)}</div>${strongVs(s, k)}${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}<div class="rcbtns">${btn}</div>${up}</div>`;
     }
     h += `</div><h3 class="sec">${th.menu.armorTitle}</h3><div class="recipes">`;
     for (const id of ARMOR_IDS) {
@@ -371,7 +392,7 @@ export class Sheet {
       if (on) btn = `<button type="button" data-unequip="${id}" ${iv ? '' : 'disabled'}>${th.menu.unequip}</button>`;
       else if (own) btn = `<button type="button" data-wear="${id}" ${iv ? '' : 'disabled'}>${th.menu.wear}</button>`;
       else btn = `<button type="button" class="primary" data-armorcraft="${id}" ${iv && canAfford(s.inv, a.recipe) ? '' : 'disabled'}>${th.menu.craftArmor}</button>`;
-      h += `<div class="rc${on ? ' eq' : ''}"><h3>${img(armorIconUrl(id))}${th.armor[id].name}</h3><div class="meta">${th.menu.armorMeta(th.menu.slots[a.slot], a.defense, a.maxHp, a.stamina)}</div>${own ? '' : `<div class="req">${this.req(s, a.recipe)}</div>`}${btn}</div>`;
+      h += `<div class="rc${on ? ' eq' : ''}"><h3>${img(armorIconUrl(id))}${th.armor[id].name}</h3><div class="meta">${th.menu.armorMeta(th.menu.slots[a.slot], a.defense, a.maxHp, a.stamina)}</div>${perkLines(s, id)}${own ? '' : `<div class="req">${this.req(s, a.recipe)}</div>`}${btn}</div>`;
     }
     h += `</div><h3 class="sec">${th.menu.potionName}</h3><div class="recipes">`;
     const P = TUNING.player.potion;
@@ -528,6 +549,7 @@ export class Sheet {
         .join('');
     let h = `<div class="bentry"><div class="bhead"><img class="mport" src="${p.url}" alt="" style="width:${p.w * sc}px"><div><b>${t.name}</b><p class="meta">${B.hunted(kills)} · ${B.where} ${where}</p></div></div>`;
     h += `<div class="stats"><div><span>${B.hp}</span><b>${def.hp}</b></div><div><span>${B.size}</span><b class="txt">${size}</b></div><div><span>${B.huntTime}</span><b>${fmtTime(def.huntTime)}</b></div></div>`;
+    if (def.weakTo) h += `<p class="note ok">${B.weakNote(th.weaponTypes[def.weakTo])}</p>`;
     if (def.rage) h += `<p class="note warn">${B.rage}</p>`;
 
     const parts = (Object.entries(def.parts) as [PartId, NonNullable<(typeof def.parts)[PartId]>][]).map(
