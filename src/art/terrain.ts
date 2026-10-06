@@ -100,7 +100,7 @@ let EDGE_LINE = '#3f7a2c';
 const SEA_ACCENT = ['#3fc3b2', '#6ad8c6', '#e8fff8', '#8fe6d4'] as const;
 let WATER_ACCENT: readonly [string, string, string, string] = SEA_ACCENT;
 
-const isGrassTile = (t: number): boolean => t === Tile.GRASS || t === Tile.FLOWER || t === Tile.TREE || t === Tile.BUSH || t === Tile.WALL || t === Tile.FENCE || t === Tile.MESA;
+const isGrassTile = (t: number): boolean => t === Tile.GRASS || t === Tile.FLOWER || t === Tile.TREE || t === Tile.BUSH || t === Tile.WALL || t === Tile.FENCE;
 const pick = (a: readonly string[], v: number): string => a[Math.max(0, Math.min(a.length - 1, Math.floor(v * a.length)))] ?? a[0] ?? '#ff00ff';
 
 export interface TerrainArt {
@@ -167,7 +167,7 @@ export function buildNorthFill(map: WorldMap): { ground: HTMLCanvasElement; cano
     riverX[y] = map.riverX[Math.max(0, y - r)] ?? 0;
     for (let x = 0; x < MW; x++) {
       const edge = tileAt(map, x, 0);
-      const open = edge !== Tile.TREE && edge !== Tile.WALL && edge !== Tile.BUSH && edge !== Tile.ROCK && edge !== Tile.MESA;
+      const open = edge !== Tile.TREE && edge !== Tile.WALL && edge !== Tile.BUSH && edge !== Tile.ROCK;
       tiles[y * MW + x] = y < r ? (open ? edge : Tile.TREE) : tileAt(map, x, y - r);
     }
   }
@@ -185,7 +185,7 @@ export function buildNorthFill(map: WorldMap): { ground: HTMLCanvasElement; cano
 export function buildSouthFill(map: WorldMap): { ground: HTMLCanvasElement; canopy: HTMLCanvasElement } {
   const r = EDGE_FILL_ROWS;
   const tiles = new Uint8Array(MW * MH);
-  const blocking = (t: number): boolean => t === Tile.TREE || t === Tile.WALL || t === Tile.BUSH || t === Tile.ROCK || t === Tile.MESA;
+  const blocking = (t: number): boolean => t === Tile.TREE || t === Tile.WALL || t === Tile.BUSH || t === Tile.ROCK;
   for (let x = 0; x < MW; x++) {
     const edge = tileAt(map, x, MH - 1);
     tiles[x] = blocking(edge) ? Tile.GRASS : edge;
@@ -194,60 +194,6 @@ export function buildSouthFill(map: WorldMap): { ground: HTMLCanvasElement; cano
   const strip: WorldMap = { ...map, exits: [], tiles, riverX: new Int16Array(MH).fill(map.riverX[MH - 1] ?? -100), reach: new Uint8Array(MW * MH), bridgeEast: -10, bridgeNorth: -10 };
   const { mb, cb } = paintBase(strip, r + 1);
   return { ground: toCanvas(mb), canopy: toCanvas(cb) };
-}
-
-/** Height (px) of the grassy top band on a mesa's front tiles, above the cliff face. */
-const MESA_TOP = 5;
-
-/**
- * One pixel of a mesa tile, SNES style: a lighter grass top with a dark outline and a bright
- * rim lit from the top-left; on tiles whose south neighbour is low ground, a layered limestone
- * cliff face with a bright lip, strata lines and a dark foot.
- */
-function mesaPixel(map: WorldMap, tx: number, ty: number, lx: number, ly: number, px: number, py: number, n: number): string {
-  const isM = (x: number, y: number): boolean => tileAt(map, x, y) === Tile.MESA;
-  const front = !isM(tx, ty + 1);
-  const left = !isM(tx - 1, ty);
-  const right = !isM(tx + 1, ty);
-  const up = !isM(tx, ty - 1);
-  const OUT = '#2c3a1e';
-  const ground = pick(GRASS, n);
-  // rounded outer corners (the cut-off pixels show the ground)
-  const cornerTL = up && left && lx + ly < 3;
-  const cornerTR = up && right && 15 - lx + ly < 3;
-  const cornerBL = front && left && lx + (15 - ly) < 2;
-  const cornerBR = front && right && 15 - lx + (15 - ly) < 2;
-  if (cornerTL || cornerTR || cornerBL || cornerBR) return ground;
-  if ((up && left && lx + ly === 3) || (up && right && 15 - lx + ly === 3)) return OUT;
-  // cliff face on the front tiles
-  if (front && ly >= MESA_TOP) {
-    if (ly === 15) return '#3e3a2c';
-    if ((left && lx === 0) || (right && lx === 15)) return '#3e3a2c';
-    if (ly === MESA_TOP) return '#f0ead6'; // lip catching the light
-    const band = (ly - MESA_TOP) % 4;
-    const crack = (px + (hash(tx, Math.floor(ly / 4)) * 9) | 0) % 9 === 0;
-    if (crack && ly < 14) return '#8a806a';
-    const base = band === 0 ? '#9a8f76' : band === 1 ? '#d6ccb2' : band === 2 ? '#c4b99e' : '#b0a68c';
-    // the left side of the face is lit, the right side in shade
-    if (left && lx < 3) return '#e2d9c0';
-    if (right && lx > 12) return '#8f846c';
-    return ly > 12 ? '#9a8f76' : base;
-  }
-  // grassy top: lighter than the ground around it, so it reads as higher
-  if (up && ly === 0) return OUT;
-  if (left && lx === 0) return OUT;
-  if (right && lx === 15) return OUT;
-  if (front && ly === MESA_TOP - 1) return '#c8e890';
-  if ((up && ly === 1) || (left && lx === 1)) return '#d4f09a';
-  if (right && lx === 14) return pick(GRASS, n * 0.6);
-  return lighten(pick(GRASS, 0.45 + n * 0.55), 1.13);
-}
-
-/** Brightens a #rrggbb colour (clamped). */
-function lighten(hex: string, k: number): string {
-  const [r, g, b] = rgb(hex);
-  const c = (v: number): string => Math.min(255, Math.round(v * k)).toString(16).padStart(2, '0');
-  return `#${c(r)}${c(g)}${c(b)}`;
 }
 
 function sandNeighbours(map: WorldMap, tx: number, ty: number): number {
@@ -276,9 +222,7 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
       const t = tileAt(map, tx, ty);
       const n = vnoise(px, py, 20) * 0.8 + hash(px, py) * 0.3 - 0.08;
       let c: string | null = null;
-      if (t === Tile.MESA) {
-        c = mesaPixel(map, tx, ty, lx, ly, px, py, n);
-      } else if (t === Tile.WATER) {
+      if (t === Tile.WATER) {
         const up = !isWater(tx, ty - 1);
         const dn = !isWater(tx, ty + 1);
         const lf = !isWater(tx - 1, ty);
@@ -353,14 +297,7 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
           } else c = pick(pal, n);
         }
       }
-      let [r, g, b] = rgb(c);
-      // a mesa casts a short shadow onto the ground just below its cliff
-      if (t !== Tile.MESA && ly < 5 && tileAt(map, tx, ty - 1) === Tile.MESA) {
-        const k = ly < 2 ? 0.66 : ly < 4 ? 0.78 : 0.9;
-        r *= k;
-        g *= k;
-        b *= k;
-      }
+      const [r, g, b] = rgb(c);
       const i = (py * mb.w + px) * 4;
       d[i] = r;
       d[i + 1] = g;

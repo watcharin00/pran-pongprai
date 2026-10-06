@@ -28,18 +28,16 @@ export const Tile = {
   PADDY: 15,
   /** fish pond: solid like water, but arrows fly over it */
   POND: 16,
-  /** raised mesa / knoll: a block of high ground with a cliff face; solid, stops arrows */
-  MESA: 17,
 } as const;
 export type TileId = (typeof Tile)[keyof typeof Tile];
 
-const BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.BUSH, Tile.WATER, Tile.HOUSE, Tile.ROCK, Tile.CLIFF, Tile.FOUNTAIN, Tile.FENCE, Tile.POND, Tile.MESA]);
+const BLOCKING = new Set<number>([Tile.WALL, Tile.TREE, Tile.BUSH, Tile.WATER, Tile.HOUSE, Tile.ROCK, Tile.CLIFF, Tile.FOUNTAIN, Tile.FENCE, Tile.POND]);
 /**
  * Tiles that stop arrows: buildings, rocks and cliffs. Shots fly over trees (the forest is
  * dense enough that blocking on trees forced players to hunt for firing angles), water,
  * bushes and fences.
  */
-const SHOT_BLOCKING = new Set<number>([Tile.WALL, Tile.HOUSE, Tile.ROCK, Tile.CLIFF, Tile.MESA]);
+const SHOT_BLOCKING = new Set<number>([Tile.WALL, Tile.HOUSE, Tile.ROCK, Tile.CLIFF]);
 
 export interface Rect {
   x: number;

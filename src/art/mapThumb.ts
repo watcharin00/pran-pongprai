@@ -44,7 +44,6 @@ function tileColour(map: WorldMap, x: number, y: number, p: ThumbPalette): strin
   if (t === Tile.STONE || t === Tile.FOUNTAIN) return '#e6dfc8';
   if (t === Tile.SOIL || t === Tile.FENCE) return '#9a6a3c';
   if (t === Tile.CLIFF) return '#a5622e';
-  if (t === Tile.MESA) return '#c8bfa6';
   if (inCanyon(map, x, y)) return '#e8be80';
   if (t === Tile.SAND) return p.path;
   if (woods(map, x, y)) return p.woods;

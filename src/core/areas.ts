@@ -16,8 +16,6 @@ interface AreaSpec {
   zone: ZoneId;
   /** exits: edge, first tile along that edge, width in tiles, destination */
   exits: readonly { edge: Edge; at: number; width: number; to: AreaId }[];
-  /** how many raised mesas (blocks of high ground with a cliff face) to place */
-  mesas?: number;
 }
 
 /** Layout of the world (see CLAUDE.md "โลก"). */
@@ -27,7 +25,7 @@ const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   peat: { seed: 7707, biome: 'peat', zone: 'peat', exits: [{ edge: 'e', at: 22, width: 3, to: 'deepwild' }] },
   swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }, { edge: 's', at: 30, width: 3, to: 'mangrove' }] },
   mangrove: { seed: 7606, biome: 'mangrove', zone: 'mangrove', exits: [{ edge: 'n', at: 30, width: 3, to: 'swamp' }] },
-  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }, { edge: 'e', at: 22, width: 3, to: 'savanna' }], mesas: 6 },
+  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }, { edge: 'e', at: 22, width: 3, to: 'savanna' }] },
   savanna: { seed: 7808, biome: 'savanna', zone: 'savanna', exits: [{ edge: 'w', at: 22, width: 3, to: 'limestone' }] },
   cave: { seed: 7505, biome: 'cave', zone: 'cave', exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
 };
@@ -131,70 +129,6 @@ function homeArea(): WorldMap {
   return { ...partial, reach, forestCells, area: 'home', zone: 'forest', biome: 'home', exits: HOME_EXITS.map(toExit) };
 }
 
-/**
- * Raised mesas: rounded blocks of high ground, kept off the exits and the central clearing.
- * Seeded like the rest of the area. Trails cut through them afterwards (see tidyMesas).
- */
-function stampMesas(tiles: Uint8Array, spec: AreaSpec, rnd: () => number): void {
-  const exits = spec.exits.map(toExit);
-  const placed: [number, number][] = [];
-  for (let tries = 0; tries < 200 && placed.length < (spec.mesas ?? 0); tries++) {
-    const cx = 7 + Math.floor(rnd() * (MW - 14));
-    const cy = 6 + Math.floor(rnd() * (MH - 12));
-    const rx = 3 + rnd() * 2.5;
-    const ry = 2 + rnd() * 1.5;
-    if (exits.some((e) => Math.hypot(e.arrive.x / T - cx, e.arrive.y / T - cy) < 10)) continue;
-    if (Math.abs(cx - 31) < 9 && Math.abs(cy - 23) < 7) continue;
-    if (placed.some(([x, y]) => Math.abs(x - cx) < 11 && Math.abs(y - cy) < 8)) continue;
-    placed.push([cx, cy]);
-    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
-      for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
-        if (x < 4 || y < 4 || x >= MW - 4 || y >= MH - 4) continue;
-        // a wobbly ellipse so the outline isn't a perfect oval
-        const q = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-        if (q > 1 + (rnd() - 0.5) * 0.35) continue;
-        const k = y * MW + x;
-        if (tiles[k] === Tile.WATER) continue;
-        tiles[k] = Tile.MESA;
-      }
-    }
-  }
-}
-
-/** Removes slivers left by trails (mesa tiles with fewer than three mesa neighbours) so every edge reads as a cliff. */
-function tidyMesas(tiles: Uint8Array): void {
-  for (let pass = 0; pass < 2; pass++) {
-    for (let y = 1; y < MH - 1; y++) {
-      for (let x = 1; x < MW - 1; x++) {
-        if (tiles[y * MW + x] !== Tile.MESA) continue;
-        let n = 0;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) if (tiles[(y + dy) * MW + x + dx] === Tile.MESA) n++;
-        if (n < 2) tiles[y * MW + x] = Tile.GRASS;
-      }
-    }
-  }
-  // drop small leftovers: a mesa needs some size to read as high ground
-  const seen = new Uint8Array(MW * MH);
-  for (let i = 0; i < tiles.length; i++) {
-    if (tiles[i] !== Tile.MESA || seen[i]) continue;
-    const comp: number[] = [];
-    const stack = [i];
-    seen[i] = 1;
-    while (stack.length) {
-      const k = stack.pop() as number;
-      comp.push(k);
-      for (const d of [1, -1, MW, -MW]) {
-        const j = k + d;
-        if (tiles[j] === Tile.MESA && !seen[j]) {
-          seen[j] = 1;
-          stack.push(j);
-        }
-      }
-    }
-    if (comp.length < 10) for (const k of comp) tiles[k] = Tile.GRASS;
-  }
-}
-
 /** Generic wild area: border wall, biome-specific obstacles, roads joining every exit at the centre. */
 function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
   const spec = SPECS[id];
@@ -272,9 +206,7 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
 
   // deer trails so dense tree cover never walls the player in
   // (in the peat swamp the trails also run as earth causeways across the blackwater pools)
-  if (spec.mesas) stampMesas(tiles, spec, rnd);
-  // trails may cut a pass through a mesa, so the area stays connected
-  const clearable = new Set<number>([Tile.TREE, Tile.BUSH, Tile.ROCK, Tile.MESA]);
+  const clearable = new Set<number>([Tile.TREE, Tile.BUSH, Tile.ROCK]);
   if (spec.biome === 'peat') clearable.add(Tile.WATER);
   openTrails(tiles, spec.seed, { clearable });
 
@@ -296,8 +228,6 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
   }
   // an open clearing in the middle so every area has room to fight
   for (let y = centre[1] - 3; y <= centre[1] + 3; y++) for (let x = centre[0] - 4; x <= centre[0] + 4; x++) if (get(x, y) !== Tile.SAND) set(x, y, Tile.GRASS);
-  // roads and the clearing may have cut through a mesa: tidy what is left
-  if (spec.mesas) tidyMesas(tiles);
 
   const riverX = new Int16Array(MH).fill(-100);
   const exits = spec.exits.map(toExit);
