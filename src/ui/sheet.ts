@@ -102,6 +102,13 @@ const AREA_POS: Record<AreaId, [number, number]> = {
 
 /** Goal step (1-based) whose hunt happens in each area, shown instead of a level. */
 const AREA_STEP: Record<AreaId, number> = { home: 1, bamboo: 5, swamp: 6, limestone: 7, deepwild: 8, cave: 9, mangrove: 10, peat: 11, savanna: 12 };
+/** Where the current goal is hunted: the area whose step range holds the goal index (null after the last area). */
+function goalArea(goal: number): AreaId | null {
+  if (goal >= Math.max(...Object.values(AREA_STEP))) return null;
+  let best: AreaId = 'home';
+  for (const id of AREA_IDS) if (AREA_STEP[id] - 1 <= goal && AREA_STEP[id] >= AREA_STEP[best]) best = id;
+  return best;
+}
 
 /** Connections drawn between world-map nodes (the area exits). */
 const WORLD_LINKS: readonly [AreaId, AreaId][] = [
@@ -781,11 +788,12 @@ export class Sheet {
       const known = s.visited.has(a) && s.visited.has(b);
       return `<line x1="${cx(a)}" y1="${cy(a)}" x2="${cx(b)}" y2="${cy(b)}" class="${known ? 'known' : ''}"/>`;
     }).join('');
+    const target = goalArea(goalIndex(s));
     const regions = AREA_IDS.map((id) => {
       const seen = s.visited.has(id);
       const here = s.area === id;
       const pic = seen ? `<img src="${areaThumbUrl(areaMap(id))}" alt="">` : `<span class="wfog">${ICONS.lock}</span>`;
-      return `<button type="button" class="wreg${seen ? '' : ' locked'}${here ? ' here' : ''}${sel === id ? ' sel' : ''}" style="left:${cx(id)}%;top:${cy(id)}%" data-area="${id}" aria-label="${th.areas[id]}"><span class="wisle">${pic}</span><span class="wlabel"><b>${th.areas[id]}</b><small>${M.step(AREA_STEP[id])}</small></span>${here ? `<span class="wpin">${ICONS.mappin}</span>` : ''}</button>`;
+      return `<button type="button" class="wreg${seen ? '' : ' locked'}${here ? ' here' : ''}${sel === id ? ' sel' : ''}${target === id ? ' goal' : ''}" style="left:${cx(id)}%;top:${cy(id)}%" data-area="${id}" aria-label="${th.areas[id]}"><span class="wisle">${pic}</span><span class="wlabel"><b>${th.areas[id]}</b>${target === id ? `<small class="wgoal">${M.goalNow}</small>` : ''}</span>${here ? `<span class="wpin">${ICONS.mappin}</span>` : ''}</button>`;
     }).join('');
     const board = `<div class="wboard"><svg class="wlinks" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>${regions}<span class="wcompass">${ICONS.compass}</span></div>`;
     return `<div class="wmap">${board}${this.areaPanel(s, sel)}</div>`;
@@ -803,7 +811,9 @@ export class Sheet {
     h += `<p class="wdesc">${seen ? th.areaInfo[id] : M.lockedDesc}</p>`;
 
     const rows: string[] = [];
-    rows.push(`<li><span>${M.step(AREA_STEP[id])}</span><b>${id === 'home' ? M.start : th.goals[AREA_STEP[id] - 1]?.title ?? ''}</b></li>`);
+    const target = goalArea(goalIndex(s));
+    const goalTitle = target === id ? (th.goals[goalIndex(s)]?.title ?? '') : id === 'home' ? M.start : (th.goals[AREA_STEP[id] - 1]?.title ?? '');
+    rows.push(`<li class="${target === id ? 'now' : ''}"><span>${target === id ? M.goalNow : M.goal}</span><b>${goalTitle}</b></li>`);
     const kinds = MONSTER_IDS.filter((k) => MONSTERS[k].area === id);
     if (kinds.length) {
       const mons = kinds.map((k) => ((s.kills[k] ?? 0) > 0 ? img(monsterIconUrl(k), 'ico mon') : `<img class="ico mon unk" src="${monsterIconUrl(k)}" alt="">`)).join('');

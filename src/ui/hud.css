@@ -569,3 +569,10 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
   .bag2 .bagchar{grid-column:auto}
   .bag2 .fbody{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
 }
+/* the island the current goal is hunted on */
+.wreg.goal .wisle{box-shadow:0 0 0 3px var(--gold),0 0 0 7px rgba(255,209,102,.3),0 7px 0 rgba(0,0,0,.35);animation:wgoal 1.6s ease-in-out infinite}
+@keyframes wgoal{50%{box-shadow:0 0 0 3px var(--gold),0 0 16px 8px rgba(255,209,102,.45),0 7px 0 rgba(0,0,0,.35)}}
+.wlabel .wgoal{color:#3a2410;background:var(--gold);border-radius:6px;padding:0 6px;margin-top:1px;font:600 10px var(--display);white-space:nowrap}
+.wreg.goal .wlabel{border-color:var(--gold)}
+.winfo li.now span,.winfo li.now b{color:var(--gold)}
+@media (prefers-reduced-motion:reduce){.wreg.goal .wisle{animation:none}}
