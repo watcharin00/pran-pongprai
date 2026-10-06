@@ -66,15 +66,21 @@ export interface TerrainArt {
   lights: StaticLight[];
 }
 
-export function buildTerrain(map: WorldMap): TerrainArt {
+/** Ground, details, trees and signposts: everything except the village buildings. Paints the top `rows` rows. */
+function paintBase(map: WorldMap, rows = MH): { mb: PixelBuffer; cb: PixelBuffer; lights: StaticLight[] } {
   const lights: StaticLight[] = [];
-  const mb = createBuffer(MW * T, MH * T);
-  const cb = createBuffer(MW * T, MH * T);
+  const mb = createBuffer(MW * T, rows * T);
+  const cb = createBuffer(MW * T, rows * T);
   ({ grass: GRASS, dark: GRASS_DARK, sand: SAND, water: WATER } = PALETTES[map.biome]);
   paintGround(map, mb);
   paintDetails(map, mb, lights);
   paintTrees(map, mb, cb);
   for (const sg of signposts(map)) drawSignpost(mb, sg.x, sg.y, sg.arms.map((a) => a.edge));
+  return { mb, cb, lights };
+}
+
+export function buildTerrain(map: WorldMap): TerrainArt {
+  const { mb, cb, lights } = paintBase(map);
   if (map.area !== 'home') return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
   drawHouse(mb, SMITH, 'smith');
   drawHouse(mb, INN, 'inn');
@@ -97,6 +103,32 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
 }
 
+/** Rows of dense forest painted above the map's north edge (seen when the portrait camera overscrolls). */
+export const NORTH_FILL_ROWS = 12;
+
+/**
+ * Paints the strip above the map: a copy of the map shifted down by NORTH_FILL_ROWS with solid
+ * forest on top, so the edge row's tree crowns, shadows and grass borders join up seamlessly.
+ * Columns that are open at the edge (north exit road, river) carry on up through the forest.
+ * Only the top NORTH_FILL_ROWS rows are painted.
+ */
+export function buildNorthFill(map: WorldMap): { ground: HTMLCanvasElement; canopy: HTMLCanvasElement } {
+  const r = NORTH_FILL_ROWS;
+  const tiles = new Uint8Array(MW * MH);
+  const riverX = new Int16Array(MH);
+  for (let y = 0; y < MH; y++) {
+    riverX[y] = map.riverX[Math.max(0, y - r)] ?? 0;
+    for (let x = 0; x < MW; x++) {
+      const edge = tileAt(map, x, 0);
+      const open = edge !== Tile.TREE && edge !== Tile.WALL && edge !== Tile.BUSH && edge !== Tile.ROCK;
+      tiles[y * MW + x] = y < r ? (open ? edge : Tile.TREE) : tileAt(map, x, y - r);
+    }
+  }
+  const shifted: WorldMap = { ...map, exits: [], tiles, riverX, reach: new Uint8Array(MW * MH), bridgeEast: map.bridgeEast + r, bridgeNorth: map.bridgeNorth + r };
+  const { mb, cb } = paintBase(shifted, r);
+  return { ground: toCanvas(mb), canopy: toCanvas(cb) };
+}
+
 function sandNeighbours(map: WorldMap, tx: number, ty: number): number {
   let n = 0;
   for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) if (tileAt(map, tx + dx, ty + dy) === Tile.SAND) n++;
@@ -114,7 +146,7 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
   const bump = (k: number, s: number, o: number): number => 1 + Math.floor(hash((k >> 1) + o * 53, s * 7919 + o) * 3);
   const isGrassAt = (x: number, y: number): boolean => isGrassTile(tileAt(map, x, y));
 
-  for (let py = 0; py < MH * T; py++) {
+  for (let py = 0; py < mb.h; py++) {
     for (let px = 0; px < MW * T; px++) {
       const tx = px >> 4;
       const ty = py >> 4;
@@ -206,7 +238,7 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
 }
 
 function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): void {
-  for (let ty = 0; ty < MH; ty++) {
+  for (let ty = 0; ty < mb.h / T; ty++) {
     for (let tx = 0; tx < MW; tx++) {
       const t = tileAt(map, tx, ty);
       const X = tx * T;
@@ -361,7 +393,9 @@ function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): vo
 
 /** Trunks go on the ground layer; the big round canopy goes on the overlay layer. */
 function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
-  for (let ty = 0; ty < MH; ty++) {
+  // crowns reach ~18px above their tile, so a short buffer also needs the row just below it
+  const lastRow = Math.min(MH - 1, mb.h / T + 1);
+  for (let ty = 0; ty <= lastRow; ty++) {
     for (let tx = 0; tx < MW; tx++) {
       const t = tileAt(map, tx, ty);
       const isTree = t === Tile.TREE || (t === Tile.WALL && (tx + ty) % 2 === 0 && hash(tx, ty) < 0.8);

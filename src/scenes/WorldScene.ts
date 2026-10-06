@@ -32,7 +32,7 @@ import { lineText, requestText } from '../ui/talk';
 import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
 import { TEX } from './textures';
-import { buildTerrain } from '../art/terrain';
+import { buildNorthFill, buildTerrain, NORTH_FILL_ROWS } from '../art/terrain';
 import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
 import { Music, nextMood } from '../audio/music';
 
@@ -67,6 +67,15 @@ interface SceneData {
   map: WorldMap;
   lights: StaticLight[];
 }
+
+/**
+ * Portrait screens stack HP, goal, minimap, monster bar and toasts down the top-left column.
+ * Near the map's north edge the clamped camera would push the player up under that column, so
+ * the camera may scroll this fraction of the view past the top edge (filled by NORTH_FILL).
+ */
+const PORTRAIT_TOP_OVERSCROLL = 0.3;
+/** height (px) of the forest strip painted above the map to fill the overscroll */
+const NORTH_FILL = NORTH_FILL_ROWS * T;
 
 const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** localStorage key for the sound on/off + volume (kept out of the game save) */
@@ -124,6 +133,12 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private clouds: { x: number; y: number; rx: number; ry: number; v: number }[] = [];
   private groundImg!: Phaser.GameObjects.Image;
   private canopyImg!: Phaser.GameObjects.Image;
+  /** forest strip drawn above the map, seen only when the camera overscrolls north */
+  private northGround!: Phaser.GameObjects.Image;
+  private northCanopy!: Phaser.GameObjects.Image;
+  private gNorthShade!: Phaser.GameObjects.Graphics;
+  /** area whose forest strip is on the north images (painted lazily: only portrait screens need it) */
+  private northArea: AreaId | null = null;
   /** static lights per area, filled when an area's terrain is first built */
   private areaLights = new Map<AreaId, StaticLight[]>();
 
@@ -169,6 +184,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
     const w = this.inWorld;
     this.groundImg = w(this.add.image(0, 0, TEX.ground).setOrigin(0).setDepth(D.ground));
+    // hidden until syncNorthFill() paints the strip (the placeholder texture is the whole map)
+    this.northGround = w(this.add.image(0, -NORTH_FILL, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
     this.areaLights.set('home', data.lights);
     this.signs = signposts(this.s.map);
     this.gGround = w(this.add.graphics().setDepth(D.groundFx));
@@ -180,6 +197,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.playerView = new PlayerView(this, w);
     for (const n of this.s.npcs) this.npcViews.set(n.id, new NpcView(this, w, n));
     this.canopyImg = w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
+    this.northCanopy = w(this.add.image(0, -NORTH_FILL, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
+    this.gNorthShade = w(this.add.graphics().setDepth(D.canopy + 0.5));
+    this.shadeNorthFill();
     this.gBars = w(this.add.graphics().setDepth(D.bars));
     this.effects = new Effects(this, w, { fx: D.fx, particles: D.particles });
     this.gClouds = w(this.add.graphics().setDepth(D.clouds));
@@ -209,7 +229,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
     const p = this.s.player;
     this.camFX = Phaser.Math.Clamp(p.x - this.VW / 2, 0, Math.max(0, MW * T - this.VW));
-    this.camFY = Phaser.Math.Clamp(p.y - this.VH / 2, 0, Math.max(0, MH * T - this.VH));
+    this.camFY = this.clampCamY(p.y - this.VH / 2);
     if (save) this.hud.toast(th.log.loaded, 'gold');
     else this.hud.toast(th.log.welcome);
     this.hud.showZone(th.zones[p.zone ?? 'village']);
@@ -257,7 +277,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     for (const v of this.npcViews.values()) v.setVisible(area === 'home');
     const p = s.player;
     this.camFX = Phaser.Math.Clamp(p.x - this.VW / 2, 0, Math.max(0, MW * T - this.VW));
-    this.camFY = Phaser.Math.Clamp(p.y - this.VH / 2, 0, Math.max(0, MH * T - this.VH));
+    this.camFY = this.clampCamY(p.y - this.VH / 2);
     this.cameras.main.fadeIn(260, 21, 32, 43);
     this.save();
   }
@@ -726,12 +746,45 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     return new Phaser.Geom.Rectangle(this.camX, this.camY, this.VW, this.VH);
   }
 
+  /** How far (px) the camera may scroll above the map's north edge: portrait screens only. */
+  private topOverscroll(): number {
+    return this.VH > this.VW ? Math.min(NORTH_FILL, Math.round(this.VH * PORTRAIT_TOP_OVERSCROLL)) : 0;
+  }
+
+  private clampCamY(v: number): number {
+    const maxY = MH * T - this.VH;
+    return maxY < 0 ? maxY / 2 : Phaser.Math.Clamp(v, -this.topOverscroll(), maxY);
+  }
+
+  /** Points the north strip at the current area's forest fill, painting it on first use. */
+  private syncNorthFill(): void {
+    const area = this.s.area;
+    if (this.northArea === area) return;
+    this.northArea = area;
+    const key = `${TEX.ground}:north:${area}`;
+    if (!this.textures.exists(key)) {
+      const art = buildNorthFill(this.s.map);
+      this.textures.addCanvas(key, art.ground);
+      this.textures.addCanvas(`${key}:canopy`, art.canopy);
+    }
+    this.northGround.setTexture(key).setVisible(true);
+    this.northCanopy.setTexture(`${key}:canopy`).setVisible(true);
+  }
+
+  /** Darkens the strip toward the top so it reads as deep forest beyond the area, not open ground. */
+  private shadeNorthFill(): void {
+    const g = this.gNorthShade.clear();
+    const steps = 12;
+    const h = NORTH_FILL / steps;
+    for (let i = 0; i < steps; i++) g.fillStyle(0x16202e, 0.5 * (1 - (i + 1) / steps)).fillRect(0, -NORTH_FILL + i * h, MW * T, h);
+  }
+
   private updateCamera(rdt: number): void {
     const p = this.s.player;
+    if (this.topOverscroll() > 0) this.syncNorthFill();
     const maxX = MW * T - this.VW;
-    const maxY = MH * T - this.VH;
     const clampX = (v: number): number => (maxX < 0 ? maxX / 2 : Phaser.Math.Clamp(v, 0, maxX));
-    const clampY = (v: number): number => (maxY < 0 ? maxY / 2 : Phaser.Math.Clamp(v, 0, maxY));
+    const clampY = (v: number): number => this.clampCamY(v);
     const k = Math.min(1, rdt * 7);
     this.camFX += (clampX(p.x - this.VW / 2) - this.camFX) * k;
     this.camFY += (clampY(p.y - this.VH / 2) - this.camFY) * k;
