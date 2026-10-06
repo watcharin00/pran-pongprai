@@ -52,7 +52,7 @@ describe('new villagers', () => {
 });
 
 describe('the forest ranger', () => {
-  it('is out in every wild area, never at home, on open ground near the way in', () => {
+  it('is out in every wild area, never at home, on open ground by the camp fire', () => {
     const s = fresh();
     expect(npcActive(s, 'ranger')).toBe(false);
     for (const a of AREA_IDS) {
@@ -62,7 +62,9 @@ describe('the forest ranger', () => {
       const r = s.npcs.find((n) => n.id === 'ranger');
       if (!r) throw new Error();
       expect(walkable(s.map, Math.floor(r.x / T), Math.floor(r.y / T)), a).toBe(true);
-      expect(Math.hypot(r.x - s.player.x, r.y - s.player.y), a).toBeLessThan(10 * T);
+      const camp = s.map.camp;
+      if (!camp) throw new Error(`no camp in ${a}`);
+      expect(Math.hypot(r.x - camp.fire.x, r.y - camp.fire.y), a).toBeLessThan(3 * T);
     }
   });
 

@@ -23,13 +23,13 @@ interface AreaSpec {
 /** Layout of the world (see CLAUDE.md "โลก"). */
 const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   bamboo: { seed: 7101, biome: 'bamboo', zone: 'bamboo', camp: true, exits: [{ edge: 's', at: 30, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'deepwild' }] },
-  deepwild: { seed: 7404, biome: 'deepwild', zone: 'deepwild', exits: [{ edge: 's', at: 30, width: 3, to: 'bamboo' }, { edge: 'w', at: 22, width: 3, to: 'peat' }] },
-  peat: { seed: 7707, biome: 'peat', zone: 'peat', exits: [{ edge: 'e', at: 22, width: 3, to: 'deepwild' }] },
-  swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }, { edge: 's', at: 30, width: 3, to: 'mangrove' }] },
-  mangrove: { seed: 7606, biome: 'mangrove', zone: 'mangrove', exits: [{ edge: 'n', at: 30, width: 3, to: 'swamp' }] },
-  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }, { edge: 'e', at: 22, width: 3, to: 'savanna' }] },
-  savanna: { seed: 7808, biome: 'savanna', zone: 'savanna', exits: [{ edge: 'w', at: 22, width: 3, to: 'limestone' }] },
-  cave: { seed: 7505, biome: 'cave', zone: 'cave', exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
+  deepwild: { seed: 7404, biome: 'deepwild', zone: 'deepwild', camp: true, exits: [{ edge: 's', at: 30, width: 3, to: 'bamboo' }, { edge: 'w', at: 22, width: 3, to: 'peat' }] },
+  peat: { seed: 7707, biome: 'peat', zone: 'peat', camp: true, exits: [{ edge: 'e', at: 22, width: 3, to: 'deepwild' }] },
+  swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', camp: true, exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }, { edge: 's', at: 30, width: 3, to: 'mangrove' }] },
+  mangrove: { seed: 7606, biome: 'mangrove', zone: 'mangrove', camp: true, exits: [{ edge: 'n', at: 30, width: 3, to: 'swamp' }] },
+  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', camp: true, exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }, { edge: 'e', at: 22, width: 3, to: 'savanna' }] },
+  savanna: { seed: 7808, biome: 'savanna', zone: 'savanna', camp: true, exits: [{ edge: 'w', at: 22, width: 3, to: 'limestone' }] },
+  cave: { seed: 7505, biome: 'cave', zone: 'cave', camp: true, exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
 };
 
 /** Home exits line up with the existing village roads / canyon floor. */

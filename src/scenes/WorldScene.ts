@@ -755,6 +755,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.ctx = contextAction(s);
       this.hud.update(s);
       this.pad.update(s, this.ctx);
+      // villagers' speech bubbles keep clear of the HUD's right column
+      const col = document.querySelector('.rcol')?.getBoundingClientRect();
+      this.text.avoid = col && col.width > 0 ? [{ x0: col.left * this.dpr, y0: col.top * this.dpr, x1: col.right * this.dpr, y1: col.bottom * this.dpr }] : [];
       const hunted = s.monsters.some((m) => m.aggro);
       this.calm = hunted ? 0 : this.calm + 0.1;
       const mood = nextMood(this.music.current, { dead: s.player.dead, inVillage: s.player.inVillage || s.player.inCamp, hunted, bossHunted: s.monsters.some((m) => m.aggro && MONSTERS[m.kind].rage !== null) }, this.calm);
@@ -1189,6 +1192,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       // signposts: one label per arm, stacked above the post in the order the arms are painted
       for (const sg of this.signs) {
         if (Math.hypot(sg.x - p.x, sg.y - p.y) > SIGN_READ_RADIUS) continue;
+        // a villager talking right by the sign has the floor; the sign reads again once they stop
+        if (talking.some((n) => Math.hypot(n.x - sg.x, n.y - sg.y) < 120)) continue;
         const n = sg.arms.length;
         // labels are 19 screen px tall: step by screen px so they stack snugly at any zoom
         const gap = (21 * this.dpr) / this.S;

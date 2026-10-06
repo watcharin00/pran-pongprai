@@ -13,11 +13,11 @@ import { npcActive } from '../src/core/npc';
 const C = TUNING.camp;
 
 describe('hunter camp', () => {
-  it('the bamboo forest has one; the village does not', () => {
+  it('every wild area has one; the village does not', () => {
     expect(areaMap('bamboo').camp).toBeDefined();
     expect(areaMap('home').camp).toBeUndefined();
     // only areas flagged in SPECS: rolled out one at a time
-    expect(AREA_IDS.filter((a) => areaMap(a).camp)).toEqual(['bamboo']);
+    expect(AREA_IDS.filter((a) => !areaMap(a).camp)).toEqual(['home']);
   });
 
   it('sits off the road in from the village, reachable, with a solid tent and fire', () => {

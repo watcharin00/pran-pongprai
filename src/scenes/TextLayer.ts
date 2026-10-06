@@ -99,6 +99,9 @@ export class TextLayer {
    * A villager's speech bubble above (wx, wy): white rounded box with a tail.
    * Keyed so each villager keeps one bubble; call every frame it should stay visible.
    */
+  /** Screen rects (device px) that bubbles slide away from: the HUD's right button column. */
+  avoid: { x0: number; y0: number; x1: number; y1: number }[] = [];
+
   bubble(m: ScreenMapper, key: string, name: string, line: string, wx: number, wy: number): void {
     let b = this.bubbles.get(key);
     if (!b) {
@@ -122,16 +125,25 @@ export class TextLayer {
     const w = b.text.width + pad * 2;
     const h = b.text.height + pad * 2;
     const top = y - tail - h;
-    b.text.setPosition(x, y - tail - pad).setVisible(true);
+    // slide the body (not the tail) left/right so it never covers the HUD buttons or leaves the screen
+    let bx = x;
+    const margin = 4 * dpr;
+    for (const r of this.avoid) {
+      if (top > r.y1 || top + h < r.y0) continue;
+      if (bx + w / 2 > r.x0 - margin && bx - w / 2 < r.x1) bx = r.x0 - margin - w / 2;
+    }
+    bx = Math.max(margin + w / 2, bx);
+    bx = Math.min(Math.max(bx, x - w / 2 + tail * 2), x + w / 2 - tail * 2);
+    b.text.setPosition(bx, y - tail - pad).setVisible(true);
     b.bg
       .clear()
       .fillStyle(0x1a1410, 0.35)
-      .fillRoundedRect(x - w / 2, top + 2 * dpr, w, h, 8 * dpr)
+      .fillRoundedRect(bx - w / 2, top + 2 * dpr, w, h, 8 * dpr)
       .fillStyle(0xfffbf0, 0.97)
-      .fillRoundedRect(x - w / 2, top, w, h, 8 * dpr)
+      .fillRoundedRect(bx - w / 2, top, w, h, 8 * dpr)
       .fillTriangle(x - tail, y - tail - 1, x + tail, y - tail - 1, x, y)
       .lineStyle(Math.max(1, dpr), 0x5a3418, 0.9)
-      .strokeRoundedRect(x - w / 2, top, w, h, 8 * dpr)
+      .strokeRoundedRect(bx - w / 2, top, w, h, 8 * dpr)
       .setVisible(true);
   }
 
