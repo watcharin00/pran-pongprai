@@ -7,7 +7,8 @@ import type { GameState } from '../core/state';
 import { requestReady } from '../core/requests';
 import type { ContextAction } from '../core/village';
 import * as th from '../i18n/th';
-import { $, ICONS } from './format';
+import { $ } from './format';
+import { padFaceUrl, skillFaceUrl } from '../art/padIcons';
 
 interface Slot {
   id: string;
@@ -42,15 +43,18 @@ export class ActionPad {
     overlay.insertAdjacentHTML(
       'beforeend',
       `<div class="pad" id="pad">
-        <button id="bAtk" class="pb atk" type="button">${ICONS.attack}<span id="atkLbl">${th.hud.attack}</span></button>
-        <button id="bDodge" class="pb dodge" type="button">${ICONS.dodge}${th.hud.dodge}</button>
+        <button id="bAtk" class="pb atk" type="button"><span class="lbl" id="atkLbl">${th.hud.attack}</span></button>
+        <button id="bDodge" class="pb dodge" type="button"><span class="lbl">${th.hud.dodge}</span></button>
         <button id="bS0" class="pb sk" type="button"></button>
         <button id="bS1" class="pb sk" type="button"></button>
         <button id="bS2" class="pb sk" type="button"></button>
-        <button id="bPot" class="pb pot" type="button" aria-label="${th.hud.drinkPotion}">${ICONS.potion}<span class="n" id="potN">2</span></button>
+        <button id="bPot" class="pb pot" type="button" aria-label="${th.hud.drinkPotion}"><span class="n" id="potN">2</span></button>
       </div>`,
     );
     this.root = $(overlay, '#pad');
+    // pixel-art faces (frame + disc + icon) painted procedurally, like the sprites
+    const faces: [string, Parameters<typeof padFaceUrl>[0]][] = [['#bAtk', 'attack'], ['#bDodge', 'dodge'], ['#bPot', 'potion']];
+    for (const [sel, f] of faces) this.q(sel).style.backgroundImage = `url(${padFaceUrl(f)})`;
     hold(this.q('#bAtk'), h.attackDown, h.attackUp);
     hold(this.q('#bDodge'), h.dodge);
     hold(this.q('#bS0'), () => h.skill(0));
@@ -94,7 +98,9 @@ export class ActionPad {
       // the weapon changed: relabel the same three buttons (no new HUD elements)
       this.shown = key;
       ids.forEach((id, i) => {
-        this.q(`#bS${i}`).innerHTML = `${ICONS[id]}${th.skills[id].name}<i class="cdo"></i><span class="cdn"></span>`;
+        const b = this.q(`#bS${i}`);
+        b.style.backgroundImage = `url(${skillFaceUrl(SKILLS[id].kind)})`;
+        b.innerHTML = `<span class="lbl">${th.skills[id].name}</span><i class="cdo"></i><span class="cdn"></span>`;
       });
     }
     ids.forEach((id, i) => {
@@ -103,8 +109,11 @@ export class ActionPad {
       b.style.setProperty('--p', String(cd / SKILLS[id].cooldown));
       const n = b.querySelector('.cdn');
       if (n) n.textContent = cd > 0 ? String(Math.ceil(cd)) : '';
+      // while cooling down the number replaces the name
+      b.classList.toggle('cooling', cd > 0);
     });
     const atk = this.q('#bAtk');
+    if (atk.classList.contains('ctx') !== !!ctx) atk.style.backgroundImage = `url(${padFaceUrl(ctx ? 'context' : 'attack')})`;
     atk.classList.toggle('ctx', !!ctx);
     this.q('#atkLbl').textContent = contextLabel(s, ctx);
   }
