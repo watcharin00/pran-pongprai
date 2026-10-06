@@ -53,14 +53,17 @@ describe('wildlife content', () => {
 
   it('has a goal line for every progress step', () => {
     const s = game();
-    const steps: WeaponId[][] = [[], ['bamboobow'], ['cleaver'], ['coreblade'], ['tigerspear'], ['cobrafang'], ['lizardbow'], ['bearblade'], ['kingbow'], ['nagamaul'], ['crabsword'], ['catbow']];
+    const steps: WeaponId[][] = [[], ['bamboobow'], ['cleaver'], ['coreblade'], ['tigerspear'], ['cobrafang'], ['lizardbow'], ['bearblade'], ['kingbow'], ['nagamaul'], ['crabsword'], ['catbow'], ['plumesword']];
     const seen: number[] = [];
     for (const add of steps) {
       add.forEach((w) => s.owned.add(w));
       seen.push(goalIndex(s));
     }
-    expect(seen).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    expect(th.goals).toHaveLength(12);
+    expect(seen).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(th.goals).toHaveLength(13);
+    // each late step names its own area (a misordered list once told coast players to go to the peat swamp)
+    const steps2 = ['ถ้ำหินปูน', 'ป่าชายเลน', 'ป่าพรุ', 'ทุ่งหญ้า'];
+    steps2.forEach((area, i) => expect(th.goals[8 + i]?.title, area).toContain(area));
   });
 
   it('breaks the boar mane from behind and the tusks from the front', () => {

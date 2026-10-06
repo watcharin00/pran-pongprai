@@ -46,6 +46,15 @@ const PALETTES: Record<Biome, GroundPalette> = {
     sand: ['#c9c4b4', '#d3cebf', '#ddd8ca', '#e6e2d5'],
     water: ['#2a9aa8', '#30a4b2', '#38aebc'],
   },
+  savanna: {
+    // sunny dry-season grassland: golden-green grass, pale earth paths, blue waterholes
+    grass: ['#a8b85a', '#b4c262', '#c0cc6c', '#ccd678'],
+    dark: ['#8a9e48', '#94a84e', '#9eb254'],
+    sand: ['#d8b878', '#e0c288', '#e8cc96', '#f0d6a4'],
+    water: ['#3a9aa0', '#42a6aa', '#4ab2b4'],
+    edge: '#7a8a3a',
+    tuft: ['#8a9a42', '#6e8034', '#e8e49a', '#f4eea8'],
+  },
   peat: {
     // bright peat swamp forest: deep greens, dark peat soil paths, amber tea-coloured water
     grass: ['#4f8f42', '#5a9a48', '#64a44e', '#6eae56'],
@@ -381,6 +390,31 @@ function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): vo
           }
         }
       }
+      if (t === Tile.BUSH && map.biome === 'savanna') {
+        ell(mb, X + 8, Y + 14, 7, 2, '#000000', 0.18);
+        for (let i = 0; i < 9; i++) {
+          const bx = X + 2 + Math.floor(hash(tx * 5 + i, ty) * 12);
+          const hgt = 7 + Math.floor(hash(tx, ty * 7 + i) * 7);
+          const lean = hash(tx + i, ty * 3) < 0.5 ? -1 : 1;
+          for (let k = 0; k < hgt; k++) {
+            const x = bx + Math.round((k / hgt) * lean * 2);
+            sp(mb, x, Y + 14 - k, k > hgt - 3 ? '#f4e6a0' : k % 3 === 0 ? '#9aa848' : '#c8c46a');
+          }
+        }
+        continue;
+      }
+      if (t === Tile.ROCK && map.biome === 'savanna') {
+        // termite mound: a tall lumpy earth cone
+        ell(mb, X + 9, Y + 14, 7, 2.2, '#000000', 0.22);
+        for (let y = 0; y < 14; y++) {
+          const half = 2 + (y / 13) * 4.6 + (hash(tx, y) - 0.5);
+          for (let dx = Math.floor(-half); dx <= Math.ceil(half); dx++) {
+            const edge = Math.abs(dx) >= half - 0.6;
+            sp(mb, X + 8 + dx, Y + 1 + y, edge ? '#6a4628' : dx < -half * 0.3 ? '#d8a868' : dx < half * 0.3 ? '#b8854a' : '#9a6a3a');
+          }
+        }
+        continue;
+      }
       if (t === Tile.BUSH) {
         ell(mb, X + 9, Y + 14, 7.5, 2.2, '#000000', 0.22);
         const pal = ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
@@ -486,9 +520,12 @@ function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
       // mostly green, some mint and a few autumn-orange trees
       const mangrove = map.biome === 'mangrove';
       const peat = map.biome === 'peat';
+      const savanna = map.biome === 'savanna';
       const pal = mangrove
         ? v < 0.35 ? ['#1f5a3a', '#2c7a4a', '#46985a', '#74c07a'] : ['#24572e', '#327a3c', '#4c9646', '#78be5c']
-        : peat
+        : savanna
+          ? ['#3e5a24', '#566e2e', '#728a3a', '#98ac50']
+          : peat
           ? v < 0.12 ? ['#6a2a24', '#9a3e30', '#c8604a', '#e88a6a'] : ['#1f5230', '#2c6e3a', '#468c44', '#6eb05a']
           : v < 0.06 ? ['#8a3a1c', '#c0582a', '#e08040', '#f4b060'] : v < 0.3 ? ['#2a6a4a', '#3c8a5a', '#58ac6a', '#8ad48a'] : ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
       ell(mb, cx + 3, ty * 16 + 14, 10, 3.2, '#000000', 0.22);

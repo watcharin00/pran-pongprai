@@ -11,6 +11,7 @@
     "nagascale":  {"partDamageMul": 1.1, "rollIframeBonus": 0.04},
     "tidecaller": {"staminaRegenMul": 1.15, "walkSpeedMul": 1.05},
     "nightstalker": {"lowHpAttackMul": 1.2, "tailDamageMul": 1.1},
+    "herdbreaker": {"noKnockback": true, "dashDamageMul": 0.8},
     "nimble":     {"dodgeCostDelta": -3},
     "slither":    {"walkSpeedMul": 1.05}
   },
@@ -51,6 +52,10 @@
     "pantherhood":    {"slot": "head", "defense": 30, "maxHp": 48, "stamina": 10, "color": "#2a2a32", "set": "nightstalker", "recipe": {"pantherpelt": 5, "pantherfang": 1, "catpelt": 2}},
     "panthercoat":    {"slot": "body", "defense": 35, "maxHp": 62, "stamina": 10, "color": "#22222a", "set": "nightstalker", "recipe": {"pantherpelt": 7, "panthertail": 1, "tapirhide": 3}},
     "tapircharm":     {"slot": "charm", "defense": 8, "maxHp": 60, "stamina": 10, "color": "#5a5058", "recipe": {"tapirsnout": 1, "tapirhide": 3}},
-    "panthercharm":   {"slot": "charm", "defense": 14, "maxHp": 50, "stamina": 45, "color": "#ffd84a", "recipe": {"panthereye": 1, "pantherfang": 1}}
+    "panthercharm":   {"slot": "charm", "defense": 14, "maxHp": 50, "stamina": 45, "color": "#ffd84a", "recipe": {"panthereye": 1, "pantherfang": 1}},
+    "buffalohelm":    {"slot": "head", "defense": 33, "maxHp": 54, "stamina": 10, "color": "#4a4a50", "set": "herdbreaker", "recipe": {"buffalohide": 5, "buffalohorn": 1, "sambarhide": 2}},
+    "buffalomail":    {"slot": "body", "defense": 39, "maxHp": 68, "stamina": 10, "color": "#3a3a40", "set": "herdbreaker", "recipe": {"buffalohide": 7, "buffalotail": 1, "plume": 3}},
+    "plumecharm":     {"slot": "charm", "defense": 6, "maxHp": 20, "stamina": 55, "color": "#3ab0a0", "recipe": {"peacocktrain": 1, "plume": 3}},
+    "meadowcharm":    {"slot": "charm", "defense": 16, "maxHp": 56, "stamina": 48, "color": "#e8d870", "recipe": {"meadowheart": 1, "buffalohorn": 1}}
   }
 }

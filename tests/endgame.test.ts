@@ -94,7 +94,7 @@ describe('veterans', () => {
 
   it('count for veteran hunt requests', () => {
     const s = endgame();
-    for (const id of ['fowl', 'herbs', 'dholehead', 'boars', 'fishes', 'ricecrop', 'dholeclean', 'gaurtail', 'boarclean', 'tiger', 'cobrahood', 'croctail', 'serows', 'tigerclean', 'trunk', 'bats', 'quills', 'kingcobra', 'otters', 'crabclaws', 'saltcroc', 'cats', 'tapirsnout', 'panther']) s.requests.done.add(id);
+    for (const id of ['fowl', 'herbs', 'dholehead', 'boars', 'fishes', 'ricecrop', 'dholeclean', 'gaurtail', 'boarclean', 'tiger', 'cobrahood', 'croctail', 'serows', 'tigerclean', 'trunk', 'bats', 'quills', 'kingcobra', 'otters', 'crabclaws', 'saltcroc', 'cats', 'tapirsnout', 'panther', 'peafowl', 'antlers', 'buffalo']) s.requests.done.add(id);
     expect(currentRequest(s)?.id).toBe('vetfirst');
     const normal = addMonster(s, 'dhole', 100, 100);
     killMonster(s, normal);

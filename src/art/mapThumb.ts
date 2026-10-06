@@ -18,6 +18,7 @@ const PAL: Record<Biome, ThumbPalette> = {
   swamp: { ground: '#7fb06a', woods: '#3d7841', path: '#c8ae7e' },
   limestone: { ground: '#a6c47f', woods: '#4f8a46', path: '#ebe7da' },
   deepwild: { ground: '#6cb85a', woods: '#2f6a2c', path: '#e8ca8e' },
+  savanna: { ground: '#cdd27a', woods: '#7a9a46', path: '#f0d6a4' },
   peat: { ground: '#6aa85a', woods: '#285e30', path: '#b89a6e' },
   mangrove: { ground: '#7fae6a', woods: '#2f6a3a', path: '#b8a07a' },
   cave: { ground: '#e2d8bf', woods: '#9a8f78', path: '#f4ecd8' },

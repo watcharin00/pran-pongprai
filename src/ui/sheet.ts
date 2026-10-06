@@ -70,6 +70,7 @@ const WORLD_GRID: Record<AreaId, [number, number]> = {
   home: [1, 3],
   limestone: [2, 3],
   cave: [2, 2],
+  savanna: [3, 3],
   swamp: [1, 4],
   mangrove: [1, 5],
 };
@@ -81,6 +82,7 @@ const WORLD_LINKS: readonly [AreaId, AreaId][] = [
   ['bamboo', 'home'],
   ['home', 'limestone'],
   ['limestone', 'cave'],
+  ['limestone', 'savanna'],
   ['home', 'swamp'],
   ['swamp', 'mangrove'],
 ];

@@ -8,7 +8,7 @@ import { parkMiller, vnoise } from './rng';
 import { exitSignTile } from './signs';
 import { openTrails } from './trails';
 
-export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave', 'mangrove', 'peat'];
+export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave', 'mangrove', 'peat', 'savanna'];
 
 interface AreaSpec {
   seed: number;
@@ -25,7 +25,8 @@ const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   peat: { seed: 7707, biome: 'peat', zone: 'peat', exits: [{ edge: 'e', at: 22, width: 3, to: 'deepwild' }] },
   swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }, { edge: 's', at: 30, width: 3, to: 'mangrove' }] },
   mangrove: { seed: 7606, biome: 'mangrove', zone: 'mangrove', exits: [{ edge: 'n', at: 30, width: 3, to: 'swamp' }] },
-  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }] },
+  limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }, { edge: 'e', at: 22, width: 3, to: 'savanna' }] },
+  savanna: { seed: 7808, biome: 'savanna', zone: 'savanna', exits: [{ edge: 'w', at: 22, width: 3, to: 'limestone' }] },
   cave: { seed: 7505, biome: 'cave', zone: 'cave', exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
 };
 
@@ -168,6 +169,13 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
           if (n > 0.6) set(x, y, Tile.SAND);
           if (r < 0.09) set(x, y, Tile.ROCK);
           else if (r < 0.17 && n < 0.45) set(x, y, Tile.TREE);
+          break;
+        case 'savanna':
+          // open golden grassland: waterholes, tall-grass clumps, termite mounds, a few lone trees
+          if (n > 0.72) set(x, y, Tile.WATER);
+          else if (r < 0.05) set(x, y, Tile.TREE);
+          else if (r < 0.065) set(x, y, Tile.ROCK);
+          else if (r > 0.9 && n < 0.6) set(x, y, Tile.BUSH);
           break;
         case 'peat':
           // tea-coloured blackwater pools under a dense, tall swamp forest

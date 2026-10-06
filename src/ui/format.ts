@@ -64,6 +64,9 @@ export const ICONS = {
   stampede: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M8 12h8M14 9l3 3-3 3"/></svg>',
   catvolley: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9l2-5 3 4M10 8l3-4 2 5"/><path d="M8 14l12-3M8 17h12M8 20l12 2"/></svg>',
   shadowcleave: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20L20 3M7 20L20 7M3 16L16 3"/></svg>',
+  hornrush: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h15M15 9l4 3-4 3"/><path d="M5 7c2-3 5-3 7 0M5 17c2 3 5 3 7 0"/></svg>',
+  plumedance: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M12 10L5 4M12 10l7-6M12 10L4 9M12 10l8-1"/><circle cx="12" cy="10" r="1.5"/></svg>',
+  herdcrush: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5c-3 2-3 6 0 7M18 5c3 2 3 6 0 7M8 9h8"/><path d="M3 20h18M7 16l-2 4M17 16l2 4"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h19M18 9l3 3-3 3"/><path d="M4 6l4 6-4 6" stroke-width="1.8"/></svg>',
   // one icon per menu tab (HUD top-right)
   tab_bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"><path d="M5 9h14l-1 11H6z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/><path d="M9 13h6"/></svg>',

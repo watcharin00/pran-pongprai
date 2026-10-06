@@ -824,7 +824,108 @@ function buildPanther(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   return finish(b);
 }
 
+/** นกยูงไทย (green peafowl): green-bronze body, tall crest, long trailing train. Tail part = train. */
+function buildPeafowl(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(29, 19);
+  const o = 1;
+  const B = '#3a8a6a';
+  const D = '#24604a';
+  // the long train: green with blue-gold eyespots; broken = a stub
+  const len = tb ? 3 : 12;
+  for (let i = 0; i < len; i++) {
+    const x = 9 - i;
+    const y = 11 + Math.round(i * 0.25) + Math.round(Math.sin(i * 0.6 + f) * 0.5);
+    rect(b, x + o, y + o, 1, 2, i % 2 ? D : '#2e7a5a');
+    if (i % 3 === 2 && !tb) {
+      sp(b, x + o, y + o, '#3ab0d0');
+      sp(b, x + o, y - 1 + o, '#e8c040');
+    }
+  }
+  legs(b, f, [[11 + o, 0], [14 + o, 1]], 13 + o, 1, 3, '#8a7a5a', '#6a5a40', '#5a4a30');
+  ell(b, 13 + o, 10 + o, 4.6, 3, B);
+  ell(b, 12 + o, 9 + o, 3, 1.4, '#c8a040');
+  // long neck, small head, crest
+  rect(b, 16 + o, 4 + o, 2, 6, '#2a7aa0');
+  ell(b, 18 + o, 3.5 + o, 1.8, 1.4, '#2a7aa0');
+  sp(b, 20 + o, 4 + o, '#d8c070');
+  sp(b, 18 + o, 3 + o, '#221a2a');
+  sp(b, 17 + o, 1 + o, '#3ab0a0');
+  sp(b, 18 + o, 0 + o, '#3ab0a0');
+  sp(b, 19 + o, 1 + o, '#3ab0a0');
+  return finish(b);
+}
+
+/** กวางป่า (sambar deer): big brown deer, dark mane, wide antlers. Head part = antlers. */
+function buildSambar(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(33, 25);
+  const o = 1;
+  const B = '#8a6a46';
+  const D = '#5a4430';
+  legs(b, f, [[9 + o, 0], [12 + o, 1], [20 + o, 0], [23 + o, 1]], 16 + o, 2, 5, B, D, '#2a2018');
+  ell(b, 16 + o, 12.5 + o, 9, 4.2, B);
+  ell(b, 15 + o, 10.6 + o, 6, 1.4, '#a07e56');
+  sp(b, 7 + o, 11 + o, '#f0e6d0');
+  // neck with a dark shaggy mane, head
+  rect(b, 22 + o, 6 + o, 3, 7, D);
+  ell(b, 26 + o, 6.5 + o, 3.2, 2.4, B);
+  rect(b, 28 + o, 7 + o, 2, 2, '#6a5038');
+  sp(b, 30 + o, 7 + o, '#221a2a');
+  sp(b, 26 + o, 5 + o, '#221a2a');
+  sp(b, 24 + o, 3 + o, D);
+  if (!hb) {
+    // branching antlers
+    const tine = '#d8c8a0';
+    for (let k = 0; k < 6; k++) sp(b, 25 - Math.floor(k / 2) + o, 3 - k + o, tine);
+    for (let k = 0; k < 6; k++) sp(b, 27 + Math.floor(k / 2) + o, 3 - k + o, tine);
+    sp(b, 22 + o, 0 + o, tine);
+    sp(b, 30 + o, 0 + o, tine);
+    sp(b, 23 + o, 1 + o, tine);
+    sp(b, 29 + o, 1 + o, tine);
+  } else {
+    sp(b, 25 + o, 3 + o, '#b8a880');
+    sp(b, 27 + o, 3 + o, '#b8a880');
+  }
+  return finish(b);
+}
+
+/** ควายป่า (wild water buffalo): huge slate-grey body, white socks, wide swept-back horns. */
+function buildWildbuffalo(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(47, 29);
+  const o = 1;
+  const B = '#4a4a50';
+  const D = '#2e2e34';
+  // tail with a dark tuft; broken = short
+  const len = tb ? 2 : 7;
+  for (let i = 0; i < len; i++) sp(b, 8 - Math.floor(i / 2) + o, 11 + i + o, D);
+  if (!tb) rect(b, 4 + o, 17 + o, 2, 2, '#1e1e22');
+  legs(b, f, [[11 + o, 0], [15 + o, 1], [27 + o, 0], [31 + o, 1]], 19 + o, 4, 5, B, D, '#e8e4d8');
+  ell(b, 21 + o, 14 + o, 13, 6.4, B);
+  ell(b, 20 + o, 10.6 + o, 9, 2, '#5e5e66');
+  // mud on the flanks from wallowing
+  for (const [x, y] of [[13, 17], [16, 18], [25, 18], [28, 17]] as const) sp(b, x + o, y + o, '#7a6248');
+  // head, pale chin
+  ell(b, 37 + o, 13 + o, 5, 4, B);
+  rect(b, 39 + o, 15 + o, 4, 2, '#8a8a90');
+  sp(b, 43 + o, 14 + o, '#16161a');
+  sp(b, 38 + o, 12 + o, '#f4f0e4');
+  if (!hb) {
+    // wide horns sweeping out and back in a crescent
+    for (let k = 0; k <= 12; k++) {
+      const x = 37 - k;
+      const y = 9 - Math.round(Math.sin((k / 12) * Math.PI) * 5);
+      sp(b, x + o, y + o, k > 9 ? '#5a5a5e' : '#2a2a2e');
+      sp(b, x + o, y + 1 + o, '#3a3a3e');
+    }
+  } else {
+    rect(b, 34 + o, 8 + o, 3, 2, '#5a4a4a');
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  peafowl: (f, _hb, tb) => buildPeafowl(f, tb),
+  sambar: (f, hb) => buildSambar(f, hb),
+  wildbuffalo: (f, hb, tb) => buildWildbuffalo(f, hb, tb),
   marbledcat: (f, _hb, tb) => buildMarbledcat(f, tb),
   tapir: (f, hb) => buildTapir(f, hb),
   panther: (f, hb, tb) => buildPanther(f, hb, tb),

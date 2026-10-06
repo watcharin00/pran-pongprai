@@ -39,8 +39,9 @@ const STAGES: Stage[] = [
   { goal: 8, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['flyingfox', 'porcupine', 'kingcobra'], next: ['nagamaul', 'batbow', 'nagablade'] },
   { goal: 9, weapon: 'nagablade', level: 3, armor: ['nagahelm', 'nagamail', 'nagacharm'], targets: ['otter', 'mudcrab', 'saltcroc'], next: ['tidespear', 'crabsword', 'pearlbow'] },
   { goal: 10, weapon: 'crabsword', level: 3, armor: ['salthelm', 'saltmail', 'pearlcharm'], targets: ['marbledcat', 'tapir', 'panther'], next: ['tapirhammer', 'catbow', 'pantherglaive'] },
-  { goal: 11, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['tiger', 'crocodile', 'bear', 'elephant'], next: [], vet: true },
-  { goal: 11, weapon: 'pantherglaive', level: 8, armor: ['pantherhood', 'panthercoat', 'panthercharm'], targets: ['tiger', 'saltcroc', 'panther'], next: [], vet: true, alpha: true },
+  { goal: 11, weapon: 'pantherglaive', level: 3, armor: ['pantherhood', 'panthercoat', 'panthercharm'], targets: ['peafowl', 'sambar', 'wildbuffalo'], next: ['hornspear', 'plumesword', 'meadowblade'] },
+  { goal: 12, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['tiger', 'crocodile', 'bear', 'elephant'], next: [], vet: true },
+  { goal: 12, weapon: 'pantherglaive', level: 8, armor: ['pantherhood', 'panthercoat', 'panthercharm'], targets: ['tiger', 'saltcroc', 'panther'], next: [], vet: true, alpha: true },
 ];
 
 /** How often the stand-in player reacts to a telegraph in time. */

@@ -474,5 +474,72 @@
       { "id": "rearswipe",  "shape": "circle", "radius": 24, "offset": -18, "telegraph": 0.7, "damage": 46, "range": 34, "weight": 2 },
       { "id": "roar",       "shape": "circle", "radius": 52, "offset": 0, "telegraph": 1.1, "damage": 48, "range": 46, "weight": 1 }
     ]
+  },
+  "peafowl": {
+    "weakTo": "sword",
+    "area": "savanna",
+    "hp": 3800, "speed": 68, "size": 7, "aggroRadius": 66, "zone": "forest", "spawnMinVillageDist": 0,
+    "huntTime": 90, "turnTime": 0.25, "recover": 0.6, "respawn": 14, "count": 5,
+    "rage": null,
+    "parts": {
+      "tail": { "hp": 800, "drop": { "peacocktrain": 1 }, "offset": [-8, -4] }
+    },
+    "carve": [
+      { "item": "plume", "min": 1, "max": 2 },
+      { "item": "fert",  "min": 1, "max": 1 }
+    ],
+    "bonus": { "seed_rice": 0.4 },
+    "rare": {},
+    "attacks": [
+      { "id": "peck",    "shape": "circle", "radius": 12, "offset": 9, "telegraph": 0.4, "damage": 30, "range": 16, "weight": 3 },
+      { "id": "display", "shape": "circle", "radius": 26, "offset": 0, "telegraph": 0.7, "damage": 32, "range": 22, "weight": 2 },
+      { "id": "flutter", "shape": "line", "length": 80, "width": 14, "telegraph": 0.6, "damage": 34, "range": 80, "minRange": 24, "dash": true, "weight": 2 }
+    ]
+  },
+  "sambar": {
+    "weakTo": "greatsword",
+    "area": "savanna",
+    "hp": 5200, "speed": 50, "size": 12, "aggroRadius": 58, "zone": "forest", "spawnMinVillageDist": 0,
+    "huntTime": 120, "turnTime": 0.5, "recover": 0.9, "respawn": 18, "count": 3,
+    "rage": null,
+    "parts": {
+      "head": { "hp": 1100, "drop": { "sambarantler": 1 }, "offset": [10, -8] }
+    },
+    "carve": [
+      { "item": "sambarhide", "min": 2, "max": 3 },
+      { "item": "fert",       "min": 1, "max": 2 }
+    ],
+    "bonus": { "seed_lemongrass": 0.4 },
+    "rare": {},
+    "attacks": [
+      { "id": "antlerjab", "shape": "circle", "radius": 16, "offset": 13, "telegraph": 0.6, "damage": 40, "range": 22, "weight": 3 },
+      { "id": "leap",      "shape": "line", "length": 110, "width": 18, "telegraph": 0.8, "damage": 44, "range": 110, "minRange": 34, "dash": true, "weight": 2 },
+      { "id": "backkick",  "shape": "circle", "radius": 18, "offset": -14, "telegraph": 0.7, "damage": 42, "range": 26, "weight": 2 }
+    ]
+  },
+  "wildbuffalo": {
+    "weakTo": "spear",
+    "area": "savanna",
+    "hp": 20000, "speed": 44, "size": 18, "aggroRadius": 66, "zone": "forest", "spawnMinVillageDist": 0,
+    "huntTime": 240, "turnTime": 0.9, "recover": 1.1, "respawn": 40, "count": 1,
+    "rage": { "below": 0.5, "speedMul": 1.2, "telegraphRate": 1.3, "damageMul": 1.2 },
+    "parts": {
+      "head": { "hp": 4200, "drop": { "buffalohorn": 2 }, "offset": [16, -6] },
+      "tail": { "hp": 3000, "drop": { "buffalotail": 1 }, "offset": [-17, -2] }
+    },
+    "carve": [
+      { "item": "buffalohide", "min": 4, "max": 5 },
+      { "item": "buffalohorn", "min": 0, "max": 1 },
+      { "item": "fert",        "min": 3, "max": 3 }
+    ],
+    "bonus": {},
+    "rare": { "meadowheart": 0.25 },
+    "attacks": [
+      { "id": "gore",     "shape": "circle", "radius": 22, "offset": 17, "telegraph": 0.7, "damage": 50, "range": 28, "weight": 3 },
+      { "id": "charge",   "shape": "line", "length": 160, "width": 30, "telegraph": 1.0, "damage": 60, "range": 160, "minRange": 50, "dash": true, "weight": 2 },
+      { "id": "hornsweep","shape": "line", "length": 70, "width": 40, "telegraph": 0.9, "damage": 52, "range": 60, "dash": false, "weight": 2 },
+      { "id": "kick",     "shape": "circle", "radius": 26, "offset": -20, "telegraph": 0.8, "damage": 52, "range": 36, "weight": 2 },
+      { "id": "wallow",   "shape": "circle", "radius": 50, "offset": 0, "telegraph": 1.2, "damage": 54, "range": 46, "weight": 1 }
+    ]
   }
 }
