@@ -21,10 +21,19 @@
     { "id": "otters",     "unlockGoal": 9, "goal": { "type": "kill",     "monster": "otter", "count": 5 },      "reward": { "items": { "ore": 8, "fert": 2 } } },
     { "id": "crabclaws",  "unlockGoal": 9, "goal": { "type": "break",    "monster": "mudcrab", "part": "head", "count": 1 }, "reward": { "items": { "ore": 8 }, "potions": 1 } },
     { "id": "saltcroc",   "unlockGoal": 9, "goal": { "type": "kill",     "monster": "saltcroc", "count": 1 },   "reward": { "items": { "ore": 12, "fert": 3 }, "potions": 2 } },
+    { "id": "cats",       "unlockGoal": 10, "goal": { "type": "kill",     "monster": "marbledcat", "count": 5 }, "reward": { "items": { "ore": 10, "fert": 2 } } },
+    { "id": "tapirsnout", "unlockGoal": 10, "goal": { "type": "break",    "monster": "tapir", "part": "head", "count": 1 }, "reward": { "items": { "ore": 10 }, "potions": 1 } },
+    { "id": "panther",    "unlockGoal": 10, "goal": { "type": "kill",     "monster": "panther", "count": 1 },    "reward": { "items": { "ore": 14, "fert": 3 }, "potions": 2 } },
     { "id": "vetfirst",   "unlockGoal": 8, "goal": { "type": "veteran",  "count": 2 },                         "reward": { "items": { "seal": 1, "ore": 6 }, "potions": 1 } },
     { "id": "vettiger",   "unlockGoal": 8, "goal": { "type": "veteran",  "monster": "tiger", "count": 1 },     "reward": { "items": { "seal": 2, "ore": 6 } } },
     { "id": "vetcroc",    "unlockGoal": 8, "goal": { "type": "veteran",  "monster": "crocodile", "count": 1 }, "reward": { "items": { "seal": 2, "ore": 8 }, "potions": 1 } },
     { "id": "vetbear",    "unlockGoal": 8, "goal": { "type": "veteran",  "monster": "bear", "count": 1 },      "reward": { "items": { "seal": 2, "ore": 8 } } },
-    { "id": "vetelephant","unlockGoal": 8, "goal": { "type": "veteran",  "monster": "elephant", "count": 1 },  "reward": { "items": { "seal": 3, "ore": 10, "fert": 3 }, "potions": 2 } }
+    { "id": "vetelephant","unlockGoal": 8, "goal": { "type": "veteran",  "monster": "elephant", "count": 1 },  "reward": { "items": { "seal": 3, "ore": 10, "fert": 3 }, "potions": 2 } },
+    { "id": "swiftcobra",   "unlockGoal": 11, "goal": { "type": "swift", "monster": "kingcobra", "count": 1 }, "reward": { "items": { "seal": 2, "ore": 10 } } },
+    { "id": "swiftcroc",    "unlockGoal": 11, "goal": { "type": "swift", "monster": "saltcroc", "count": 1 },  "reward": { "items": { "seal": 2, "ore": 10 }, "potions": 1 } },
+    { "id": "swiftpanther", "unlockGoal": 11, "goal": { "type": "swift", "monster": "panther", "count": 1 },   "reward": { "items": { "seal": 3, "ore": 12 }, "potions": 1 } },
+    { "id": "alphafirst",   "unlockGoal": 11, "goal": { "type": "alpha", "count": 1 },                         "reward": { "items": { "seal": 3, "ore": 12 }, "potions": 2 } },
+    { "id": "alphapack",    "unlockGoal": 11, "goal": { "type": "alpha", "count": 3 },                         "reward": { "items": { "seal": 4, "fert": 4 }, "potions": 2 } },
+    { "id": "alphapanther", "unlockGoal": 11, "goal": { "type": "alpha", "monster": "panther", "count": 1 },   "reward": { "items": { "seal": 6, "ore": 15 }, "potions": 3 } }
   ]
 }

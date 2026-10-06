@@ -65,6 +65,7 @@ export const TABS: readonly Tab[] = ['bag', 'forge', 'kitchen', 'farm', 'book', 
 /** World-map grid position (column, row) of each area, matching the exits. */
 const WORLD_GRID: Record<AreaId, [number, number]> = {
   deepwild: [1, 1],
+  peat: [0, 1],
   bamboo: [1, 2],
   home: [1, 3],
   limestone: [2, 3],
@@ -76,6 +77,7 @@ const WORLD_GRID: Record<AreaId, [number, number]> = {
 /** Connections drawn between world-map nodes (the area exits). */
 const WORLD_LINKS: readonly [AreaId, AreaId][] = [
   ['deepwild', 'bamboo'],
+  ['peat', 'deepwild'],
   ['bamboo', 'home'],
   ['home', 'limestone'],
   ['limestone', 'cave'],
@@ -368,7 +370,7 @@ export class Sheet {
   private forge(s: GameState): string {
     const p = s.player;
     const iv = p.inVillage;
-    let h = `${this.villageNote(s)}<h3 class="sec">${th.menu.weaponsTitle}</h3><p class="note">${th.menu.upgradeHint(WEAPONS_DATA.upgrade.maxLevel)}</p><div class="recipes">`;
+    let h = `${this.villageNote(s)}<h3 class="sec">${th.menu.weaponsTitle}</h3><p class="note">${th.menu.upgradeHint(WEAPONS_DATA.upgrade.finalLevel, WEAPONS_DATA.upgrade.maxLevel)}</p><div class="recipes">`;
     for (const [k, w] of Object.entries(WEAPONS) as [WeaponId, (typeof WEAPONS)[WeaponId]][]) {
       const own = s.owned.has(k);
       const eq = p.weapon === k;
@@ -688,6 +690,7 @@ function useText(x: ItemUse): string {
   if (x.kind === 'weapon') return `${img(weaponIconUrl(x.weapon), 'ico sm')}${U.weapon(th.weapons[x.weapon].name)}`;
   if (x.kind === 'armor') return `${img(armorIconUrl(x.armor), 'ico sm')}${U.armor(th.armor[x.armor].name)}`;
   if (x.kind === 'upgrade') return `${img(weaponIconUrl(x.weapon), 'ico sm')}${U.upgrade(th.weapons[x.weapon].name)}`;
+  if (x.kind === 'masterUpgrade') return U.masterUpgrade(x.from, x.to);
   if (x.kind === 'meal') return `${img(mealIconUrl(x.meal), 'ico sm')}${U.meal(th.meals[x.meal].name)}`;
   if (x.kind === 'potion') return `${img(potionIconUrl(), 'ico sm')}${U.potion}`;
   if (x.kind === 'plant') return U.plant(th.crops[x.crop].name);

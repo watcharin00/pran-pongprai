@@ -21,14 +21,28 @@ describe('weapon upgrades', () => {
     expect(upgradeCost(s, 'bone')).toEqual({ hide: 3, fang: 3, ore: 3 });
   });
 
-  it('the last level also needs the rare material; nothing past max', () => {
+  it('+5 also needs the rare material; nothing past max', () => {
     const s = village();
-    s.weaponLevels.cleaver = WEAPONS_DATA.upgrade.maxLevel - 1;
+    s.weaponLevels.cleaver = WEAPONS_DATA.upgrade.finalLevel - 1;
     expect(upgradeCost(s, 'cleaver')).toMatchObject({ core: 1 });
     s.weaponLevels.cleaver = WEAPONS_DATA.upgrade.maxLevel;
     expect(upgradeCost(s, 'cleaver')).toBeNull();
     s.owned.add('cleaver');
     expect(upgradeWeapon(s, 'cleaver')).toEqual({ ok: false, reason: 'maxLevel' });
+  });
+
+  it('+6 to +10 are endgame levels: hunter seals, rising by one a level, and no rare material', () => {
+    const s = village();
+    expect(WEAPONS_DATA.upgrade.maxLevel).toBe(10);
+    s.weaponLevels.cleaver = 5;
+    const c6 = upgradeCost(s, 'cleaver');
+    expect(c6?.seal).toBe(1);
+    expect(c6?.core).toBeUndefined();
+    s.weaponLevels.cleaver = 9;
+    expect(upgradeCost(s, 'cleaver')?.seal).toBe(5);
+    expect(weaponPower(s, 'cleaver')).toBeCloseTo(WEAPONS.cleaver.damage * 1.9);
+    s.weaponLevels.cleaver = 4;
+    expect(upgradeCost(s, 'cleaver')?.seal).toBeUndefined();
   });
 
   it('spends materials, raises the level, and needs the village and ownership', () => {
@@ -61,11 +75,12 @@ describe('weapon upgrades', () => {
     s.weaponLevels = { bone: 3, fangblade: 1 };
     const t = createGame({ rngSeed: 1, now: NOW, map: MAP, save: parseSave(serialize(s)), noMonsters: true });
     expect(t.weaponLevels).toEqual({ bone: 3, fangblade: 1 });
-    expect(parseSave(JSON.stringify({ inv: {}, owned: ['bone'], weaponLevels: { bone: 99, cleaver: 2 } }))?.weaponLevels).toEqual({ bone: 5 });
+    expect(parseSave(JSON.stringify({ inv: {}, owned: ['bone'], weaponLevels: { bone: 99, cleaver: 2 } }))?.weaponLevels).toEqual({ bone: WEAPONS_DATA.upgrade.maxLevel });
     expect(parseSave(JSON.stringify({ inv: {} }))?.weaponLevels).toEqual({});
   });
 
   it('the bag lists upgrade uses for materials', () => {
     expect(itemUses('core')).toContainEqual({ kind: 'upgrade', weapon: 'cleaver' });
+    expect(itemUses('seal')).toContainEqual({ kind: 'masterUpgrade', from: 6, to: 10 });
   });
 });

@@ -8,7 +8,7 @@ import { parkMiller, vnoise } from './rng';
 import { exitSignTile } from './signs';
 import { openTrails } from './trails';
 
-export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave', 'mangrove'];
+export const AREA_IDS: readonly AreaId[] = ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave', 'mangrove', 'peat'];
 
 interface AreaSpec {
   seed: number;
@@ -21,7 +21,8 @@ interface AreaSpec {
 /** Layout of the world (see CLAUDE.md "โลก"). */
 const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   bamboo: { seed: 7101, biome: 'bamboo', zone: 'bamboo', exits: [{ edge: 's', at: 30, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'deepwild' }] },
-  deepwild: { seed: 7404, biome: 'deepwild', zone: 'deepwild', exits: [{ edge: 's', at: 30, width: 3, to: 'bamboo' }] },
+  deepwild: { seed: 7404, biome: 'deepwild', zone: 'deepwild', exits: [{ edge: 's', at: 30, width: 3, to: 'bamboo' }, { edge: 'w', at: 22, width: 3, to: 'peat' }] },
+  peat: { seed: 7707, biome: 'peat', zone: 'peat', exits: [{ edge: 'e', at: 22, width: 3, to: 'deepwild' }] },
   swamp: { seed: 7202, biome: 'swamp', zone: 'swamp', exits: [{ edge: 'n', at: 30, width: 3, to: 'home' }, { edge: 's', at: 30, width: 3, to: 'mangrove' }] },
   mangrove: { seed: 7606, biome: 'mangrove', zone: 'mangrove', exits: [{ edge: 'n', at: 30, width: 3, to: 'swamp' }] },
   limestone: { seed: 7303, biome: 'limestone', zone: 'limestone', exits: [{ edge: 'w', at: 22, width: 3, to: 'home' }, { edge: 'n', at: 30, width: 3, to: 'cave' }] },
@@ -168,6 +169,13 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
           if (r < 0.09) set(x, y, Tile.ROCK);
           else if (r < 0.17 && n < 0.45) set(x, y, Tile.TREE);
           break;
+        case 'peat':
+          // tea-coloured blackwater pools under a dense, tall swamp forest
+          if (n > 0.7) set(x, y, Tile.WATER);
+          else if (n > 0.58) set(x, y, r < 0.22 ? Tile.TREE : Tile.GRASS);
+          else if (r < 0.26) set(x, y, Tile.TREE);
+          else if (r > 0.95) set(x, y, Tile.BUSH);
+          break;
         case 'mangrove':
           // tidal channels, mud flats along them, mangroves crowding the banks
           if (n > 0.67) set(x, y, Tile.WATER);
@@ -189,7 +197,10 @@ function wildArea(id: Exclude<AreaId, 'home'>): WorldMap {
   }
 
   // deer trails so dense tree cover never walls the player in
-  openTrails(tiles, spec.seed, { clearable: new Set([Tile.TREE, Tile.BUSH, Tile.ROCK]) });
+  // (in the peat swamp the trails also run as earth causeways across the blackwater pools)
+  const clearable = new Set<number>([Tile.TREE, Tile.BUSH, Tile.ROCK]);
+  if (spec.biome === 'peat') clearable.add(Tile.WATER);
+  openTrails(tiles, spec.seed, { clearable });
 
   // roads: every exit to the centre, wide enough to walk without snagging
   const centre: [number, number] = [31, 23];

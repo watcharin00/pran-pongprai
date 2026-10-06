@@ -84,8 +84,8 @@ export class Minimap {
       if (x < 0 || y < 0 || x > px || y > px) continue;
       const boss = MONSTERS[m.kind].rage !== null;
       g.fillStyle = boss ? '#c9a0ff' : '#ef5b4c';
-      // veterans get a gold rim (a plain gold dot means an exit)
-      g.strokeStyle = m.vet ? '#ffcf4a' : '#151c2b';
+      // veterans get a gold rim, alphas a crimson one (a plain gold dot means an exit)
+      g.strokeStyle = m.alpha ? '#ff4a6a' : m.vet ? '#ffcf4a' : '#151c2b';
       g.lineWidth = (m.vet ? 1.6 : 1) * dpr;
       g.beginPath();
       g.arc(x, y, (boss ? 3.6 : 2.4) * dpr, 0, Math.PI * 2);

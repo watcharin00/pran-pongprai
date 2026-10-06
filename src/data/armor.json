@@ -10,6 +10,7 @@
     "mastery":    {"rollIframeBonus": 0.06},
     "nagascale":  {"partDamageMul": 1.1, "rollIframeBonus": 0.04},
     "tidecaller": {"staminaRegenMul": 1.15, "walkSpeedMul": 1.05},
+    "nightstalker": {"lowHpAttackMul": 1.2, "tailDamageMul": 1.1},
     "nimble":     {"dodgeCostDelta": -3},
     "slither":    {"walkSpeedMul": 1.05}
   },
@@ -46,6 +47,10 @@
     "salthelm":       {"slot": "head", "defense": 27, "maxHp": 44, "stamina": 5, "color": "#6a6a4a", "set": "tidecaller", "recipe": {"salthide": 5, "saltfang": 1, "crabshell": 2}},
     "saltmail":       {"slot": "body", "defense": 32, "maxHp": 58, "stamina": 5, "color": "#5a5a3e", "set": "tidecaller", "recipe": {"salthide": 7, "salttail": 1, "otterpelt": 3}},
     "crabcharm":      {"slot": "charm", "defense": 12, "maxHp": 20, "stamina": 10, "color": "#e0603a", "recipe": {"crabclaw": 2, "crabshell": 3}},
-    "pearlcharm":     {"slot": "charm", "defense": 12, "maxHp": 45, "stamina": 40, "color": "#3a3a5a", "recipe": {"blackpearl": 1, "saltfang": 1}}
+    "pearlcharm":     {"slot": "charm", "defense": 12, "maxHp": 45, "stamina": 40, "color": "#3a3a5a", "recipe": {"blackpearl": 1, "saltfang": 1}},
+    "pantherhood":    {"slot": "head", "defense": 30, "maxHp": 48, "stamina": 10, "color": "#2a2a32", "set": "nightstalker", "recipe": {"pantherpelt": 5, "pantherfang": 1, "catpelt": 2}},
+    "panthercoat":    {"slot": "body", "defense": 35, "maxHp": 62, "stamina": 10, "color": "#22222a", "set": "nightstalker", "recipe": {"pantherpelt": 7, "panthertail": 1, "tapirhide": 3}},
+    "tapircharm":     {"slot": "charm", "defense": 8, "maxHp": 60, "stamina": 10, "color": "#5a5058", "recipe": {"tapirsnout": 1, "tapirhide": 3}},
+    "panthercharm":   {"slot": "charm", "defense": 14, "maxHp": 50, "stamina": 45, "color": "#ffd84a", "recipe": {"panthereye": 1, "pantherfang": 1}}
   }
 }

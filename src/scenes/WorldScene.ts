@@ -492,9 +492,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const partName = (k: keyof typeof th.monsters, p: PartId): string => (th.monsters[k].parts as Partial<Record<PartId, string>>)[p] ?? p;
 
     ev.on('monster:spawned', (e) => {
-      fx.burst(e.at.x, e.at.y, e.vet ? '#ffcf4a' : '#fff8e0', e.vet ? 16 : 8, 40, 'dust');
+      fx.burst(e.at.x, e.at.y, e.alpha ? '#ff6a7a' : e.vet ? '#ffcf4a' : '#fff8e0', e.vet ? 16 : 8, 40, 'dust');
       if (e.vet) {
-        hud.toast(th.log.veteranAppeared(monName(e.kind)), 'bad');
+        hud.toast(e.alpha ? th.log.alphaAppeared(monName(e.kind)) : th.log.veteranAppeared(monName(e.kind)), 'bad');
         snd('enrage', undefined, 0.5);
       }
     });
@@ -853,7 +853,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       for (let xx = x0; xx <= x0 + this.VW / T + 1; xx++) {
         if (xx < 0 || yy < 0 || xx >= MW || yy >= MH || tileAt(this.s.map, xx, yy) !== Tile.WATER) continue;
         const o = (xx * 7 + yy * 13) % 16;
-        if (Math.sin(time * 2 + o) > 0.3) px(xx * T + 3 + ((o + Math.floor(time * 4)) % 9), yy * T + 7 + ((o * 5) % 6), 0xc8fff0, 2, 1);
+        if (Math.sin(time * 2 + o) > 0.3) px(xx * T + 3 + ((o + Math.floor(time * 4)) % 9), yy * T + 7 + ((o * 5) % 6), this.s.map.biome === 'peat' ? 0xfff0c8 : 0xc8fff0, 2, 1);
       }
     }
     if (this.s.area !== 'home') {
@@ -1009,9 +1009,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       sh.fillStyle(0x142814, 0.3).fillEllipse(m.x, feet, size * 1.9, size * 0.64);
       if (m.rage) sa.fillStyle(0xff501e, 0.14 + 0.08 * Math.sin(time * 10)).fillEllipse(m.x, m.y, (size + 6) * 2, size * 1.6);
       if (m.vet) {
-        // veteran: a slow golden ring at the feet
-        const k = 0.5 + 0.5 * Math.sin(time * 3 + m.id);
-        sa.lineStyle(1, 0xffcf4a, 0.35 + 0.25 * k).strokeEllipse(m.x, feet, size * 2.3 + k * 3, size * 0.8 + k);
+        // veteran: a slow golden ring at the feet; alpha: a faster crimson one
+        const k = 0.5 + 0.5 * Math.sin(time * (m.alpha ? 6 : 3) + m.id);
+        sa.lineStyle(m.alpha ? 1.5 : 1, m.alpha ? 0xff4a6a : 0xffcf4a, 0.35 + 0.25 * k).strokeEllipse(m.x, feet, size * 2.3 + k * 3, size * 0.8 + k);
       }
     }
     for (const [id, v] of this.monsterViews) {

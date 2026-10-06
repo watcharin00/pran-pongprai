@@ -16,6 +16,8 @@ interface GroundPalette {
   edge?: string;
   /** ground specks: [floor dark, wall dark, highlight, highlight 2] (default grass tufts) */
   tuft?: readonly [string, string, string, string];
+  /** water accents: [shallow edge, ripple glint, south-bank foam, south-bank shallow] (default sea-green) */
+  waterAccent?: readonly [string, string, string, string];
 }
 
 /** Ground colours per biome; every area stays bright (no dark/night areas). */
@@ -43,6 +45,15 @@ const PALETTES: Record<Biome, GroundPalette> = {
     dark: ['#5f7f45', '#67884c', '#709153'],
     sand: ['#c9c4b4', '#d3cebf', '#ddd8ca', '#e6e2d5'],
     water: ['#2a9aa8', '#30a4b2', '#38aebc'],
+  },
+  peat: {
+    // bright peat swamp forest: deep greens, dark peat soil paths, amber tea-coloured water
+    grass: ['#4f8f42', '#5a9a48', '#64a44e', '#6eae56'],
+    dark: ['#3a7232', '#427c38', '#4a863e'],
+    sand: ['#8a6a46', '#957552', '#a0805e', '#ab8b6a'],
+    water: ['#8a6634', '#96723c', '#a27e46'],
+    // amber blackwater: warm shallows and glints instead of sea-green
+    waterAccent: ['#b08a50', '#d0aa6a', '#f0dcb0', '#c8a468'],
   },
   mangrove: {
     // bright tidal coast: green banks, grey-brown mud flats, sea-green channels
@@ -77,6 +88,8 @@ let TUFT: readonly [string, string, string, string] = ['#4e8a2e', '#356a26', '#a
 const CANYON = ['#d6a35e', '#dfb06c', '#e7bd7a', '#eec98a'];
 const PLAZA_STONE = ['#cfc7ab', '#d8d0b6', '#e1dac2'];
 let EDGE_LINE = '#3f7a2c';
+const SEA_ACCENT = ['#3fc3b2', '#6ad8c6', '#e8fff8', '#8fe6d4'] as const;
+let WATER_ACCENT: readonly [string, string, string, string] = SEA_ACCENT;
 
 const isGrassTile = (t: number): boolean => t === Tile.GRASS || t === Tile.FLOWER || t === Tile.TREE || t === Tile.BUSH || t === Tile.WALL || t === Tile.FENCE;
 const pick = (a: readonly string[], v: number): string => a[Math.max(0, Math.min(a.length - 1, Math.floor(v * a.length)))] ?? a[0] ?? '#ff00ff';
@@ -96,6 +109,7 @@ function paintBase(map: WorldMap, rows = MH): { mb: PixelBuffer; cb: PixelBuffer
   ({ grass: GRASS, dark: GRASS_DARK, sand: SAND, water: WATER } = pal);
   EDGE_LINE = pal.edge ?? '#3f7a2c';
   TUFT = pal.tuft ?? ['#4e8a2e', '#356a26', '#a8dc6a', '#9ad460'];
+  WATER_ACCENT = pal.waterAccent ?? SEA_ACCENT;
   paintGround(map, mb);
   paintDetails(map, mb, lights);
   paintTrees(map, mb, cb);
@@ -204,27 +218,27 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
         const dn = !isWater(tx, ty + 1);
         const lf = !isWater(tx - 1, ty);
         const rt = !isWater(tx + 1, ty);
-        if (up && (map.biome === 'swamp' || map.biome === 'mangrove') && ly < 3) {
+        if (up && (map.biome === 'swamp' || map.biome === 'mangrove' || map.biome === 'peat') && ly < 3) {
           // muddy bank instead of a cliff face
           c = ly === 0 ? EDGE_LINE : ly === 1 ? '#6a5a34' : '#4a6a4a';
         } else if (up && map.biome === 'cave' && ly < 3) {
           // smooth stone rim of a cave pool
           c = ly === 0 ? EDGE_LINE : ly === 1 ? '#b9ae93' : '#5fb4c8';
-        } else if (up && map.biome !== 'swamp' && map.biome !== 'mangrove' && map.biome !== 'cave' && ly < 6) {
+        } else if (up && map.biome !== 'swamp' && map.biome !== 'mangrove' && map.biome !== 'peat' && map.biome !== 'cave' && ly < 6) {
           // cliff face dropping into the water
           const above = tileAt(map, tx, ty - 1);
           c = ly === 0 ? (isGrassTile(above) ? EDGE_LINE : '#f3dca0') : ly === 5 ? '#5a3418' : (lx + (ly >> 1)) % 5 === 0 ? '#9a5a2a' : ly < 3 ? '#d4914a' : '#bf7a3a';
         } else if (lf && lx < 2) c = map.biome === 'cave' ? (lx === 0 ? EDGE_LINE : '#b9ae93') : lx === 0 ? '#7a4420' : '#bf7a3a';
         else if (rt && lx > 13) c = map.biome === 'cave' ? (lx === 15 ? EDGE_LINE : '#b9ae93') : lx === 15 ? '#7a4420' : '#bf7a3a';
-        else if (dn && ly > 13) c = ly === 15 ? '#e8fff8' : '#8fe6d4';
+        else if (dn && ly > 13) c = ly === 15 ? WATER_ACCENT[2] : WATER_ACCENT[3];
         else {
           let dd = 99;
           if (up) dd = Math.min(dd, ly - 6);
           if (lf) dd = Math.min(dd, lx - 2);
           if (rt) dd = Math.min(dd, 13 - lx);
           if (dn) dd = Math.min(dd, 13 - ly);
-          if (dd < 3) c = '#3fc3b2';
-          else if (Math.sin(px * 0.35 + py * 0.9 + vnoise(px, py, 10) * 6) > 0.94) c = '#6ad8c6';
+          if (dd < 3) c = WATER_ACCENT[0];
+          else if (Math.sin(px * 0.35 + py * 0.9 + vnoise(px, py, 10) * 6) > 0.94) c = WATER_ACCENT[1];
           else c = pick(WATER, n * 0.9);
         }
       } else if (t === Tile.BRIDGE) {
@@ -471,14 +485,17 @@ function paintTrees(map: WorldMap, mb: PixelBuffer, cb: PixelBuffer): void {
       const v = hash(tx * 3, ty * 5);
       // mostly green, some mint and a few autumn-orange trees
       const mangrove = map.biome === 'mangrove';
+      const peat = map.biome === 'peat';
       const pal = mangrove
         ? v < 0.35 ? ['#1f5a3a', '#2c7a4a', '#46985a', '#74c07a'] : ['#24572e', '#327a3c', '#4c9646', '#78be5c']
-        : v < 0.06 ? ['#8a3a1c', '#c0582a', '#e08040', '#f4b060'] : v < 0.3 ? ['#2a6a4a', '#3c8a5a', '#58ac6a', '#8ad48a'] : ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
+        : peat
+          ? v < 0.12 ? ['#6a2a24', '#9a3e30', '#c8604a', '#e88a6a'] : ['#1f5230', '#2c6e3a', '#468c44', '#6eb05a']
+          : v < 0.06 ? ['#8a3a1c', '#c0582a', '#e08040', '#f4b060'] : v < 0.3 ? ['#2a6a4a', '#3c8a5a', '#58ac6a', '#8ad48a'] : ['#24572e', '#347a3a', '#4f9a44', '#7cc25a'];
       ell(mb, cx + 3, ty * 16 + 14, 10, 3.2, '#000000', 0.22);
-      if (mangrove) {
-        // stilt roots arching out of the mud on both sides of the trunk
+      if (mangrove || peat) {
+        // stilt roots (mangrove) or knee roots (peat swamp) arching out of the mud beside the trunk
         for (const side of [-1, 1] as const) {
-          for (let k = 0; k < 2; k++) {
+          for (let k = 0; k < (peat ? 1 : 2); k++) {
             const reach = 4 + k * 2;
             for (let i = 0; i <= reach; i++) {
               const x = cx + side * (1 + i);

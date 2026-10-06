@@ -158,6 +158,8 @@ export interface MonsterState {
   hitPlayer: boolean;
   /** endgame "veteran" variant: tougher, better drops (tuning.veteran) */
   vet: boolean;
+  /** post-game "alpha": a veteran made tougher again (tuning.alpha stacks on tuning.veteran) */
+  alpha: boolean;
   /** starting HP (higher for veterans); rage and HP bars measure against it */
   maxHp: number;
 }

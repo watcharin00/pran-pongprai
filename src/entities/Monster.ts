@@ -43,13 +43,15 @@ export class MonsterView {
     else sy = 1 + Math.sin(time * 4 + m.id) * 0.03;
     // veterans stand a little taller with a warm golden cast
     if (m.vet) {
-      sx *= 1.12;
-      sy *= 1.12;
+      const k = m.alpha ? 1.22 : 1.12;
+      sx *= k;
+      sy *= k;
     }
     const feet = MonsterView.feet(m, h);
     img.setOrigin(Math.round(w / 2) / w, (h - 2) / h);
     img.setPosition(Math.round(m.x + ox), Math.round(feet)).setRotation(rot).setScale(m.dirX * sx, sy).setDepth(ENTITY_DEPTH + m.y);
     if (m.flash > 0) img.setTintFill(0xffffff);
+    else if (m.alpha) img.setTint(0xffc8c8);
     else if (m.vet) img.setTint(0xffe6bc);
     else img.clearTint();
   }

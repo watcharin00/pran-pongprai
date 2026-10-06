@@ -18,7 +18,7 @@ const endgame = (): ReturnType<typeof game> => {
 
 const killed = (o: Partial<GameEvents['monster:killed']>): GameEvents['monster:killed'] => ({
   id: 1, kind: 'dhole', at: { x: 0, y: 0 }, drops: {}, rare: null, corpse: { dirX: 1, frame: 0, headBroken: false, tailBroken: false },
-  flawless: false, vet: false, allParts: false, huntLeft: 0.2, ...o,
+  flawless: false, vet: false, alpha: false, allParts: false, huntLeft: 0.2, ...o,
 });
 
 describe('veterans', () => {
@@ -94,7 +94,7 @@ describe('veterans', () => {
 
   it('count for veteran hunt requests', () => {
     const s = endgame();
-    for (const id of ['fowl', 'herbs', 'dholehead', 'boars', 'fishes', 'ricecrop', 'dholeclean', 'gaurtail', 'boarclean', 'tiger', 'cobrahood', 'croctail', 'serows', 'tigerclean', 'trunk', 'bats', 'quills', 'kingcobra', 'otters', 'crabclaws', 'saltcroc']) s.requests.done.add(id);
+    for (const id of ['fowl', 'herbs', 'dholehead', 'boars', 'fishes', 'ricecrop', 'dholeclean', 'gaurtail', 'boarclean', 'tiger', 'cobrahood', 'croctail', 'serows', 'tigerclean', 'trunk', 'bats', 'quills', 'kingcobra', 'otters', 'crabclaws', 'saltcroc', 'cats', 'tapirsnout', 'panther']) s.requests.done.add(id);
     expect(currentRequest(s)?.id).toBe('vetfirst');
     const normal = addMonster(s, 'dhole', 100, 100);
     killMonster(s, normal);

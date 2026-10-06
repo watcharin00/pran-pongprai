@@ -125,7 +125,7 @@ export class Hud {
     box.hidden = false;
     const def = MONSTERS[m.kind];
     const names = th.monsters[m.kind];
-    this.q('#bName').textContent = (m.vet ? th.hud.veteran(names.name) : names.name) + (m.rage ? th.hud.enraged : '') + (m.mode === 'stun' ? th.hud.stunned : '');
+    this.q('#bName').textContent = (m.alpha ? th.hud.alpha(names.name) : m.vet ? th.hud.veteran(names.name) : names.name) + (m.rage ? th.hud.enraged : '') + (m.mode === 'stun' ? th.hud.stunned : '');
     const bt = this.q('#bTime');
     bt.textContent = m.huntT !== null ? fmtTime(m.huntT) : '';
     bt.classList.toggle('low', m.huntT !== null && m.huntT < 15);

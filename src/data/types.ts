@@ -21,8 +21,8 @@ export type ArmorSlot = (typeof ARMOR_SLOTS)[number];
 export type MealId = keyof (typeof mealsJson)['meals'];
 export type SkillId = keyof (typeof skillsJson)['skills'];
 export type PartId = 'head' | 'tail';
-export type AreaId = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave' | 'mangrove';
-export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave' | 'mangrove';
+export type AreaId = 'home' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave' | 'mangrove' | 'peat';
+export type ZoneId = 'village' | 'forest' | 'bridge' | 'canyon' | 'bamboo' | 'swamp' | 'limestone' | 'deepwild' | 'cave' | 'mangrove' | 'peat';
 
 export type ItemBag = Partial<Record<MaterialId, number>>;
 
@@ -163,6 +163,10 @@ export interface UpgradeRules {
   damageMul: number[];
   /** iron ore per level step (× target level) */
   orePerLevel: number;
+  /** the level that also needs the weapon's `final` rare material */
+  finalLevel: number;
+  /** endgame levels past `finalLevel` also need hunter seals: this many × (level − finalLevel) */
+  sealsPerLevel: number;
 }
 
 export interface WeaponsData {
@@ -423,6 +427,23 @@ export interface Tuning {
     /** hunter seals per veteran */
     seals: number;
   };
+  /**
+   * post-game "alpha" (pack leader): a veteran made tougher again once the last area's weapon is
+   * forged. Multipliers stack on top of the veteran ones.
+   */
+  alpha: {
+    unlockGoal: number;
+    /** chance each spawn is an alpha (rolled before the veteran roll) */
+    chance: number;
+    hpMul: number;
+    partHpMul: number;
+    damageMul: number;
+    speedMul: number;
+    telegraphRate: number;
+    carveMul: number;
+    /** extra hunter seals on top of the veteran ones */
+    seals: number;
+  };
   medals: {
     /** "swift" medal: killed with at least this share of the hunt timer left */
     swiftHuntLeft: number;
@@ -451,7 +472,11 @@ export type RequestGoal =
   /** gather from nodes or harvest from the farm */
   | { type: 'collect'; item: MaterialId; count: number }
   /** hunt veterans (endgame); any kind when `monster` is left out */
-  | { type: 'veteran'; monster?: MonsterId; count: number };
+  | { type: 'veteran'; monster?: MonsterId; count: number }
+  /** hunt alphas (post-game); any kind when `monster` is left out */
+  | { type: 'alpha'; monster?: MonsterId; count: number }
+  /** kill with at least `medals.swiftHuntLeft` of the hunt timer left */
+  | { type: 'swift'; monster: MonsterId; count: number };
 
 export interface RequestDef {
   id: string;

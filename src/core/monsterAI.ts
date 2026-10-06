@@ -14,14 +14,18 @@ const C = TUNING.combat;
 const VILLAGE_CENTER = { x: PLAZA.x * T + 8, y: PLAZA.y * T + 8 } as const;
 
 const V = TUNING.veteran;
+const A = TUNING.alpha;
 
-export function createMonster(id: number, kind: MonsterId, x: number, y: number, dirX: 1 | -1, vet = false): MonsterState {
+export function createMonster(id: number, kind: MonsterId, x: number, y: number, dirX: 1 | -1, vet = false, alpha = false): MonsterState {
   const def = MONSTERS[kind];
+  // an alpha is always a veteran too; its multipliers stack on top
+  const isVet = vet || alpha;
+  const partMul = (isVet ? V.partHpMul : 1) * (alpha ? A.partHpMul : 1);
   const parts: Partial<Record<PartId, PartState>> = {};
-  for (const [k, pd] of Object.entries(def.parts)) if (pd) parts[k as PartId] = { hp: Math.round(pd.hp * (vet ? V.partHpMul : 1)), broken: false };
-  const hp = Math.round(def.hp * (vet ? V.hpMul : 1));
+  for (const [k, pd] of Object.entries(def.parts)) if (pd) parts[k as PartId] = { hp: Math.round(pd.hp * partMul), broken: false };
+  const hp = Math.round(def.hp * (isVet ? V.hpMul : 1) * (alpha ? A.hpMul : 1));
   return {
-    vet, maxHp: hp,
+    vet: isVet, alpha, maxHp: hp,
     id, kind, x, y, hx: x, hy: y, hp, parts, mode: 'wander', t: 0, tt: 1, dirX, turnT: 0, wanderT: 0, waypoint: null,
     atkCd: 0, flash: 0, stunMeter: 0, stunT: 0, huntT: null, aggro: false, leash: 0, rage: false, shape: null, attack: null,
     dashLeft: 0, dashHit: false, anim: 0, tipT: 0, hitPlayer: false,
@@ -52,6 +56,11 @@ export function veteransUnlocked(s: GameState): boolean {
   return goalIndex(s) >= V.unlockGoal;
 }
 
+/** Alphas appear after the last area's weapon is forged (post-game). */
+export function alphasUnlocked(s: GameState): boolean {
+  return goalIndex(s) >= A.unlockGoal;
+}
+
 /** Places a monster on a random free cell of its zone, away from the player and other monsters. */
 export function spawnMonster(s: GameState, kind: MonsterId): MonsterState | null {
   const def = MONSTERS[kind];
@@ -66,11 +75,12 @@ export function spawnMonster(s: GameState, kind: MonsterId): MonsterState | null
     if (!canStand(s.map, x, y, def.size * 0.5)) continue;
     if (s.monsters.some((m) => Math.hypot(m.x - x, m.y - y) < C.monsterSpawnMinSpacing)) continue;
     const dirX = s.rng.chance(0.5) ? 1 : -1;
-    // only roll for a veteran once they are unlocked, so early-game randomness is unchanged
-    const vet = veteransUnlocked(s) && s.rng.chance(V.chance);
-    const m = createMonster(s.nextId++, kind, x, y, dirX, vet);
+    // only roll once they are unlocked, so earlier randomness is unchanged
+    const alpha = alphasUnlocked(s) && s.rng.chance(A.chance);
+    const vet = alpha || (veteransUnlocked(s) && s.rng.chance(V.chance));
+    const m = createMonster(s.nextId++, kind, x, y, dirX, vet, alpha);
     s.monsters.push(m);
-    s.events.emit('monster:spawned', { id: m.id, kind, at: { x, y }, vet });
+    s.events.emit('monster:spawned', { id: m.id, kind, at: { x, y }, vet, alpha });
     return m;
   }
   return null;
@@ -159,7 +169,7 @@ function think(s: GameState, m: MonsterState, dt: number): void {
     }
   }
   const rage = m.rage ? def.rage : null;
-  const spd = def.speed * (rage ? rage.speedMul : 1) * (m.vet ? V.speedMul : 1);
+  const spd = def.speed * (rage ? rage.speedMul : 1) * (m.vet ? V.speedMul : 1) * (m.alpha ? A.speedMul : 1);
   const r = def.size * 0.5;
   const playerInVillage = s.area === 'home' && inVillagePx(p.x, p.y);
 
@@ -234,7 +244,7 @@ function think(s: GameState, m: MonsterState, dt: number): void {
     }
 
     case 'tele': {
-      m.t -= dt * (rage ? rage.telegraphRate : 1) * (m.vet ? V.telegraphRate : 1);
+      m.t -= dt * (rage ? rage.telegraphRate : 1) * (m.vet ? V.telegraphRate : 1) * (m.alpha ? A.telegraphRate : 1);
       if (m.t > 0) return;
       const a = m.attack;
       const sh = m.shape;

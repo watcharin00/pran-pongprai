@@ -155,7 +155,9 @@ export function upgradeCost(s: GameState, id: WeaponId): ItemBag | null {
   const cost: ItemBag = {};
   for (const [k, n] of Object.entries(per)) cost[k as keyof Inventory] = (n ?? 0) * next;
   if (UP.orePerLevel > 0) cost.ore = (cost.ore ?? 0) + UP.orePerLevel * next;
-  if (next === UP.maxLevel) for (const [k, n] of Object.entries(final)) cost[k as keyof Inventory] = (cost[k as keyof Inventory] ?? 0) + (n ?? 0);
+  if (next === UP.finalLevel) for (const [k, n] of Object.entries(final)) cost[k as keyof Inventory] = (cost[k as keyof Inventory] ?? 0) + (n ?? 0);
+  // master levels (+6 and up) are endgame: they also need hunter seals from veterans
+  if (next > UP.finalLevel && UP.sealsPerLevel > 0) cost.seal = (cost.seal ?? 0) + UP.sealsPerLevel * (next - UP.finalLevel);
   return cost;
 }
 
@@ -265,5 +267,6 @@ export function goalIndex(s: GameState): number {
   if (!has('kingblade', 'kingbow')) return 7;
   if (!has('nagamaul', 'batbow', 'nagablade')) return 8;
   if (!has('tidespear', 'crabsword', 'pearlbow')) return 9;
-  return 10;
+  if (!has('tapirhammer', 'catbow', 'pantherglaive')) return 10;
+  return 11;
 }

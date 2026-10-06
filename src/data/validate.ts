@@ -192,7 +192,7 @@ export function loadMonsters(v: unknown, materials: readonly string[]): Record<s
       speed: num(m.speed, `${p}.speed`, 0),
       size: num(m.size, `${p}.size`, 1),
       aggroRadius: num(m.aggroRadius, `${p}.aggroRadius`, 0),
-      area: optional(m, 'area', (x) => oneOf(x, `${p}.area`, ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave', 'mangrove'] as const)) ?? 'home',
+      area: optional(m, 'area', (x) => oneOf(x, `${p}.area`, ['home', 'bamboo', 'swamp', 'limestone', 'deepwild', 'cave', 'mangrove', 'peat'] as const)) ?? 'home',
       zone: oneOf(m.zone, `${p}.zone`, ['forest', 'canyon'] as const),
       spawnMinVillageDist: optional(m, 'spawnMinVillageDist', (x) => num(x, `${p}.spawnMinVillageDist`, 0)) ?? 0,
       spawnEastOfRiver: optional(m, 'spawnEastOfRiver', (x) => bool(x, `${p}.spawnEastOfRiver`)) ?? false,
@@ -263,7 +263,8 @@ export function loadWeapons(v: unknown, materials: readonly string[], skills: re
   const maxLevel = num(u.maxLevel, 'weapons.upgrade.maxLevel', 0, 20);
   const damageMul = arr(u.damageMul, 'weapons.upgrade.damageMul').map((x, i) => num(x, `weapons.upgrade.damageMul[${i}]`, 0));
   if (damageMul.length !== maxLevel + 1) throw new DataError('weapons.upgrade.damageMul', `expected ${maxLevel + 1} entries (+0..+${maxLevel})`);
-  const upgrade = { maxLevel, damageMul, orePerLevel: num(u.orePerLevel, 'weapons.upgrade.orePerLevel', 0) };
+  const finalLevel = num(u.finalLevel, 'weapons.upgrade.finalLevel', 1, maxLevel);
+  const upgrade = { maxLevel, damageMul, orePerLevel: num(u.orePerLevel, 'weapons.upgrade.orePerLevel', 0), finalLevel, sealsPerLevel: num(u.sealsPerLevel, 'weapons.upgrade.sealsPerLevel', 0) };
   return { upgrade, types, weapons } as WeaponsData;
 }
 
@@ -423,19 +424,23 @@ export function loadRequests(v: unknown, materials: readonly string[], monsters:
     if (seen.has(id)) throw new DataError(`${p}.id`, `duplicate id ${id}`);
     seen.add(id);
     const g = obj(r.goal, `${p}.goal`);
-    const type = oneOf(g.type, `${p}.goal.type`, ['kill', 'flawless', 'break', 'collect', 'veteran'] as const);
+    const type = oneOf(g.type, `${p}.goal.type`, ['kill', 'flawless', 'break', 'collect', 'veteran', 'alpha', 'swift'] as const);
     const count = num(g.count, `${p}.goal.count`, 1);
     let goal: RequestGoal;
     if (type === 'collect') goal = { type, item: oneOf(g.item, `${p}.goal.item`, materials) as MaterialId, count };
-    else if (type === 'veteran') {
-      goal = g.monster === undefined ? { type, count } : { type, monster: oneOf(g.monster, `${p}.goal.monster`, Object.keys(monsters)) as MonsterId, count };
+    else if (type === 'veteran' || type === 'alpha') {
+      const monster = g.monster === undefined ? undefined : (oneOf(g.monster, `${p}.goal.monster`, Object.keys(monsters)) as MonsterId);
+      if (type === 'veteran') goal = monster ? { type, monster, count } : { type, count };
+      else goal = monster ? { type, monster, count } : { type, count };
     } else {
       const monster = oneOf(g.monster, `${p}.goal.monster`, Object.keys(monsters)) as MonsterId;
       if (type === 'break') {
         const part = oneOf(g.part, `${p}.goal.part`, PART_IDS);
         if (!monsters[monster]?.parts[part]) throw new DataError(`${p}.goal.part`, `${monster} has no ${part}`);
         goal = { type, monster, part, count };
-      } else goal = type === 'kill' ? { type, monster, count } : { type, monster, count };
+      } else if (type === 'kill') goal = { type, monster, count };
+      else if (type === 'flawless') goal = { type, monster, count };
+      else goal = { type, monster, count };
     }
     const rw = obj(r.reward, `${p}.reward`);
     const potions = optional(rw, 'potions', (x) => num(x, `${p}.reward.potions`, 0, 9));

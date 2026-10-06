@@ -143,8 +143,9 @@ export function rollCarve(s: GameState, m: MonsterState): { drops: ItemBag; rare
     drops[k] = (drops[k] ?? 0) + n;
   };
   const V = TUNING.veteran;
-  const mul = m.vet ? V.carveMul : 1;
-  for (const c of def.carve) add(c.item, s.rng.int(c.min, c.max) * mul);
+  const A = TUNING.alpha;
+  const mul = (m.vet ? V.carveMul : 1) * (m.alpha ? A.carveMul : 1);
+  for (const c of def.carve) add(c.item, Math.round(s.rng.int(c.min, c.max) * mul));
   for (const [k, p] of Object.entries(def.bonus)) if (s.rng.next() < (p ?? 0)) add(k as MaterialId, 1);
   let rare: MaterialId | null = null;
   for (const [k, p] of Object.entries(def.rare)) {
@@ -155,6 +156,7 @@ export function rollCarve(s: GameState, m: MonsterState): { drops: ItemBag; rare
     }
   }
   if (m.vet && V.seals > 0) add('seal', V.seals);
+  if (m.alpha && A.seals > 0) add('seal', A.seals);
   const nonZero: ItemBag = {};
   for (const [k, n] of Object.entries(drops)) if (n) nonZero[k as MaterialId] = n;
   return { drops: nonZero, rare };
@@ -175,6 +177,7 @@ export function killMonster(s: GameState, m: MonsterState): void {
     corpse: { dirX: m.dirX, frame: Math.floor(m.anim) % MONSTER_FRAME_COUNT, headBroken: !!m.parts.head?.broken, tailBroken: !!m.parts.tail?.broken },
     flawless: !m.hitPlayer,
     vet: m.vet,
+    alpha: m.alpha,
     allParts: Object.values(m.parts).every((ps) => ps.broken),
     huntLeft: m.huntT === null ? 1 : Math.max(0, m.huntT / def.huntTime),
   });
@@ -198,7 +201,7 @@ export function resolveMonsterHit(s: GameState, m: MonsterState, a: AttackDef): 
   if (p.hurtIF > 0) return;
   const rage = MONSTERS[m.kind].rage;
   const dash = a.shape === 'line' && a.dash ? (gearPerk(s).dashDamageMul ?? 1) : 1;
-  hurtPlayer(s, a.damage * (m.rage && rage ? rage.damageMul : 1) * (m.vet ? TUNING.veteran.damageMul : 1) * dash, m);
+  hurtPlayer(s, a.damage * (m.rage && rage ? rage.damageMul : 1) * (m.vet ? TUNING.veteran.damageMul : 1) * (m.alpha ? TUNING.alpha.damageMul : 1) * dash, m);
 }
 
 export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void {

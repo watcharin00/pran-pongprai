@@ -1,6 +1,6 @@
 // Where an item comes from and what it is used for, derived from the content
 // JSON so new monsters/recipes show up in the bag without extra wiring.
-import { ARMOR, CROPS, MEALS, MONSTERS, MONSTER_IDS, REQUESTS, TUNING, WEAPONS } from '../data';
+import { ARMOR, CROPS, MEALS, MONSTERS, MONSTER_IDS, REQUESTS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import * as th from '../i18n/th';
 import type { ArmorId, CropId, MaterialId, MealId, MonsterId, PartId, WeaponId } from '../data/types';
 
@@ -20,6 +20,8 @@ export type ItemUse =
   | { kind: 'weapon'; weapon: WeaponId }
   | { kind: 'armor'; armor: ArmorId }
   | { kind: 'upgrade'; weapon: WeaponId }
+  /** hunter seals: every weapon's endgame levels */
+  | { kind: 'masterUpgrade'; from: number; to: number }
   | { kind: 'meal'; meal: MealId }
   | { kind: 'potion' }
   | { kind: 'plant'; crop: CropId }
@@ -58,6 +60,8 @@ export function itemUses(id: MaterialId): ItemUse[] {
     const { per, final } = WEAPONS[weapon].upgrade;
     if ((per[id] ?? 0) > 0 || (final[id] ?? 0) > 0) out.push({ kind: 'upgrade', weapon });
   }
+  const UP = WEAPONS_DATA.upgrade;
+  if (id === 'seal' && UP.sealsPerLevel > 0 && UP.maxLevel > UP.finalLevel) out.push({ kind: 'masterUpgrade', from: UP.finalLevel + 1, to: UP.maxLevel });
   for (const meal of Object.keys(MEALS) as MealId[]) if ((MEALS[meal].recipe[id] ?? 0) > 0) out.push({ kind: 'meal', meal });
   if (id === 'herb') out.push({ kind: 'potion' });
   for (const crop of Object.keys(CROPS) as CropId[]) if (CROPS[crop].seed === id) out.push({ kind: 'plant', crop });

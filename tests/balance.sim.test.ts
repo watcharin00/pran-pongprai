@@ -22,6 +22,8 @@ interface Stage {
   /** what this stage is farming for */
   next: WeaponId[];
   vet?: boolean;
+  /** post-game alpha (stacks on vet) */
+  alpha?: boolean;
 }
 
 const STAGES: Stage[] = [
@@ -36,7 +38,9 @@ const STAGES: Stage[] = [
   { goal: 7, weapon: 'bearblade', level: 2, armor: ['bearhood', 'bearcoat', 'serowcharm'], targets: ['muntjac', 'elephant'], next: ['kingblade', 'kingbow'] },
   { goal: 8, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['flyingfox', 'porcupine', 'kingcobra'], next: ['nagamaul', 'batbow', 'nagablade'] },
   { goal: 9, weapon: 'nagablade', level: 3, armor: ['nagahelm', 'nagamail', 'nagacharm'], targets: ['otter', 'mudcrab', 'saltcroc'], next: ['tidespear', 'crabsword', 'pearlbow'] },
-  { goal: 10, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['tiger', 'crocodile', 'bear', 'elephant'], next: [], vet: true },
+  { goal: 10, weapon: 'crabsword', level: 3, armor: ['salthelm', 'saltmail', 'pearlcharm'], targets: ['marbledcat', 'tapir', 'panther'], next: ['tapirhammer', 'catbow', 'pantherglaive'] },
+  { goal: 11, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['tiger', 'crocodile', 'bear', 'elephant'], next: [], vet: true },
+  { goal: 11, weapon: 'pantherglaive', level: 8, armor: ['pantherhood', 'panthercoat', 'panthercharm'], targets: ['tiger', 'saltcroc', 'panther'], next: [], vet: true, alpha: true },
 ];
 
 /** How often the stand-in player reacts to a telegraph in time. */
@@ -85,7 +89,7 @@ function fight(stage: Stage, kind: MonsterId, skill: number, seed: number, dummy
   const spot = openSpot(s);
   s.player.x = spot.x;
   s.player.y = spot.y;
-  const m = createMonster(s.nextId++, kind, spot.x + 70, spot.y, -1, !!stage.vet);
+  const m = createMonster(s.nextId++, kind, spot.x + 70, spot.y, -1, !!stage.vet, !!stage.alpha);
   // a training dummy: same moves, endless HP, to measure sustained damage per second
   if (dummyFor) m.hp = m.maxHp = 1e7;
   s.monsters.push(m);
@@ -164,7 +168,7 @@ describe.runIf(import.meta.env.BALANCE === '1')('balance report', () => {
           };
           const ttk = avg(wins.map((r) => r.time));
           lines.push(
-            `| ${st.goal}${st.vet ? ' vet' : ''} | ${st.weapon}+${st.level} | ${kind} | ${fmt((wins.length / RUNS) * 100)} | ${fmt((rs.filter((r) => r.died).length / RUNS) * 100)} | ${fmt((rs.filter((r) => r.fled).length / RUNS) * 100)} | ${fmt(ttk, 1)} | ${fmt(avg(rs.map((r) => r.damage)))} | ${fmt(avg(rs.map((r) => r.potions)), 1)} | ${partRate(headDrop, 'head')} | ${partRate(tailDrop, 'tail')} |`,
+            `| ${st.goal}${st.alpha ? ' alpha' : st.vet ? ' vet' : ''} | ${st.weapon}+${st.level} | ${kind} | ${fmt((wins.length / RUNS) * 100)} | ${fmt((rs.filter((r) => r.died).length / RUNS) * 100)} | ${fmt((rs.filter((r) => r.fled).length / RUNS) * 100)} | ${fmt(ttk, 1)} | ${fmt(avg(rs.map((r) => r.damage)))} | ${fmt(avg(rs.map((r) => r.potions)), 1)} | ${partRate(headDrop, 'head')} | ${partRate(tailDrop, 'tail')} |`,
           );
           if (skillName === 'average') {
             const drops: ItemBag = {};
@@ -184,7 +188,7 @@ describe.runIf(import.meta.env.BALANCE === '1')('balance report', () => {
       const rs = Array.from({ length: 6 }, (_, i) => fight(st, boss, SKILLS.average, i + 1, 60));
       const dps = avg(rs.map((r) => r.dealt / r.time));
       const taken = avg(rs.map((r) => (r.damage / r.time) * 60));
-      lines.push(`| ${st.goal}${st.vet ? ' vet' : ''} | ${st.weapon}+${st.level} | ${boss} | ${fmt(dps)} | ${fmt(taken)} | ${[10, 20, 40, 60].map((x) => fmt(dps * x)).join(' / ')} |`);
+      lines.push(`| ${st.goal}${st.alpha ? ' alpha' : st.vet ? ' vet' : ''} | ${st.weapon}+${st.level} | ${boss} | ${fmt(dps)} | ${fmt(taken)} | ${[10, 20, 40, 60].map((x) => fmt(dps * x)).join(' / ')} |`);
     }
 
     // economy: hunts needed for the next weapon with the average player's drop rates

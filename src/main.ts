@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { WorldScene } from './scenes/WorldScene';
 import './ui/hud.css';
+import { keepScreenAwake } from './wakeLock';
 
 // The canvas is sized in device pixels and shown at CSS size (zoom = 1/dpr),
 // so pixel art stays crisp on high-DPI phones. WorldScene owns resizing.
@@ -25,6 +26,8 @@ const game = new Phaser.Game({
   banner: false,
   scene: [BootScene, WorldScene],
 });
+
+keepScreenAwake();
 
 if (import.meta.env.DEV) {
   (window as unknown as { game: Phaser.Game }).game = game;

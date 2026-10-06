@@ -1,5 +1,5 @@
 {
-  "upgrade": { "maxLevel": 5, "damageMul": [1, 1.08, 1.16, 1.25, 1.35, 1.5], "orePerLevel": 1 },
+  "upgrade": { "maxLevel": 10, "damageMul": [1, 1.08, 1.16, 1.25, 1.35, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0], "orePerLevel": 1, "finalLevel": 5, "sealsPerLevel": 1 },
   "types": {
     "sword":      { "hitstop": 0.04,  "shake": 0.05, "skills": ["whirl", "dash"] },
     "hammer":     { "hitstop": 0.085, "shake": 0.1,  "skills": ["slam", "sweep"] },
@@ -37,6 +37,10 @@
     "tidespear":   { "type": "spear",      "damage": 80,  "rate": 0.46, "range": 30, "partMul": { "head": 1.6, "tail": 1.5 }, "stun": 10, "color": "#5a8a8a", "signature": "tidelunge",  "upgrade": { "per": { "salthide": 2, "crabshell": 1 }, "final": { "saltfang": 3 } }, "recipe": { "saltfang": 3, "salthide": 5, "crabclaw": 2 } },
     "crabsword":   { "type": "sword",      "damage": 104, "rate": 0.4,  "range": 18, "partMul": { "head": 1.4, "tail": 1.7 }, "stun": 0,  "color": "#e0603a", "signature": "crabpincer", "upgrade": { "per": { "crabshell": 2, "otterpelt": 1 }, "final": { "crabclaw": 3 } }, "recipe": { "crabclaw": 4, "crabshell": 6, "ottertail": 2 } },
     "pearlbow":    { "type": "bow",        "damage": 80,  "rate": 0.36, "range": 88, "partMul": { "head": 1, "tail": 1 }, "stun": 0,  "color": "#3a3a5a", "signature": "pearlrain",  "upgrade": { "per": { "otterpelt": 2, "salthide": 1 }, "final": { "blackpearl": 1 } }, "recipe": { "blackpearl": 1, "salttail": 1, "otterpelt": 6 },
-                     "projectile": { "speed": 400, "range": 125, "pierce": 2 } }
+                     "projectile": { "speed": 400, "range": 125, "pierce": 2 } },
+    "tapirhammer": { "type": "hammer",     "damage": 120, "rate": 0.85, "range": 18, "partMul": { "head": 1.9, "tail": 0.8 }, "stun": 46, "color": "#5a5058", "signature": "stampede",     "upgrade": { "per": { "tapirhide": 2, "catpelt": 1 }, "final": { "tapirsnout": 2 } }, "recipe": { "tapirsnout": 2, "tapirhide": 6, "pantherfang": 1 } },
+    "catbow":      { "type": "bow",        "damage": 98,  "rate": 0.36, "range": 88, "partMul": { "head": 1, "tail": 1 }, "stun": 0,  "color": "#8a7a62", "signature": "catvolley",    "upgrade": { "per": { "catpelt": 2, "tapirhide": 1 }, "final": { "cattail": 2 } }, "recipe": { "cattail": 2, "catpelt": 6, "panthertail": 1 },
+                     "projectile": { "speed": 420, "range": 128, "pierce": 2 } },
+    "pantherglaive": { "type": "greatsword", "damage": 146, "rate": 0.68, "range": 22, "partMul": { "head": 1.7, "tail": 1.7 }, "stun": 24, "color": "#2a2a32", "signature": "shadowcleave", "upgrade": { "per": { "pantherpelt": 2, "catpelt": 1 }, "final": { "panthereye": 1 } }, "recipe": { "panthereye": 1, "pantherfang": 2, "pantherpelt": 6, "cattail": 1 } }
   }
 }

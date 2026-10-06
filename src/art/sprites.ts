@@ -739,7 +739,95 @@ function buildSaltcroc(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   return finish(b);
 }
 
+/** แมวลายหินอ่อน (marbled cat): small grey-brown cat with dark marbled blotches and a long bushy tail. Tail part = tail. */
+function buildMarbledcat(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(27, 15);
+  const o = 1;
+  const B = '#8a7a62';
+  const D = '#4a3e30';
+  // long, thick tail curving up behind; broken = a stub
+  const tail: [number, number][] = tb ? [[6, 7], [5, 7]] : [[6, 7], [5, 7], [4, 6], [3, 6], [2, 5], [2, 4], [3, 3], [4, 3]];
+  tail.forEach(([x, y], i) => rect(b, x + o, y + o, 1, 2, i % 2 ? D : B));
+  legs(b, f, [[8 + o, 0], [10 + o, 1], [15 + o, 0], [17 + o, 1]], 10 + o, 2, 3, B, D, '#2a2018');
+  ell(b, 12.5 + o, 8 + o, 5.6, 2.8, B);
+  // marbled blotches
+  for (const [x, y] of [[9, 7], [11, 6], [13, 8], [15, 7], [10, 9]] as const) {
+    sp(b, x + o, y + o, D);
+    sp(b, x + 1 + o, y + o, D);
+  }
+  // head with round ears
+  ell(b, 19.5 + o, 6.5 + o, 2.8, 2.4, B);
+  sp(b, 18 + o, 3 + o, D);
+  sp(b, 21 + o, 3 + o, D);
+  rect(b, 21 + o, 7 + o, 2, 1, '#d8c8b0');
+  sp(b, 20 + o, 6 + o, '#9fe07a');
+  sp(b, 23 + o, 7 + o, '#221a2a');
+  return finish(b);
+}
+
+/** สมเสร็จ (Malayan tapir): black front and legs, white saddle, short trunk-like snout. Head part = snout. */
+function buildTapir(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(33, 21);
+  const o = 1;
+  const K = '#2a2a30';
+  const W = '#ece8dc';
+  legs(b, f, [[8 + o, 0], [11 + o, 1], [19 + o, 0], [22 + o, 1]], 13 + o, 3, 4, K, '#1a1a20', '#101014');
+  ell(b, 15 + o, 10 + o, 10, 4.6, K);
+  // white saddle over the back half
+  ell(b, 12 + o, 9.6 + o, 5.6, 3.8, W);
+  rect(b, 7 + o, 9 + o, 4, 3, W);
+  ell(b, 12 + o, 8.4 + o, 3.6, 1.2, '#ffffff');
+  // head and short trunk
+  ell(b, 25 + o, 8.5 + o, 3.6, 3.2, K);
+  sp(b, 24 + o, 5 + o, '#3a3a42');
+  sp(b, 24 + o, 4 + o, '#ece8dc');
+  sp(b, 26 + o, 7 + o, '#d8c070');
+  if (!hb) {
+    rect(b, 28 + o, 9 + o, 3, 2, '#3a3a42');
+    sp(b, 31 + o, 11 + o, '#3a3a42');
+  } else {
+    sp(b, 28 + o, 10 + o, '#5a4a52');
+  }
+  return finish(b);
+}
+
+/** เสือดำ (black panther): sleek black big cat with faint rosettes and yellow eyes. Head part = fangs. */
+function buildPanther(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(41, 21);
+  const o = 1;
+  const B = '#24242c';
+  const D = '#16161c';
+  const R = '#34343e';
+  // long tail curving behind; broken = short
+  const len = tb ? 3 : 10;
+  for (let i = 0; i < len; i++) {
+    const x = 9 - i;
+    const y = 8 + Math.round(Math.sin(i * 0.5 + f * 0.7) * 1.2) + (i > 6 ? -1 : 0);
+    rect(b, x + o, y + o, 1, 2, i % 2 ? D : B);
+  }
+  legs(b, f, [[11 + o, 0], [14 + o, 1], [24 + o, 0], [27 + o, 1]], 12 + o, 3, 4, B, D, '#0e0e12');
+  ell(b, 19 + o, 9.5 + o, 10, 3.8, B);
+  ell(b, 18 + o, 7.6 + o, 7, 1.4, '#3e3e4a');
+  // faint rosettes catch the light
+  for (const [x, y] of [[13, 9], [16, 8], [19, 10], [22, 8], [25, 9], [15, 11], [21, 11]] as const) sp(b, x + o, y + o, R);
+  // head, ears, golden eye
+  ell(b, 31 + o, 7.5 + o, 3.8, 3.2, B);
+  sp(b, 29 + o, 4 + o, D);
+  sp(b, 32 + o, 4 + o, D);
+  rect(b, 33 + o, 8 + o, 3, 2, '#2e2e38');
+  sp(b, 32 + o, 7 + o, '#ffd84a');
+  sp(b, 36 + o, 8 + o, '#16161c');
+  if (!hb) {
+    sp(b, 34 + o, 10 + o, '#ffffff');
+    sp(b, 35 + o, 10 + o, '#ffffff');
+  }
+  return finish(b);
+}
+
 export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
+  marbledcat: (f, _hb, tb) => buildMarbledcat(f, tb),
+  tapir: (f, hb) => buildTapir(f, hb),
+  panther: (f, hb, tb) => buildPanther(f, hb, tb),
   otter: (f, _hb, tb) => buildOtter(f, tb),
   mudcrab: (f, hb) => buildMudcrab(f, hb),
   saltcroc: (f, hb, tb) => buildSaltcroc(f, hb, tb),

@@ -1,7 +1,7 @@
 // Hunt requests from the village elder. One request is active at a time: the first
 // unlocked one not yet done. Progress counts automatically from game events; the
 // reward is claimed by talking to the elder, which gives a reason to come home.
-import { REQUESTS } from '../data';
+import { REQUESTS, TUNING } from '../data';
 import type { ItemBag, RequestDef } from '../data/types';
 import { give, goalIndex } from './inventory';
 import type { GameState, RequestState } from './state';
@@ -43,6 +43,8 @@ export function trackRequests(s: GameState): void {
   ev.on('monster:killed', (e) => {
     const g = currentRequest(s)?.goal;
     if (g?.type === 'veteran' && e.vet && (g.monster === undefined || g.monster === e.kind)) advance(s, 1);
+    if (g?.type === 'alpha' && e.alpha && (g.monster === undefined || g.monster === e.kind)) advance(s, 1);
+    if (g?.type === 'swift' && g.monster === e.kind && e.huntLeft >= TUNING.medals.swiftHuntLeft) advance(s, 1);
   });
   ev.on('part:broken', (e) => {
     const g = currentRequest(s)?.goal;

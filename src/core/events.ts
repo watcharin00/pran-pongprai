@@ -17,7 +17,7 @@ export interface CorpseInfo {
 }
 
 export interface GameEvents {
-  'monster:spawned': { id: number; kind: MonsterId; at: Vec2; vet: boolean };
+  'monster:spawned': { id: number; kind: MonsterId; at: Vec2; vet: boolean; alpha: boolean };
   /** `tip` = first hit on this part recently: show the part name */
   'monster:hit': { id: number; kind: MonsterId; part: PartId | 'body'; damage: number; at: Vec2; gold: boolean; big: boolean; tip: boolean; color: string };
   'part:broken': { id: number; kind: MonsterId; part: PartId; at: Vec2; drops: Drops };
@@ -31,6 +31,7 @@ export interface GameEvents {
     /** it never hit the player */
     flawless: boolean;
     vet: boolean;
+    alpha: boolean;
     /** every part it has was broken */
     allParts: boolean;
     /** share of the hunt timer left (0..1) */
