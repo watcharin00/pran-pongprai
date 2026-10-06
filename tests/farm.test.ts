@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { growDuration, harvest, plant, plantAll, plotProgress } from '../src/core/farm';
+import { freePlotsFor, growDuration, harvest, plant, plantAll, plantOne, plotProgress } from '../src/core/farm';
 import { step } from '../src/core/sim';
 import { game, intent, NOW } from './helpers';
 
@@ -67,3 +67,32 @@ describe('crops', () => {
     expect(s.inv.herb).toBeGreaterThan(0);
   });
 });
+
+describe('farm menu: plant one of a crop', () => {
+  it("goes into the first empty plot of that crop's bed, and selects the crop", () => {
+    const s = game();
+    s.inv.seed_rice = 2;
+    s.inv.seed_herb = 0;
+    const free = freePlotsFor(s, 'rice');
+    expect(plantOne(s, 'rice')).toBe(true);
+    expect(s.selCrop).toBe('rice');
+    expect(s.inv.seed_rice).toBe(1);
+    expect(freePlotsFor(s, 'rice')).toBe(free - 1);
+    const planted = s.plots.filter((p) => p.crop === 'rice');
+    expect(planted).toHaveLength(1);
+    expect(planted[0]?.bed).toBe('paddy');
+  });
+
+  it('does nothing without seeds or without a free plot', () => {
+    const s = game();
+    s.inv.seed_herb = 0;
+    expect(plantOne(s, 'herb')).toBe(false);
+    s.inv.seed_herb = 99;
+    const free = freePlotsFor(s, 'herb');
+    let n = 0;
+    while (plantOne(s, 'herb')) n++;
+    expect(n).toBe(free);
+    expect(freePlotsFor(s, 'herb')).toBe(0);
+  });
+});
+

@@ -85,6 +85,23 @@ export function tapPlot(s: GameState, index: number): boolean {
   return harvest(s, index);
 }
 
+/**
+ * Plants one `crop` in the first empty plot of its bed (the farm menu's per-crop button).
+ * Also makes it the selected crop, so "plant all" continues with the same one.
+ */
+export function plantOne(s: GameState, crop: CropId): boolean {
+  s.selCrop = crop;
+  const bed = CROPS[crop].bed;
+  const i = s.plots.findIndex((pl) => pl.bed === bed && !pl.crop);
+  return i >= 0 && plant(s, i, crop);
+}
+
+/** Empty plots that `crop` could go into. */
+export function freePlotsFor(s: GameState, crop: CropId): number {
+  const bed = CROPS[crop].bed;
+  return s.plots.filter((pl) => pl.bed === bed && !pl.crop).length;
+}
+
 /** Plants the selected crop in every empty plot of its bed while seeds last. Returns how many. */
 export function plantAll(s: GameState): number {
   const def = CROPS[s.selCrop];

@@ -1,8 +1,8 @@
 // The single menu: bottom sheet on phones, side drawer on wide screens.
 // The game pauses while it is open.
 import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
-import { ARMOR_SLOTS, MEDALS, type MealEffect, type AreaId, type ArmorId, type ArmorSlot, type WeaponType, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
-import { plantAll, plotProgress, tapPlot } from '../core/farm';
+import { ARMOR_SLOTS, MEDALS, type CropBed, type MealEffect, type AreaId, type ArmorId, type ArmorSlot, type WeaponType, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
+import { freePlotsFor, plantAll, plantOne, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS } from '../core/areas';
 import { ELDER_HOUSE, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
@@ -62,6 +62,8 @@ function strongVs(s: GameState, id: WeaponId): string {
 export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm' | 'book' | 'map';
 type ForgeSub = 'craft' | 'upgrade' | 'armor';
 type MealFilter = 'all' | 'hp' | 'atk' | 'def' | 'st';
+type BedFilter = 'all' | CropBed;
+const BED_FILTERS: readonly BedFilter[] = ['all', 'soil', 'paddy', 'pond'];
 const MEAL_FILTERS: readonly MealFilter[] = ['all', 'hp', 'atk', 'def', 'st'];
 /** Which effect groups a meal belongs to (a meal can be in several). */
 function mealGroups(e: MealEffect): MealFilter[] {
@@ -139,6 +141,7 @@ export class Sheet {
   private armorSel: ArmorId | null = null;
   private mealFilter: MealFilter = 'all';
   private mealSel: MealId | null = null;
+  private bedFilter: BedFilter = 'all';
   private dirty = false;
   private refreshT = 0;
 
@@ -597,17 +600,39 @@ export class Sheet {
     const ids = (Object.keys(MEALS) as MealId[]).filter((id) => this.mealFilter === 'all' || mealGroups(MEALS[id].effect).includes(this.mealFilter));
     const sel = this.mealSel && ids.includes(this.mealSel) ? this.mealSel : cur && ids.includes(cur) ? cur : (ids[0] ?? null);
     this.mealSel = sel;
+    const iv = s.player.inVillage;
     const items = ids.map((id) => {
       const m = MEALS[id];
-      const state = cur === id ? K.eating : canAfford(s.inv, m.recipe) ? K.ready : '';
-      const cls = cur === id ? 'eq' : state ? 'ready' : '';
-      return `<button type="button" class="fitem${id === sel ? ' sel' : ''}" style="--tc:${m.color}" data-ksel="${id}">${img(mealIconUrl(id))}<span class="fname">${th.meals[id].name}</span><span class="fdesc">${th.meals[id].desc}</span>${state ? `<span class="fstate ${cls}">${state}</span>` : ''}</button>`;
+      const can = canAfford(s.inv, m.recipe);
+      const on = cur === id;
+      // the dish card selects; the small button cooks straight away (one tap, pillar 1)
+      return `<div class="fcard${id === sel ? ' sel' : ''}${on ? ' eq' : ''}" style="--tc:${m.color}"><button type="button" class="fitem" data-ksel="${id}">${img(mealIconUrl(id))}<span class="fname">${th.meals[id].name}</span>${this.mealChips(m.effect)}</button><button type="button" class="fquick" data-meal="${id}" ${iv && can && !on ? '' : 'disabled'}>${on ? K.eating : K.cook}</button></div>`;
     });
     const detail = sel ? this.mealDetail(s, sel, curFx) : '';
     const compare = cur && curFx
       ? `<aside class="fcompare" style="--tc:${MEALS[cur].color}"><h4>${K.current}</h4><div class="fhero sm">${img(mealIconUrl(cur), 'big')}</div><b>${th.meals[cur].name}</b><ul class="fstats">${this.mealRows(curFx, null)}</ul></aside>`
       : `<aside class="fcompare"><h4>${K.current}</h4><p class="note">${K.none}</p></aside>`;
-    return `${this.villageNote(s)}<div class="forge">${nav}<section class="fmain"><div class="ftypes">${tabs}</div><div class="fbody"><div class="flist">${items.join('')}</div>${detail}</div></section>${compare}</div>`;
+    return `${this.villageNote(s)}<div class="forge kitchen2">${nav}<section class="fmain"><div class="ftypes">${tabs}</div><div class="fbody"><div class="flist">${items.join('')}</div>${detail}</div>${this.pantry(s)}</section>${compare}</div>`;
+  }
+
+  /** Effects as icon + number chips (heart +30, sword +20% ...). */
+  private mealChips(e: MealEffect): string {
+    const pct = (m: number): number => Math.round((m - 1) * 100);
+    const chips: string[] = [];
+    if (e.maxHpBonus) chips.push(`<i class="hp">${ICONS.heart}+${e.maxHpBonus}</i>`);
+    if (e.attackMul) chips.push(`<i class="atk">${ICONS.attack}+${pct(e.attackMul)}%</i>`);
+    if (e.defense) chips.push(`<i class="def">${ICONS.shield}+${e.defense}</i>`);
+    if (e.staminaRegenMul) chips.push(`<i class="st">${ICONS.dodge}×${e.staminaRegenMul}</i>`);
+    else if (e.dodgeCost) chips.push(`<i class="st">${ICONS.dodge}${e.dodgeCost}</i>`);
+    return `<span class="fchips">${chips.join('')}</span>`;
+  }
+
+  /** Every cooking ingredient the player holds (dimmed when out). */
+  private pantry(s: GameState): string {
+    const used = new Set<MaterialId>();
+    for (const m of Object.values(MEALS)) for (const k of Object.keys(m.recipe)) used.add(k as MaterialId);
+    const chips = [...used].map((id) => `<span class="${s.inv[id] > 0 ? '' : 'out'}">${img(materialIconUrl(id), 'ico sm')}${th.materials[id]}<b>${s.inv[id]}</b></span>`).join('');
+    return `<div class="fpantry"><h4>${th.menu.cookTab.pantry}</h4><div>${chips}</div></div>`;
   }
 
   private mealDetail(s: GameState, id: MealId, curFx: MealEffect | null): string {
@@ -627,35 +652,67 @@ export class Sheet {
     return `<div class="fdetail" style="--tc:${m.color}"><div class="fhead"><div class="fhero">${img(mealIconUrl(id), 'big')}</div><div><h3>${th.meals[id].name}</h3><p class="meta">${th.meals[id].desc}</p></div></div><h4>${K.effects}</h4><ul class="fstats">${this.mealRows(m.effect, on ? null : curFx)}</ul><h4>${K.ingredients}</h4>${this.reqRows(s, m.recipe)}${where ? `<ul class="fwhere">${where}</ul>` : ''}<div class="fbtns">${btn}</div></div>`;
   }
 
+  /** Farm tab: your plots (with timers) and the expected harvest | crop cards with a plant button each. */
   private farm(s: GameState): string {
+    const F = th.menu.farmTab;
     const iv = s.player.inVillage;
-    const sel = CROPS[s.selCrop];
-    let h = iv ? `<p class="note ok">${th.menu.farmInVillage}</p>` : `<p class="note warn">${th.menu.farmNotInVillage}</p>`;
-    h += `<h3 class="sec">${th.menu.seedToPlant}</h3><div class="seeds">${(Object.keys(CROPS) as CropId[])
-      .map((id) => `<button type="button" data-seed="${id}" class="${s.selCrop === id ? 'on' : ''}">${img(materialIconUrl(CROPS[id].seed), 'ico sm')}${th.crops[id].name} <b>${s.inv[CROPS[id].seed]}</b></button>`)
-      .join('')}</div>`;
-    h += `<p class="note">${th.menu.growInfo(th.crops[s.selCrop].name, fmtTime(sel.growSeconds), th.crops[s.selCrop].source)} · ${th.menu.growsIn(th.menu.beds[sel.bed])}</p>`;
-    h += `<label class="chk"><input type="checkbox" id="useFert" ${s.useFert ? 'checked' : ''}> ${th.menu.useFert(s.inv.fert)}</label>`;
-    h += `<div class="row"><span class="note">${th.menu.plantAllHelp}</span><button type="button" class="btn" data-plantall="1" ${iv ? '' : 'disabled'}>${th.menu.plantAll}</button></div>`;
-    // one grid per bed: vegetable plots, rice paddy, fish pond
+    const note = iv ? `<p class="note ok">${th.menu.farmInVillage}</p>` : `<p class="note warn">${th.menu.farmNotInVillage}</p>`;
+
+    // plots, one grid per bed
+    let plots = `<h3 class="sec">${F.plots}</h3>`;
     for (const bed of ['soil', 'paddy', 'pond'] as const) {
       const idx = s.plots.map((pl, i) => [pl, i] as const).filter(([pl]) => pl.bed === bed);
-      if (!idx.length) continue;
-      h += `<h3 class="sec">${th.menu.beds[bed]}</h3>`;
-      h += this.plotGrid(s, idx);
+      if (idx.length) plots += `<h4>${th.menu.beds[bed]}</h4>${this.plotGrid(s, idx)}`;
     }
-    return h;
+    plots += this.expectedHarvest(s);
+    plots += `<p class="fhint">${F.hint}</p>`;
+
+    // crop cards, filtered by bed
+    const tabs = BED_FILTERS.map((b) => `<button type="button" class="${this.bedFilter === b ? 'on' : ''}" data-bed="${b}"><span>${b === 'all' ? F.all : th.menu.beds[b]}</span></button>`).join('');
+    const tools = `<div class="ftools"><label class="chk"><input type="checkbox" id="useFert" ${s.useFert ? 'checked' : ''}> ${th.menu.useFert(s.inv.fert)}</label><button type="button" class="btn" data-plantall="1" ${iv ? '' : 'disabled'}>${th.menu.plantAll} · ${th.crops[s.selCrop].name}</button></div>`;
+    const ids = (Object.keys(CROPS) as CropId[]).filter((c) => this.bedFilter === 'all' || CROPS[c].bed === this.bedFilter);
+    const cards = ids
+      .map((c) => {
+        const def = CROPS[c];
+        const seeds = s.inv[def.seed];
+        const free = freePlotsFor(s, c);
+        const meals = itemUses(def.yield.item)
+          .filter((u): u is Extract<ItemUse, { kind: 'meal' }> => u.kind === 'meal')
+          .map((u) => th.meals[u.meal].name);
+        const btn = free === 0 ? F.noFree : F.plant;
+        return `<div class="fcard crop${s.selCrop === c ? ' sel' : ''}" style="--tc:${def.color}"><button type="button" class="fitem" data-seed="${c}">${img(materialIconUrl(def.yield.item))}<span class="fname">${th.crops[c].name}</span><span class="fdesc">${F.grow(fmtTime(def.growSeconds))} · ${th.menu.beds[def.bed]}</span>${meals.length ? `<span class="fuse">${F.usedIn(meals.join(' '))}</span>` : ''}</button><div class="fside"><span class="${seeds > 0 ? 'have' : 'miss'}">${F.seeds(seeds)}</span><button type="button" class="fquick" data-plantcrop="${c}" ${iv && seeds > 0 && free > 0 ? '' : 'disabled'}>${btn}</button></div></div>`;
+      })
+      .join('');
+    const crops = `<h3 class="sec">${F.crops}</h3><div class="ftypes">${tabs}</div>${tools}<div class="fcrops">${cards}</div>`;
+    return `${note}<div class="farm2"><section class="fplots">${plots}</section><section class="fcroplist">${crops}</section></div>`;
   }
 
+  /** Expected harvest from everything growing: min–max per item. */
+  private expectedHarvest(s: GameState): string {
+    const F = th.menu.farmTab;
+    const sum = new Map<MaterialId, [number, number]>();
+    for (const pl of s.plots) {
+      if (!pl.crop) continue;
+      const y = CROPS[pl.crop].yield;
+      const [a, b] = sum.get(y.item) ?? [0, 0];
+      sum.set(y.item, [a + y.min, b + y.max]);
+    }
+    const rows = [...sum].map(([id, [a, b]]) => `<li>${img(materialIconUrl(id), 'ico sm')}<span>${th.materials[id]}</span><b>×${a === b ? a : `${a}–${b}`}</b></li>`).join('');
+    return `<div class="fyield"><h4>${F.expected}</h4>${rows ? `<ul>${rows}</ul>` : `<p class="note">${F.nothingGrowing}</p>`}</div>`;
+  }
+
+  /** Plot buttons: crop picture, countdown and progress; "+" when empty; glowing when ripe. */
   private plotGrid(s: GameState, plots: readonly (readonly [GameState['plots'][number], number])[]): string {
     const iv = s.player.inVillage;
+    const F = th.menu.farmTab;
     return `<div class="plotgrid">${plots
       .map(([pl, i]) => {
-        if (!pl.crop) return `<button type="button" class="plot" data-plot="${i}" ${iv ? '' : 'disabled'}>${th.menu.plotEmpty}<span class="meta">${th.menu.plotTapToPlant}</span></button>`;
+        if (!pl.crop) return `<button type="button" class="plot empty" data-plot="${i}" ${iv ? '' : 'disabled'} aria-label="${th.menu.plotTapToPlant}"><span class="plus">+</span></button>`;
         const pr = plotProgress(pl, s.now);
         const ripe = pr >= 1;
-        const left = th.menu.plotLeft(fmtTime((pl.dur - (s.now - pl.at)) / 1000));
-        return `<button type="button" class="plot${ripe ? ' ripe' : ''}" data-plot="${i}" ${iv ? '' : 'disabled'}>${th.crops[pl.crop].name}<span class="meta">${ripe ? th.menu.plotRipe : left}</span><span class="pbar"><i style="width:${pr * 100}%;background:${CROPS[pl.crop].color}"></i></span></button>`;
+        const left = fmtTime((pl.dur - (s.now - pl.at)) / 1000);
+        const def = CROPS[pl.crop];
+        return `<button type="button" class="plot${ripe ? ' ripe' : ''}" style="--tc:${def.color}" data-plot="${i}" ${iv ? '' : 'disabled'} aria-label="${th.crops[pl.crop].name}">${img(materialIconUrl(def.yield.item))}<span class="ptime">${ripe ? F.harvest : left}</span><span class="pbar"><i style="width:${pr * 100}%;background:${def.color}"></i></span></button>`;
       })
       .join('')}</div>`;
   }
@@ -822,6 +879,12 @@ export class Sheet {
       this.render();
       return;
     }
+    if (d.bed) {
+      this.bedFilter = d.bed as BedFilter;
+      this.hooks.sfx('ui');
+      this.render();
+      return;
+    }
     if (d.kfilter || d.ksel) {
       if (d.kfilter) this.mealFilter = d.kfilter as MealFilter;
       if (d.ksel) this.mealSel = d.ksel as MealId;
@@ -852,6 +915,9 @@ export class Sheet {
     }
     if (!s.player.inVillage) return;
     if (d.plot !== undefined) tapPlot(s, Number(d.plot));
+    else if (d.plantcrop) {
+      if (plantOne(s, d.plantcrop as CropId)) this.hud.toast(th.log.plantedMany(th.crops[d.plantcrop as CropId].name, 1));
+    }
     else if (d.plantall) {
       const n = plantAll(s);
       if (n) this.hud.toast(th.log.plantedMany(th.crops[s.selCrop].name, n));

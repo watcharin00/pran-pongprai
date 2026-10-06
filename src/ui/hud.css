@@ -423,3 +423,60 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .fitem:has(.fstate) .fdesc{padding-right:42px}
 .fwhere{list-style:none;align-self:stretch;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--warn)}
 .fwhere li{display:flex;align-items:center;gap:6px}
+/* kitchen cards: select on the card, cook with the small button */
+.fcard{position:relative;flex:0 0 228px;display:flex;align-items:stretch;gap:6px;scroll-snap-align:start;background:var(--card);border:2px solid var(--line2);border-radius:10px;padding:2px 6px 2px 2px}
+.fcard.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,209,102,.25);background:#2c3550}
+.fcard.eq{border-color:color-mix(in srgb,var(--gold) 60%,var(--line2))}
+.fcard>.fitem{flex:1;min-width:0;background:none;border:0;padding:4px 6px;min-height:54px}
+.fcard>.fitem.sel{box-shadow:none}
+.fquick{align-self:center;flex:none;min-width:58px;min-height:44px;padding:0 10px;border-radius:8px;font:600 13px var(--display);background:linear-gradient(180deg,#f2c45a,#d8962e);border:2px solid #ffe08a;color:#3a2410}
+.fquick:disabled{background:#2f3a52;border-color:var(--line2);color:var(--muted);opacity:.7}
+.fchips{grid-column:2;display:flex;flex-wrap:wrap;gap:2px 8px}
+.fchips i{display:inline-flex;align-items:center;gap:2px;font:600 12px var(--pixel);font-style:normal}
+.fchips svg{width:13px;height:13px}
+.fchips .hp{color:#ff8a8a}.fchips .atk{color:var(--warn)}.fchips .def{color:#8ac8ff}.fchips .st{color:var(--ok)}
+.fpantry{margin-top:10px}
+.fpantry h4{margin:0 0 6px;font:500 13px var(--display);color:var(--muted)}
+.fpantry>div{display:flex;flex-wrap:wrap;gap:4px}
+.fpantry span{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;background:#1a2030;border:1px solid var(--line2);border-radius:6px;padding:1px 6px}
+.fpantry span b{font:600 12px var(--pixel);color:var(--cream)}
+.fpantry span.out{opacity:.45}
+@media (min-width:760px){.fcard{flex:none}.kitchen2 .fbody{grid-template-columns:236px minmax(0,1fr)}}
+
+/* farm tab: plots first on phones; crops left / plots right on wide screens */
+.farm2{display:flex;flex-direction:column;gap:12px}
+.fplots h4,.fcroplist h4{margin:8px 0 6px;font:500 13px var(--display);color:var(--muted)}
+.fplots .plotgrid{grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.plot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-height:58px;padding:4px;background:linear-gradient(180deg,#5a3e26,#46301e);border:2px solid #6a4a2e;border-radius:10px;color:var(--cream)}
+.plot img{width:26px;height:26px;image-rendering:pixelated}
+.plot .ptime{font:600 11px var(--pixel);color:var(--cream)}
+.plot .pbar{position:absolute;left:6px;right:6px;bottom:5px;height:3px;background:rgba(0,0,0,.4);border-radius:2px;overflow:hidden}
+.plot .pbar i{display:block;height:100%}
+.plot.empty{background:#3a2a1c;border-style:dashed;border-color:#6a4a2e}
+.plot .plus{font:600 26px var(--display);color:#a88a66;line-height:1}
+.plot.ripe{border-color:var(--gold);box-shadow:0 0 10px color-mix(in srgb,var(--gold) 45%,transparent);animation:ripe 1.4s ease-in-out infinite}
+.plot.ripe .ptime{color:var(--gold)}
+@keyframes ripe{50%{box-shadow:0 0 2px transparent}}
+@media (prefers-reduced-motion:reduce){.plot.ripe{animation:none}}
+.fyield{margin-top:10px;background:var(--card);border:2px solid var(--line2);border-radius:10px;padding:8px 10px}
+.fyield h4{margin:0 0 6px}
+.fyield ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.fyield li{display:flex;align-items:center;gap:8px;font-size:13px}
+.fyield li span{flex:1}
+.fyield li b{font:600 13px var(--pixel)}
+.ftools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}
+.fcrops{display:flex;flex-direction:column;gap:6px}
+.fcard.crop{flex:none;padding:4px 8px 4px 2px}
+.fcard.crop .fitem{grid-template-rows:auto auto auto}
+.fcard.crop .fdesc{grid-column:2;font-size:11.5px;color:var(--muted)}
+.fcard.crop .fuse{grid-column:2;font-size:11px;color:var(--ok);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcard.crop .fitem img{grid-row:1/4}
+.fside{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;flex:none;padding:2px 0}
+.fside .have{font-size:11.5px;color:var(--ok)}.fside .miss{font-size:11.5px;color:#f0a89c}
+.farm2 .fhint{display:block}
+@media (min-width:760px){
+  .farm2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start}
+  .fcroplist{order:-1}
+  .fcrops{max-height:min(520px,calc(100dvh - 300px));overflow-y:auto;padding-right:2px}
+}
+@media (min-width:760px){.fplots .plotgrid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}.plot{min-height:68px}.plot img{width:30px;height:30px}}
