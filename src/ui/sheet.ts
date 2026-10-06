@@ -1,7 +1,7 @@
 // The single menu: bottom sheet on phones, side drawer on wide screens.
 // The game pauses while it is open.
 import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
-import { ARMOR_SLOTS, MEDALS, type AreaId, type ArmorId, type ArmorSlot, type WeaponType, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
+import { ARMOR_SLOTS, MEDALS, type MealEffect, type AreaId, type ArmorId, type ArmorSlot, type WeaponType, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS } from '../core/areas';
@@ -61,6 +61,17 @@ function strongVs(s: GameState, id: WeaponId): string {
 
 export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm' | 'book' | 'map';
 type ForgeSub = 'craft' | 'upgrade' | 'armor';
+type MealFilter = 'all' | 'hp' | 'atk' | 'def' | 'st';
+const MEAL_FILTERS: readonly MealFilter[] = ['all', 'hp', 'atk', 'def', 'st'];
+/** Which effect groups a meal belongs to (a meal can be in several). */
+function mealGroups(e: MealEffect): MealFilter[] {
+  const out: MealFilter[] = [];
+  if (e.maxHpBonus) out.push('hp');
+  if (e.attackMul) out.push('atk');
+  if (e.defense) out.push('def');
+  if (e.staminaRegenMul || e.dodgeCost) out.push('st');
+  return out;
+}
 const WEAPON_TYPE_ORDER: readonly WeaponType[] = ['sword', 'hammer', 'greatsword', 'spear', 'bow'];
 /** first weapon of each type, used as that type's tab icon */
 const TYPE_ICON_WEAPON: Record<WeaponType, WeaponId> = Object.fromEntries(
@@ -126,6 +137,8 @@ export class Sheet {
   private forgeSel: WeaponId | null = null;
   private armorSlot: ArmorSlot = 'head';
   private armorSel: ArmorId | null = null;
+  private mealFilter: MealFilter = 'all';
+  private mealSel: MealId | null = null;
   private dirty = false;
   private refreshT = 0;
 
@@ -556,19 +569,62 @@ export class Sheet {
     return `<div class="fdetail t${tier}"><div class="fhead"><div class="fhero">${img(armorIconUrl(id), 'big')}</div><div><h3>${th.armor[id].name}</h3>${this.badge(tier)}<p class="meta">${th.menu.slots[a.slot]} · ${th.armor[id].desc}</p></div></div><ul class="fstats">${rows}</ul>${mats}<div class="fbtns">${btn}</div>${perkLines(s, id)}</div>`;
   }
 
+  /** Effect rows of a meal, with differences against the meal being eaten now. */
+  private mealRows(e: MealEffect, cur: MealEffect | null): string {
+    const K = th.menu.cookTab;
+    const pct = (m: number | undefined): number => Math.round(((m ?? 1) - 1) * 100);
+    let rows = '';
+    if (e.maxHpBonus) rows += this.statRow(K.hp, `+${e.maxHpBonus}`, cur ? e.maxHpBonus - (cur.maxHpBonus ?? 0) : 0);
+    if (e.attackMul) rows += this.statRow(K.atk, `+${pct(e.attackMul)}%`, cur ? pct(e.attackMul) - pct(cur.attackMul) : 0);
+    if (e.defense) rows += this.statRow(K.def, `+${e.defense}`, cur ? e.defense - (cur.defense ?? 0) : 0);
+    if (e.staminaRegenMul) rows += this.statRow(K.regen, `×${e.staminaRegenMul}`);
+    if (e.dodgeCost) rows += this.statRow(K.dodge, `${TUNING.player.roll.staminaCost} → ${e.dodgeCost}`);
+    return rows;
+  }
+
+  /** Kitchen tab, laid out like the forge: what you are eating | filter, list, selected dish | comparison. */
   private kitchen(s: GameState): string {
-    const iv = s.player.inVillage;
+    const K = th.menu.cookTab;
     const cur = activeMeal(s);
-    let h = this.villageNote(s);
-    h += cur && s.player.meal
-      ? `<p class="note">${th.menu.currentMeal} <b style="color:var(--gold)">${th.meals[cur].name}</b> ${th.menu.mealLeft(fmtTime((s.player.meal.until - s.now) / 1000))}</p>`
-      : `<p class="note">${th.menu.mealRule}</p>`;
-    h += '<div class="recipes">';
-    for (const [id, ml] of Object.entries(MEALS) as [MealId, (typeof MEALS)[MealId]][]) {
-      const on = cur === id;
-      h += `<div class="rc${on ? ' eq' : ''}"><h3>${img(mealIconUrl(id))}${th.meals[id].name}</h3><div class="meta">${th.meals[id].desc}</div><div class="req">${this.req(s, ml.recipe)}</div><button type="button" class="primary" data-meal="${id}" ${iv && canAfford(s.inv, ml.recipe) && !on ? '' : 'disabled'}>${on ? th.menu.eating : th.menu.cookAndEat}</button></div>`;
-    }
-    return `${h}</div>`;
+    const curFx = cur ? MEALS[cur].effect : null;
+    const nowCard = cur && s.player.meal
+      ? `<div class="fpotion fmeal" style="--tc:${MEALS[cur].color}">${img(mealIconUrl(cur))}<div><b>${K.current}</b><span class="now">${th.meals[cur].name}</span><span>${th.menu.mealLeft(fmtTime((s.player.meal.until - s.now) / 1000))}</span></div></div>`
+      : `<div class="fpotion fmeal"><span class="fmeal-ico">${ICONS.bowl}</span><div><b>${K.current}</b><span>${K.none}</span></div></div>`;
+    const nav = `<nav class="fsub">${nowCard}<p class="note">${K.rule}</p><p class="fhint">${K.hint}</p></nav>`;
+
+    const icons: Record<MealFilter, string> = { all: ICONS.bowl, hp: ICONS.heart, atk: ICONS.attack, def: ICONS.shield, st: ICONS.dodge };
+    const tabs = MEAL_FILTERS.map((f) => `<button type="button" class="${this.mealFilter === f ? 'on' : ''}" data-kfilter="${f}">${icons[f]}<span>${K.filters[f]}</span></button>`).join('');
+    const ids = (Object.keys(MEALS) as MealId[]).filter((id) => this.mealFilter === 'all' || mealGroups(MEALS[id].effect).includes(this.mealFilter));
+    const sel = this.mealSel && ids.includes(this.mealSel) ? this.mealSel : cur && ids.includes(cur) ? cur : (ids[0] ?? null);
+    this.mealSel = sel;
+    const items = ids.map((id) => {
+      const m = MEALS[id];
+      const state = cur === id ? K.eating : canAfford(s.inv, m.recipe) ? K.ready : '';
+      const cls = cur === id ? 'eq' : state ? 'ready' : '';
+      return `<button type="button" class="fitem${id === sel ? ' sel' : ''}" style="--tc:${m.color}" data-ksel="${id}">${img(mealIconUrl(id))}<span class="fname">${th.meals[id].name}</span><span class="fdesc">${th.meals[id].desc}</span>${state ? `<span class="fstate ${cls}">${state}</span>` : ''}</button>`;
+    });
+    const detail = sel ? this.mealDetail(s, sel, curFx) : '';
+    const compare = cur && curFx
+      ? `<aside class="fcompare" style="--tc:${MEALS[cur].color}"><h4>${K.current}</h4><div class="fhero sm">${img(mealIconUrl(cur), 'big')}</div><b>${th.meals[cur].name}</b><ul class="fstats">${this.mealRows(curFx, null)}</ul></aside>`
+      : `<aside class="fcompare"><h4>${K.current}</h4><p class="note">${K.none}</p></aside>`;
+    return `${this.villageNote(s)}<div class="forge">${nav}<section class="fmain"><div class="ftypes">${tabs}</div><div class="fbody"><div class="flist">${items.join('')}</div>${detail}</div></section>${compare}</div>`;
+  }
+
+  private mealDetail(s: GameState, id: MealId, curFx: MealEffect | null): string {
+    const K = th.menu.cookTab;
+    const m = MEALS[id];
+    const on = activeMeal(s) === id;
+    const iv = s.player.inVillage;
+    // missing ingredients say where to get them (the farm feeds the hunt)
+    const where = Object.entries(m.recipe)
+      .filter(([k, n]) => s.inv[k as MaterialId] < (n ?? 0))
+      .map(([k]) => {
+        const src = itemSources(k as MaterialId)[0];
+        return src ? `<li>${img(materialIconUrl(k as MaterialId), 'ico sm')}${th.materials[k as MaterialId]} · ${K.from(sourceText(src))}</li>` : '';
+      })
+      .join('');
+    const btn = `<button type="button" class="fbtn primary" data-meal="${id}" ${iv && canAfford(s.inv, m.recipe) && !on ? '' : 'disabled'}>${ICONS.bowl}${on ? th.menu.eating : th.menu.cookAndEat}</button>`;
+    return `<div class="fdetail" style="--tc:${m.color}"><div class="fhead"><div class="fhero">${img(mealIconUrl(id), 'big')}</div><div><h3>${th.meals[id].name}</h3><p class="meta">${th.meals[id].desc}</p></div></div><h4>${K.effects}</h4><ul class="fstats">${this.mealRows(m.effect, on ? null : curFx)}</ul><h4>${K.ingredients}</h4>${this.reqRows(s, m.recipe)}${where ? `<ul class="fwhere">${where}</ul>` : ''}<div class="fbtns">${btn}</div></div>`;
   }
 
   private farm(s: GameState): string {
@@ -763,6 +819,13 @@ export class Sheet {
     }
     if (d.filter) {
       this.filter = d.filter as BagFilter;
+      this.render();
+      return;
+    }
+    if (d.kfilter || d.ksel) {
+      if (d.kfilter) this.mealFilter = d.kfilter as MealFilter;
+      if (d.ksel) this.mealSel = d.ksel as MealId;
+      this.hooks.sfx('ui');
       this.render();
       return;
     }
