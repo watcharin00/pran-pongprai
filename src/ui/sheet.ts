@@ -1,7 +1,7 @@
 // The single menu: bottom sheet on phones, side drawer on wide screens.
 // The game pauses while it is open.
 import { ARMOR, ARMOR_IDS, CROPS, MATERIALS, MATERIAL_IDS, MEALS, MONSTERS, MONSTER_IDS, SKILLS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
-import { ARMOR_SLOTS, MEDALS, type AreaId, type ArmorId, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
+import { ARMOR_SLOTS, MEDALS, type AreaId, type ArmorId, type ArmorSlot, type WeaponType, type CropId, type ItemBag, type MaterialId, type MealId, type MonsterId, type PartId, type PerkId, type WeaponId } from '../data/types';
 import { plantAll, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS } from '../core/areas';
@@ -18,7 +18,7 @@ import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
 import type { Hud } from './hud';
 import type { SfxName, SoundSettings } from '../audio/sfx';
-import { itemSources, itemUses, monsterWhere, type ItemSource, type ItemUse } from './itemInfo';
+import { gearTier, itemSources, itemUses, monsterWhere, type ItemSource, type ItemUse } from './itemInfo';
 
 type BagFilter = 'all' | 'gear' | 'material' | 'seed';
 const FILTERS: BagFilter[] = ['all', 'gear', 'material', 'seed'];
@@ -60,6 +60,13 @@ function strongVs(s: GameState, id: WeaponId): string {
 }
 
 export type Tab = 'bag' | 'forge' | 'kitchen' | 'farm' | 'book' | 'map';
+type ForgeSub = 'craft' | 'upgrade' | 'armor';
+const WEAPON_TYPE_ORDER: readonly WeaponType[] = ['sword', 'hammer', 'greatsword', 'spear', 'bow'];
+/** first weapon of each type, used as that type's tab icon */
+const TYPE_ICON_WEAPON: Record<WeaponType, WeaponId> = Object.fromEntries(
+  WEAPON_TYPE_ORDER.map((t) => [t, (Object.keys(WEAPONS) as WeaponId[]).find((k) => WEAPONS[k].type === t) ?? 'bone']),
+) as Record<WeaponType, WeaponId>;
+const SKILL_ICONS = ICONS as Readonly<Record<string, string>>;
 export const TABS: readonly Tab[] = ['bag', 'forge', 'kitchen', 'farm', 'book', 'map'];
 
 /** World-map grid position (column, row) of each area, matching the exits. */
@@ -114,6 +121,11 @@ export class Sheet {
   private filter: BagFilter = 'all';
   private sel: ItemKey | null = null;
   private bookSel: MonsterId | null = null;
+  private forgeSub: ForgeSub = 'craft';
+  private forgeType: WeaponType = 'sword';
+  private forgeSel: WeaponId | null = null;
+  private armorSlot: ArmorSlot = 'head';
+  private armorSel: ArmorId | null = null;
   private dirty = false;
   private refreshT = 0;
 
@@ -236,7 +248,20 @@ export class Sheet {
       map: (st) => this.worldMap(st),
     };
     const html = views[this.tab](s);
+    const list = this.body.querySelector<HTMLElement>('.flist');
+    const keep = list ? { left: list.scrollLeft, top: list.scrollTop } : null;
     this.body.innerHTML = html;
+    const next = this.body.querySelector<HTMLElement>('.flist');
+    if (keep && next) {
+      next.scrollLeft = keep.left;
+      next.scrollTop = keep.top;
+    }
+    // the chosen weapon-type / armor-slot tab may sit off the edge of the scrolling tab row on phones
+    const tab = this.body.querySelector<HTMLElement>('.ftypes .on');
+    if (tab?.parentElement) {
+      const row = tab.parentElement;
+      if (tab.offsetLeft < row.scrollLeft || tab.offsetLeft + tab.offsetWidth > row.scrollLeft + row.clientWidth) row.scrollLeft = tab.offsetLeft - 8;
+    }
   }
 
   private req(s: GameState, rec: ItemBag): string {
@@ -369,43 +394,166 @@ export class Sheet {
     return `<div class="detail">${img(materialIconUrl(id), 'ico lg')}<div><b>${th.materials[id]}</b>${tag}<p class="meta">${M.have(s.inv[id])}</p><div class="dcols"><div><h4>${M.sourcesTitle}</h4><ul>${src}</ul></div><div><h4>${M.usesTitle}</h4><ul>${use}</ul></div></div></div></div>`;
   }
 
+  /** Materials as rows: icon, name, have/need, tick or cross. */
+  private reqRows(s: GameState, rec: ItemBag): string {
+    const rows = Object.entries(rec).map(([k, n]) => {
+      const id = k as MaterialId;
+      const need = n ?? 0;
+      const have = s.inv[id];
+      const ok = have >= need;
+      return `<li class="${ok ? 'have' : 'miss'}">${img(materialIconUrl(id), 'ico sm')}<span>${th.materials[id]}</span><b>${have}/${need}</b><i>${ok ? '✓' : '✗'}</i></li>`;
+    });
+    return `<ul class="freq">${rows.join('')}</ul>`;
+  }
+
+  /** One stat row, with an optional difference against the gear in use. */
+  private statRow(label: string, value: string, delta = 0): string {
+    const d = Math.round(delta);
+    const diff = d ? `<em class="${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${d}</em>` : '';
+    return `<li><span>${label}</span><b>${value}</b>${diff}</li>`;
+  }
+
+  private badge(tier: number): string {
+    return `<span class="badge t${tier}">${th.menu.forge.tiers[tier] ?? ''}</span>`;
+  }
+
+  /** Forge tab: a sub-menu (craft / upgrade / armor), a filtered list, the selected item, and a comparison on wide screens. */
   private forge(s: GameState): string {
-    const p = s.player;
-    const iv = p.inVillage;
-    let h = `${this.villageNote(s)}<h3 class="sec">${th.menu.weaponsTitle}</h3><p class="note">${th.menu.upgradeHint(WEAPONS_DATA.upgrade.finalLevel, WEAPONS_DATA.upgrade.maxLevel)}</p><div class="recipes">`;
-    for (const [k, w] of Object.entries(WEAPONS) as [WeaponId, (typeof WEAPONS)[WeaponId]][]) {
-      const own = s.owned.has(k);
-      const eq = p.weapon === k;
-      let btn: string;
-      if (eq) btn = `<button type="button" disabled>${th.menu.equipped}</button>`;
-      else if (own) btn = `<button type="button" data-equip="${k}" ${iv ? '' : 'disabled'}>${th.menu.equip}</button>`;
-      else btn = `<button type="button" class="primary" data-craft="${k}" ${iv && w.recipe && canAfford(s.inv, w.recipe) ? '' : 'disabled'}>${th.menu.craft}</button>`;
-      const speed = w.rate < 0.5 ? th.menu.speed.fast : w.rate < 0.8 ? th.menu.speed.mid : th.menu.speed.slow;
-      let up = '';
-      if (own) {
-        const cost = upgradeCost(s, k);
-        const lv = weaponLevel(s, k);
-        up = cost
-          ? `<div class="req">${this.req(s, cost)}</div><button type="button" class="primary" data-upgrade="${k}" ${iv && canAfford(s.inv, cost) ? '' : 'disabled'}>${th.menu.upgrade(lv + 1)}</button>`
-          : `<p class="note ok">${th.menu.maxLevel}</p>`;
-      }
-      h += `<div class="rc${eq ? ' eq' : ''}"><h3>${img(weaponIconUrl(k))}${th.weaponName(k, weaponLevel(s, k))}</h3><div class="meta">${th.menu.weaponMeta(th.weaponTypes[w.type], Math.round(weaponPower(s, k)), speed, th.weapons[k].desc)}</div>${strongVs(s, k)}${own || !w.recipe ? '' : `<div class="req">${this.req(s, w.recipe)}</div>`}<div class="rcbtns">${btn}</div>${up}</div>`;
-    }
-    h += `</div><h3 class="sec">${th.menu.armorTitle}</h3><div class="recipes">`;
-    for (const id of ARMOR_IDS) {
-      const a = ARMOR[id];
-      const own = s.ownedArmor.has(id);
-      const on = s.armor[a.slot] === id;
-      let btn: string;
-      if (on) btn = `<button type="button" data-unequip="${id}" ${iv ? '' : 'disabled'}>${th.menu.unequip}</button>`;
-      else if (own) btn = `<button type="button" data-wear="${id}" ${iv ? '' : 'disabled'}>${th.menu.wear}</button>`;
-      else btn = `<button type="button" class="primary" data-armorcraft="${id}" ${iv && canAfford(s.inv, a.recipe) ? '' : 'disabled'}>${th.menu.craftArmor}</button>`;
-      h += `<div class="rc${on ? ' eq' : ''}"><h3>${img(armorIconUrl(id))}${th.armor[id].name}</h3><div class="meta">${th.menu.armorMeta(th.menu.slots[a.slot], a.defense, a.maxHp, a.stamina)}</div>${perkLines(s, id)}${own ? '' : `<div class="req">${this.req(s, a.recipe)}</div>`}${btn}</div>`;
-    }
-    h += `</div><h3 class="sec">${th.menu.potionName}</h3><div class="recipes">`;
+    const F = th.menu.forge;
+    const subs: [ForgeSub, string, string][] = [
+      ['craft', ICONS.tab_forge, F.craft],
+      ['upgrade', ICONS.up, F.upgrade],
+      ['armor', ICONS.shield, F.armor],
+    ];
+    const nav = subs.map(([k, ic, label]) => `<button type="button" class="${this.forgeSub === k ? 'on' : ''}" data-fsub="${k}">${ic}<span>${label}</span></button>`).join('');
+    const body = this.forgeSub === 'armor' ? this.forgeArmor(s) : this.forgeWeapons(s);
+    return `${this.villageNote(s)}<div class="forge"><nav class="fsub">${nav}${this.potionCard(s)}<p class="fhint">${F.hint}</p></nav>${body}</div>`;
+  }
+
+  private potionCard(s: GameState): string {
     const P = TUNING.player.potion;
-    h += `<div class="rc"><h3>${img(potionIconUrl())}${th.menu.potionName}</h3><div class="meta">${th.menu.potionMeta(P.heal, p.potions)}</div><div class="req">${this.req(s, { herb: P.herbCost })}</div><button type="button" class="primary" data-potion="1" ${iv && s.inv.herb >= P.herbCost ? '' : 'disabled'}>${th.menu.brew}</button></div></div>`;
-    return h;
+    const ok = s.player.inVillage && s.inv.herb >= P.herbCost;
+    return `<div class="fpotion">${img(potionIconUrl())}<div><b>${th.menu.potionName}</b><span>${th.menu.potionMeta(P.heal, s.player.potions)}</span><span class="${s.inv.herb >= P.herbCost ? 'have' : 'miss'}">${th.materials.herb} ${s.inv.herb}/${P.herbCost}</span></div><button type="button" data-potion="1" ${ok ? '' : 'disabled'}>${th.menu.brew}</button></div>`;
+  }
+
+  private forgeWeapons(s: GameState): string {
+    const F = th.menu.forge;
+    const p = s.player;
+    const upgrading = this.forgeSub === 'upgrade';
+    const tabs = WEAPON_TYPE_ORDER.map(
+      (t) => `<button type="button" class="${this.forgeType === t ? 'on' : ''}" data-ftype="${t}">${img(weaponIconUrl(TYPE_ICON_WEAPON[t]), 'ico sm')}<span>${th.weaponTypes[t]}</span></button>`,
+    ).join('');
+    const list = (Object.keys(WEAPONS) as WeaponId[]).filter((k) => WEAPONS[k].type === this.forgeType && (!upgrading || s.owned.has(k)));
+    const sel = this.forgeSel && list.includes(this.forgeSel) ? this.forgeSel : list.includes(p.weapon) ? p.weapon : (list[0] ?? null);
+    this.forgeSel = sel;
+    const items = list.map((k) => {
+      const w = WEAPONS[k];
+      const tier = gearTier(w.recipe);
+      const state = p.weapon === k ? F.equipped : s.owned.has(k) ? F.owned : w.recipe && canAfford(s.inv, w.recipe) ? F.ready : '';
+      const cls = p.weapon === k ? 'eq' : s.owned.has(k) ? 'own' : state ? 'ready' : '';
+      return `<button type="button" class="fitem t${tier}${k === sel ? ' sel' : ''}" data-fsel="${k}">${img(weaponIconUrl(k))}<span class="fname">${th.weaponName(k, weaponLevel(s, k))}</span>${this.badge(tier)}${state ? `<span class="fstate ${cls}">${state}</span>` : ''}</button>`;
+    });
+    const detail = sel ? this.weaponDetail(s, sel) : `<p class="note">${F.noneOwned}</p>`;
+    const hint = upgrading ? `<p class="note">${th.menu.upgradeHint(WEAPONS_DATA.upgrade.finalLevel, WEAPONS_DATA.upgrade.maxLevel)}</p>` : '';
+    return `<section class="fmain"><div class="ftypes">${tabs}</div>${hint}<div class="fbody"><div class="flist">${items.join('')}</div>${detail}</div></section>${this.weaponCompare(s)}`;
+  }
+
+  private weaponDetail(s: GameState, k: WeaponId): string {
+    const F = th.menu.forge;
+    const p = s.player;
+    const w = WEAPONS[k];
+    const tier = gearTier(w.recipe);
+    const own = s.owned.has(k);
+    const eq = p.weapon === k;
+    const iv = p.inVillage;
+    const lv = weaponLevel(s, k);
+    const UP = WEAPONS_DATA.upgrade;
+    const upgrading = this.forgeSub === 'upgrade';
+    const power = weaponPower(s, k);
+    const next = upgrading && lv < UP.maxLevel ? w.damage * (UP.damageMul[lv + 1] ?? 1) : null;
+    const curPower = weaponPower(s, p.weapon);
+    const speed = w.rate < 0.5 ? th.menu.speed.fast : w.rate < 0.8 ? th.menu.speed.mid : th.menu.speed.slow;
+    let rows = '';
+    if (next !== null) rows += this.statRow(F.power, `${Math.round(power)} → ${Math.round(next)}`, next - power);
+    else rows += this.statRow(F.power, `${Math.round(power)}`, eq ? 0 : power - curPower);
+    rows += this.statRow(F.speed, `${speed} · ${w.rate} วิ`);
+    rows += this.statRow(F.head, `×${w.partMul.head}`);
+    rows += this.statRow(F.tail, `×${w.partMul.tail}`);
+    if (w.stun) rows += this.statRow(F.stun, `${w.stun}`);
+    if (w.projectile) rows += this.statRow(F.range, `${w.range}`);
+    if (own) rows += this.statRow(F.level, `+${lv} / +${UP.maxLevel}`);
+    const sig = th.skills[w.signature];
+    const sigHtml = `<div class="fsig">${SKILL_ICONS[w.signature] ?? ''}<div><b>${F.signature} · ${sig.name}</b><span>${sig.desc}</span></div></div>`;
+
+    let mats = '';
+    let btns = '';
+    if (upgrading) {
+      const cost = upgradeCost(s, k);
+      mats = cost ? `<h4>${F.upgradeCost(lv + 1)}</h4>${this.reqRows(s, cost)}` : `<p class="note ok">${th.menu.maxLevel}</p>`;
+      if (cost) btns += `<button type="button" class="fbtn primary" data-upgrade="${k}" ${iv && canAfford(s.inv, cost) ? '' : 'disabled'}>${ICONS.up}${th.menu.upgrade(lv + 1)}</button>`;
+      if (!eq) btns += `<button type="button" class="fbtn" data-equip="${k}" ${iv ? '' : 'disabled'}>${th.menu.equip}</button>`;
+    } else {
+      if (!own) mats = w.recipe ? `<h4>${F.materials}</h4>${this.reqRows(s, w.recipe)}` : `<p class="note">${F.starter}</p>`;
+      if (eq) btns = `<button type="button" class="fbtn" disabled>${th.menu.equipped}</button>`;
+      else if (own) btns = `<button type="button" class="fbtn" data-equip="${k}" ${iv ? '' : 'disabled'}>${th.menu.equip}</button>`;
+      else btns = `<button type="button" class="fbtn primary" data-craft="${k}" ${iv && w.recipe && canAfford(s.inv, w.recipe) ? '' : 'disabled'}>${ICONS.tab_forge}${th.menu.craft}</button>`;
+    }
+    return `<div class="fdetail t${tier}"><div class="fhead"><div class="fhero">${img(weaponIconUrl(k), 'big')}</div><div><h3>${th.weaponName(k, lv)}</h3>${this.badge(tier)}<p class="meta">${th.weaponTypes[w.type]} · ${th.weapons[k].desc}</p></div></div><ul class="fstats">${rows}</ul>${mats}<div class="fbtns">${btns}</div>${sigHtml}${strongVs(s, k)}</div>`;
+  }
+
+  /** Wide screens: the weapon in hand, to compare against. */
+  private weaponCompare(s: GameState): string {
+    const F = th.menu.forge;
+    const k = s.player.weapon;
+    const w = WEAPONS[k];
+    const speed = w.rate < 0.5 ? th.menu.speed.fast : w.rate < 0.8 ? th.menu.speed.mid : th.menu.speed.slow;
+    const rows = this.statRow(F.power, `${Math.round(weaponPower(s, k))}`) + this.statRow(F.speed, speed) + this.statRow(F.head, `×${w.partMul.head}`) + this.statRow(F.tail, `×${w.partMul.tail}`);
+    return `<aside class="fcompare"><h4>${F.current}</h4><div class="fhero sm">${img(weaponIconUrl(k), 'big')}</div><b>${th.weaponName(k, weaponLevel(s, k))}</b>${this.badge(gearTier(w.recipe))}<ul class="fstats">${rows}</ul></aside>`;
+  }
+
+  private forgeArmor(s: GameState): string {
+    const F = th.menu.forge;
+    const tabs = ARMOR_SLOTS.map(
+      (slot) => `<button type="button" class="${this.armorSlot === slot ? 'on' : ''}" data-aslot="${slot}">${img(armorSlotIconUrl(slot), 'ico sm')}<span>${th.menu.slots[slot]}</span></button>`,
+    ).join('');
+    const list = ARMOR_IDS.filter((id) => ARMOR[id].slot === this.armorSlot);
+    const worn = s.armor[this.armorSlot];
+    const sel = this.armorSel && list.includes(this.armorSel) ? this.armorSel : worn && list.includes(worn) ? worn : (list[0] ?? null);
+    this.armorSel = sel;
+    const items = list.map((id) => {
+      const a = ARMOR[id];
+      const tier = gearTier(a.recipe);
+      const state = worn === id ? F.worn : s.ownedArmor.has(id) ? F.owned : canAfford(s.inv, a.recipe) ? F.ready : '';
+      const cls = worn === id ? 'eq' : s.ownedArmor.has(id) ? 'own' : state ? 'ready' : '';
+      return `<button type="button" class="fitem t${tier}${id === sel ? ' sel' : ''}" data-asel="${id}">${img(armorIconUrl(id))}<span class="fname">${th.armor[id].name}</span>${this.badge(tier)}${state ? `<span class="fstate ${cls}">${state}</span>` : ''}</button>`;
+    });
+    const detail = sel ? this.armorDetail(s, sel) : '';
+    const cur = worn ? ARMOR[worn] : null;
+    const compare = cur && worn
+      ? `<aside class="fcompare"><h4>${F.current}</h4><div class="fhero sm">${img(armorIconUrl(worn), 'big')}</div><b>${th.armor[worn].name}</b>${this.badge(gearTier(cur.recipe))}<ul class="fstats">${this.statRow(th.menu.stats.defense, `${cur.defense}`)}${this.statRow(th.menu.stats.hp, `+${cur.maxHp}`)}${this.statRow(th.menu.stats.stamina, `+${cur.stamina}`)}</ul></aside>`
+      : `<aside class="fcompare"><h4>${F.current}</h4><p class="note">${F.nothingWorn}</p></aside>`;
+    return `<section class="fmain"><div class="ftypes">${tabs}</div><div class="fbody"><div class="flist">${items.join('')}</div>${detail}</div></section>${compare}`;
+  }
+
+  private armorDetail(s: GameState, id: ArmorId): string {
+    const a = ARMOR[id];
+    const tier = gearTier(a.recipe);
+    const iv = s.player.inVillage;
+    const own = s.ownedArmor.has(id);
+    const worn = s.armor[a.slot];
+    const on = worn === id;
+    const cur = worn ? ARMOR[worn] : null;
+    const S = th.menu.stats;
+    const rows =
+      this.statRow(S.defense, `${a.defense}`, on ? 0 : a.defense - (cur?.defense ?? 0)) +
+      this.statRow(S.hp, `+${a.maxHp}`, on ? 0 : a.maxHp - (cur?.maxHp ?? 0)) +
+      this.statRow(S.stamina, `+${a.stamina}`, on ? 0 : a.stamina - (cur?.stamina ?? 0));
+    let btn: string;
+    if (on) btn = `<button type="button" class="fbtn" data-unequip="${id}" ${iv ? '' : 'disabled'}>${th.menu.unequip}</button>`;
+    else if (own) btn = `<button type="button" class="fbtn" data-wear="${id}" ${iv ? '' : 'disabled'}>${th.menu.wear}</button>`;
+    else btn = `<button type="button" class="fbtn primary" data-armorcraft="${id}" ${iv && canAfford(s.inv, a.recipe) ? '' : 'disabled'}>${ICONS.shield}${th.menu.craftArmor}</button>`;
+    const mats = own ? '' : `<h4>${th.menu.forge.materials}</h4>${this.reqRows(s, a.recipe)}`;
+    return `<div class="fdetail t${tier}"><div class="fhead"><div class="fhero">${img(armorIconUrl(id), 'big')}</div><div><h3>${th.armor[id].name}</h3>${this.badge(tier)}<p class="meta">${th.menu.slots[a.slot]} · ${th.armor[id].desc}</p></div></div><ul class="fstats">${rows}</ul>${mats}<div class="fbtns">${btn}</div>${perkLines(s, id)}</div>`;
   }
 
   private kitchen(s: GameState): string {
@@ -615,6 +763,16 @@ export class Sheet {
     }
     if (d.filter) {
       this.filter = d.filter as BagFilter;
+      this.render();
+      return;
+    }
+    if (d.fsub || d.ftype || d.fsel || d.aslot || d.asel) {
+      if (d.fsub) this.forgeSub = d.fsub as ForgeSub;
+      if (d.ftype) this.forgeType = d.ftype as WeaponType;
+      if (d.fsel) this.forgeSel = d.fsel as WeaponId;
+      if (d.aslot) this.armorSlot = d.aslot as ArmorSlot;
+      if (d.asel) this.armorSel = d.asel as ArmorId;
+      this.hooks.sfx('ui');
       this.render();
       return;
     }

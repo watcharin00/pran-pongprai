@@ -1,8 +1,8 @@
 // Where an item comes from and what it is used for, derived from the content
 // JSON so new monsters/recipes show up in the bag without extra wiring.
-import { ARMOR, CROPS, MEALS, MONSTERS, MONSTER_IDS, REQUESTS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
+import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, MONSTER_IDS, REQUESTS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import * as th from '../i18n/th';
-import type { ArmorId, CropId, MaterialId, MealId, MonsterId, PartId, WeaponId } from '../data/types';
+import type { AreaId, ArmorId, CropId, ItemBag, MaterialId, MealId, MonsterId, PartId, WeaponId } from '../data/types';
 
 export type ItemSource =
   | { kind: 'part'; monster: MonsterId; part: PartId }
@@ -76,3 +76,33 @@ export function monsterWhere(k: MonsterId): string {
   if (def.spawnEastOfRiver) return th.menu.book.eastBank;
   return th.zones[def.zone];
 }
+
+/** How far into the world each area is, for gear tiers (a compile error here when an area is added). */
+const AREA_RANK: Readonly<Record<AreaId, number>> = { home: 0, bamboo: 1, swamp: 1, limestone: 2, deepwild: 2, cave: 3, mangrove: 3, peat: 4, savanna: 4 };
+/** Monster HP bands: the tiger, bear and boss tiers stand out even inside early areas. */
+const hpBand = (hp: number): number => (hp <= 600 ? 0 : hp <= 3600 ? 1 : hp <= 8000 ? 2 : hp <= 13000 ? 3 : 4);
+
+/**
+ * Display tier 0..4 (common → legendary) of a craftable piece, derived from data: each material
+ * counts as its easiest source (area depth or monster toughness, whichever is higher), the
+ * hardest material sets the tier, and a rare (rarity 2) material lifts it one more step.
+ */
+export function gearTier(recipe: ItemBag | null): number {
+  if (!recipe) return 0;
+  let tier = 0;
+  let rare = false;
+  for (const [k, n] of Object.entries(recipe)) {
+    if (!n) continue;
+    const id = k as MaterialId;
+    if ((MATERIALS[id].rarity ?? 0) >= 2) rare = true;
+    let easiest = Infinity;
+    for (const src of itemSources(id)) {
+      if (!('monster' in src)) continue;
+      const def = MONSTERS[src.monster];
+      easiest = Math.min(easiest, Math.max(AREA_RANK[def.area] ?? 0, hpBand(def.hp)));
+    }
+    if (Number.isFinite(easiest)) tier = Math.max(tier, easiest);
+  }
+  return Math.min(4, tier + (rare ? 1 : 0));
+}
+

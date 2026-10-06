@@ -315,3 +315,101 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .reqbox .n{font-family:var(--pixel);color:var(--cream);margin-left:4px}
 .reqbar{display:block;position:relative;height:6px;margin:6px 0 2px;background:#1a1008;border-radius:3px;overflow:hidden}
 .reqbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(#ffe08a,#e8b440)}
+
+/* ---------------------------------------------------------------- forge tab
+   sub-menu | (type tabs, item list, selected item) | in-use comparison (wide only).
+   Tier colours: t0 common grey … t4 legendary gold. */
+.t0{--tc:#9aa3b5}.t1{--tc:#6fcf6a}.t2{--tc:#4aa8ff}.t3{--tc:#b07aff}.t4{--tc:#ffb84a}
+.forge{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.fsub{display:flex;flex-wrap:wrap;gap:6px}
+.fsub>button{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;background:var(--card);border:2px solid var(--line2);border-radius:10px;font:500 13.5px var(--display);color:var(--muted);white-space:nowrap}
+.fsub>button.on{background:linear-gradient(180deg,#5a4a22,#3a3018);border-color:var(--gold);color:var(--gold)}
+.fsub svg{width:20px;height:20px;flex:none}
+.fhint{display:none;margin:4px 2px 0;font-size:11.5px;color:var(--muted);font-style:italic}
+.fpotion{flex-basis:100%;display:flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--line2);border-radius:10px;padding:6px 8px}
+.fpotion .ico{width:28px;height:28px}
+.fpotion div{flex:1;min-width:0;display:flex;flex-direction:column;font-size:11.5px;color:var(--muted)}
+.fpotion b{color:var(--cream);font:500 13px var(--display)}
+.fpotion .have{color:var(--ok)}.fpotion .miss{color:#f0a89c}
+.fpotion button{min-height:44px;padding:0 12px;border-radius:8px;background:#2f3a52;border:2px solid var(--line2);font:500 13px var(--display)}
+.fpotion button:disabled{opacity:.45}
+.ftypes{position:relative;display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.ftypes button{flex:none;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;background:var(--card);border:2px solid var(--line2);border-radius:10px;font:500 13px var(--display);color:var(--muted);white-space:nowrap}
+.ftypes button.on{border-color:var(--gold);color:var(--cream);background:#3a3420}
+.ftypes .ico{width:22px;height:22px}
+.fmain>.note{margin-top:6px}
+.fbody{display:flex;flex-direction:column;gap:10px;margin-top:8px;min-width:0}
+.flist{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity;scrollbar-width:thin}
+.fitem{position:relative;flex:0 0 172px;scroll-snap-align:start;display:grid;grid-template-columns:40px minmax(0,1fr);grid-template-rows:auto auto;gap:2px 8px;align-items:center;min-height:58px;padding:6px 8px;text-align:left;background:var(--card);border:2px solid var(--line2);border-radius:10px;color:var(--cream)}
+.fitem img{grid-row:1/3;width:40px;height:40px;image-rendering:pixelated;border-radius:8px;background:radial-gradient(circle,color-mix(in srgb,var(--tc) 40%,transparent) 0%,transparent 72%)}
+.fitem .fname{font:500 13px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fitem .badge{justify-self:start}
+.fitem.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,209,102,.25);background:#2c3550}
+.fstate{position:absolute;right:6px;bottom:5px;font-size:10px;color:var(--muted)}
+.fstate.eq{color:var(--gold)}.fstate.ready{color:var(--ok)}
+.badge{display:inline-block;font:600 10.5px/1.5 var(--display);color:var(--tc);border:1px solid var(--tc);background:color-mix(in srgb,var(--tc) 14%,transparent);border-radius:999px;padding:0 8px;white-space:nowrap}
+.fdetail{min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px;background:linear-gradient(180deg,#22304a,#1c2436);border:2px solid var(--line2);border-radius:12px}
+.fhero{width:104px;height:104px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--tc) 50%,transparent) 0%,color-mix(in srgb,var(--tc) 12%,transparent) 45%,transparent 70%)}
+.fhero img.big{width:76px;height:76px;image-rendering:pixelated;filter:drop-shadow(0 4px 0 rgba(0,0,0,.35))}
+.fhero.sm{width:76px;height:76px}.fhero.sm img.big{width:48px;height:48px}
+.fhead{align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.fhead>div:last-child{display:flex;flex-direction:column;align-items:center;gap:4px}
+.fhead .meta{margin:0}
+.fdetail h3{margin:0;font:500 18px var(--display)}
+.fdetail h4{align-self:stretch;margin:6px 0 0;font:500 13px var(--display);color:var(--muted)}
+.fdetail>.perk{align-self:stretch;text-align:center}
+.fstats{list-style:none;align-self:stretch;margin:4px 0 0;padding:0;background:#1a2030;border:1px solid var(--line2);border-radius:8px}
+.fstats li{display:flex;align-items:center;gap:8px;padding:6px 10px;border-top:1px solid #2a3348;font-size:13px}
+.fstats li:first-child{border-top:0}
+.fstats span{flex:1;color:var(--muted)}
+.fstats b{font:600 14px var(--pixel);color:var(--cream)}
+.fstats em{font:600 12.5px var(--pixel);font-style:normal}
+.fstats .up{color:var(--ok)}.fstats .down{color:#f0a89c}
+.fsig{align-self:stretch;display:flex;gap:8px;align-items:flex-start;padding:8px 10px;background:#1a2030;border:1px solid var(--line2);border-radius:8px;color:var(--sk)}
+.fsig svg{width:28px;height:28px;flex:none}
+.fsig b{display:block;color:var(--cream);font:500 13px var(--display)}
+.fsig span{font-size:12px;color:var(--muted)}
+.freq{list-style:none;align-self:stretch;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.freq li{display:grid;grid-template-columns:20px minmax(0,1fr) auto 18px;align-items:center;gap:8px;padding:6px 10px;background:#1a2030;border:1px solid var(--line2);border-radius:8px;font-size:13px}
+.freq li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.freq b{font:600 13px var(--pixel)}
+.freq i{font-style:normal;font-weight:700;text-align:center}
+.freq .have b,.freq .have i{color:var(--ok)}.freq .miss b,.freq .miss i{color:#f0a89c}
+.fbtns{align-self:stretch;display:flex;gap:8px;margin:6px 0 4px}
+.fbtn{flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px;white-space:nowrap;font:600 14.5px var(--display);color:var(--cream);background:#2f3a52;border:2px solid var(--line2);border-radius:10px}
+.fbtn.primary{background:linear-gradient(180deg,#f2c45a,#d8962e);border-color:#ffe08a;color:#3a2410;box-shadow:0 3px 0 #8a5a1a}
+.fbtn svg{width:20px;height:20px;flex:none}
+.fbtn:disabled{opacity:.45;cursor:not-allowed}
+.fcompare{display:none}
+@media (min-width:760px){
+  .forge{grid-template-columns:150px minmax(0,1fr);align-items:start}
+  .fsub{flex-direction:column;flex-wrap:nowrap}
+  .fsub>button{width:100%}
+  .fhint{display:block}
+  /* the narrow left column stacks the potion card: icon + text, then a full-width button */
+  .fpotion{flex-direction:column;align-items:stretch;gap:6px}
+  .fpotion>.ico{align-self:center}
+  .fpotion button{width:100%}
+  .fbody{display:grid;grid-template-columns:190px minmax(0,1fr);align-items:start}
+  .flist{flex-direction:column;overflow-x:visible;overflow-y:auto;max-height:min(480px,calc(100dvh - 230px));padding-right:2px}
+  .fitem{flex:none}
+  /* side by side: picture left, name / tier / description right */
+  .fhead{flex-direction:row;text-align:left;gap:10px}
+  .fhead>div:last-child{align-items:flex-start}
+  .fhead .fhero{width:84px;height:84px;flex:none}
+  .fhead .fhero img.big{width:56px;height:56px}
+}
+@media (min-width:980px){
+  .forge{grid-template-columns:150px minmax(0,1fr) 170px}
+  .fcompare{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px;background:var(--card);border:2px solid var(--line2);border-radius:12px}
+  .fcompare h4{align-self:stretch;margin:0;font:500 13px var(--display);color:var(--muted)}
+  .fcompare>b{font:500 14px var(--display);text-align:center}
+  .fcompare .fstats li{padding:5px 8px;font-size:12px}
+}
+/* short landscape screens: a smaller hero so the stats and the button stay in view */
+@media (max-height:500px){
+  .fhero{width:80px;height:80px}
+  .fhero img.big{width:52px;height:52px}
+  .fdetail{padding:8px;gap:4px}
+  .fdetail h3{font-size:16px}
+}
