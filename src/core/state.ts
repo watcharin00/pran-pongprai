@@ -97,6 +97,8 @@ export interface PlayerState {
   stDelay: number;
   potCd: number;
   dead: boolean;
+  /** the out-of-potions warning for auto-drink was shown (reset once potions or HP recover) */
+  autoPotionWarned: boolean;
   deadT: number;
   moving: boolean;
   walkT: number;
@@ -266,6 +268,8 @@ export interface GameState {
   selCrop: CropId;
   useFert: boolean;
   autoOn: boolean;
+  /** drink a potion by itself below this share of max HP (0 = off); a player setting, saved */
+  autoPotion: number;
   /** successful hunts per monster kind (unlocks bestiary entries) */
   kills: Partial<Record<MonsterId, number>>;
   /** areas the player has been to (shown on the world map) */

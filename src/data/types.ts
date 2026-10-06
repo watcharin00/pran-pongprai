@@ -339,7 +339,8 @@ export interface Tuning {
     radius: number;
     roll: { duration: number; speed: number; iframe: number; cooldown: number; staminaCost: number; buffer: number };
     hurt: { iframe: number; flash: number; knockback: number };
-    potion: { heal: number; herbCost: number; startCount: number; cooldown: number };
+    /** autoOptions: HP shares the auto-drink setting can take (0 = off); autoDefault is the starting choice */
+    potion: { heal: number; herbCost: number; startCount: number; cooldown: number; autoOptions: number[]; autoDefault: number };
     villageRegen: number;
     knockoutTime: number;
     startInventory: ItemBag;
@@ -374,7 +375,6 @@ export interface Tuning {
   };
   auto: {
     searchRange: number;
-    potionBelow: number;
     dashMin: number;
     dashMax: number;
     gatherRange: number;

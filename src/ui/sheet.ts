@@ -393,6 +393,12 @@ export class Sheet {
     const snd = this.hooks.sound.get();
     let h = '<section class="fmain bagtext">';
     h += `<div class="sound"><h3 class="sec">${M.sound.title}</h3><label class="chk"><input type="checkbox" id="sndOn" ${snd.on ? 'checked' : ''}>${M.sound.on}</label><label class="vol"><span>${M.sound.volume}</span><input type="range" id="sndVol" min="0" max="100" step="5" value="${Math.round(snd.volume * 100)}" aria-label="${M.sound.volume}" ${snd.on ? '' : 'disabled'}></label><label class="vol"><span>${M.sound.music}</span><input type="range" id="sndMusic" min="0" max="100" step="5" value="${Math.round(snd.music * 100)}" aria-label="${M.sound.music}" ${snd.on ? '' : 'disabled'}></label></div>`;
+    // auto-drink threshold: segmented buttons, one tap each
+    const cur = this.s().autoPotion;
+    const opts = TUNING.player.potion.autoOptions
+      .map((v) => `<button type="button" class="seg${v === cur ? ' on' : ''}" data-autopot="${v}" aria-pressed="${v === cur}">${v === 0 ? M.autoPotion.off : `${Math.round(v * 100)}%`}</button>`)
+      .join('');
+    h += `<div class="autopot"><h3 class="sec">${M.autoPotion.title}</h3><p class="note">${M.autoPotion.help}</p><div class="segs">${opts}</div></div>`;
     const armed = Date.now() - this.resetArm < 3000;
     h += `<div class="row"><h3 class="sec">${M.log}</h3><button type="button" class="btn" id="btnReset">${armed ? M.confirmNewGame : M.newGame}</button></div>`;
     h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
@@ -987,6 +993,15 @@ export class Sheet {
         return;
       }
       this.hooks.reset();
+      return;
+    }
+    if (d.autopot !== undefined) {
+      const v = Number(d.autopot);
+      if (TUNING.player.potion.autoOptions.includes(v)) {
+        s.autoPotion = v;
+        this.hooks.sfx('ui');
+        this.render();
+      }
       return;
     }
     if (d.travel) {

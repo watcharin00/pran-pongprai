@@ -22,24 +22,44 @@ export function processActions(s: GameState, intent: Intent): void {
   const p = s.player;
   if (intent.lockId !== null && findMonster(s, intent.lockId)) p.lockId = intent.lockId;
   if (intent.potion) drink(s);
+  else autoDrink(s);
   if (intent.dodge) dodge(s, intent.move);
   intent.skills.forEach((pressed, i) => {
     if (pressed) castSkill(s, i, intent.move);
   });
 }
 
-export function drink(s: GameState): boolean {
+/**
+ * The auto-drink setting: below the chosen HP share, drink without a button press. Never mid-roll,
+ * mid-wind-up or mid-dash, so it cannot cost the player a dodge. Out of potions it warns once.
+ */
+export function autoDrink(s: GameState): boolean {
+  const p = s.player;
+  const low = s.autoPotion > 0 && p.hp < p.maxHp * s.autoPotion;
+  if (!low || p.potions > 0) p.autoPotionWarned = false;
+  if (!low || p.dead || p.roll > 0 || p.cast || p.dash || p.potCd > 0) return false;
+  if (p.potions <= 0) {
+    if (!p.autoPotionWarned) {
+      p.autoPotionWarned = true;
+      s.events.emit('player:noPotion', { auto: true });
+    }
+    return false;
+  }
+  return drink(s, true);
+}
+
+export function drink(s: GameState, auto = false): boolean {
   const p = s.player;
   if (p.dead || p.roll > 0 || p.potCd > 0) return false;
   if (p.potions <= 0) {
-    s.events.emit('player:noPotion', {});
+    s.events.emit('player:noPotion', { auto });
     return false;
   }
   if (p.hp >= p.maxHp) return false;
   p.potions--;
   p.potCd = P.potion.cooldown;
   p.hp = Math.min(p.maxHp, p.hp + P.potion.heal);
-  s.events.emit('player:drink', { heal: P.potion.heal, at: { x: p.x, y: p.y } });
+  s.events.emit('player:drink', { heal: P.potion.heal, at: { x: p.x, y: p.y }, auto });
   return true;
 }
 

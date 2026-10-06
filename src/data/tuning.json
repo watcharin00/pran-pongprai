@@ -4,7 +4,7 @@
     "walkSpeed": 80, "radius": 4,
     "roll": { "duration": 0.26, "speed": 170, "iframe": 0.42, "cooldown": 0.35, "staminaCost": 22, "buffer": 0.2 },
     "hurt": { "iframe": 0.5, "flash": 0.2, "knockback": 10 },
-    "potion": { "heal": 45, "herbCost": 2, "startCount": 2, "cooldown": 1 },
+    "potion": { "heal": 45, "herbCost": 2, "startCount": 2, "cooldown": 1, "autoOptions": [0, 0.25, 0.35, 0.5], "autoDefault": 0.35 },
     "villageRegen": 25,
     "knockoutTime": 2.6,
     "startInventory": { "seed_herb": 3, "seed_yam": 2, "fry": 1, "fert": 1 }
@@ -36,7 +36,6 @@
   },
   "auto": {
     "searchRange": 340,
-    "potionBelow": 0.35,
     "dashMin": 36,
     "dashMax": 85,
     "gatherRange": 200,

@@ -621,9 +621,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       float(e.at.x, e.at.y - 16, `+${e.heal}`, '#8ff08a', true);
       fx.healGlow(e.at.x, e.at.y);
       snd('drink');
+      if (e.auto) hud.toast(th.log.autoDrank(this.s.player.potions));
     });
-    ev.on('player:noPotion', () => {
-      hud.toast(th.log.noPotion, 'bad');
+    ev.on('player:noPotion', (e) => {
+      hud.toast(e.auto ? th.log.autoNoPotion : th.log.noPotion, 'bad');
       snd('error');
     });
     ev.on('player:knockedOut', () => hud.toast(this.s.map.camp ? th.log.knockedOutCamp : th.log.knockedOut, 'bad'));

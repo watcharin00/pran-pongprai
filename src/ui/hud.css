@@ -584,3 +584,7 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .wreg.goal .wlabel{border-color:var(--gold)}
 .winfo li.now span,.winfo li.now b{color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.wreg.goal .wisle{animation:none}}
+
+.autopot .segs{display:flex;gap:8px;flex-wrap:wrap}
+.autopot .seg{min-width:64px;min-height:44px;padding:0 14px;border-radius:10px;border:2px solid var(--line2);background:#202a3e;color:var(--cream);font:500 15px var(--display)}
+.autopot .seg.on{border-color:var(--gold);background:#3a3420;color:var(--gold)}

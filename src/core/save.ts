@@ -1,5 +1,5 @@
 // Save format + migration. Storage access (localStorage) lives outside core.
-import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, REQUESTS, WEAPONS, WEAPONS_DATA } from '../data';
+import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, REQUESTS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import { ARMOR_SLOTS, MEDALS, type ArmorId, type ArmorSlot, type CropId, type MaterialId, type MealId, type MedalId, type MonsterId, type WeaponId, type AreaId } from '../data/types';
 import { refreshStats, startingInventory } from './inventory';
 import { AREA_IDS } from './areas';
@@ -26,6 +26,8 @@ export interface SaveData {
   meal: Meal | null;
   selCrop: CropId;
   autoOn: boolean;
+  /** auto-drink HP threshold (0 = off) */
+  autoPotion: number;
   kills: Partial<Record<MonsterId, number>>;
   visited: AreaId[];
   plots: SavedPlot[];
@@ -49,6 +51,7 @@ export function snapshot(s: GameState): SaveData {
     meal: s.player.meal ? { ...s.player.meal } : null,
     selCrop: s.selCrop,
     autoOn: s.autoOn,
+    autoPotion: s.autoPotion,
     kills: { ...s.kills },
     visited: [...s.visited],
     plots: s.plots.map((p) => ({ crop: p.crop, at: p.at, dur: p.dur, fert: p.fert })),
@@ -148,6 +151,7 @@ export function parseSave(raw: string | null): SaveData | null {
     meal,
     selCrop: typeof d.selCrop === 'string' && d.selCrop in CROPS ? (d.selCrop as CropId) : 'herb',
     autoOn: d.autoOn === true,
+    autoPotion: isNum(d.autoPotion) && TUNING.player.potion.autoOptions.includes(d.autoPotion) ? d.autoPotion : TUNING.player.potion.autoDefault,
     kills,
     visited: [...visited],
     plots,
@@ -173,6 +177,7 @@ export function applySave(s: GameState, d: SaveData): void {
   s.player.meal = d.meal;
   s.selCrop = d.selCrop;
   s.autoOn = d.autoOn;
+  s.autoPotion = d.autoPotion;
   s.kills = { ...d.kills };
   s.visited = new Set(d.visited);
   s.requests.done = new Set(d.requestsDone);

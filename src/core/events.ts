@@ -44,8 +44,9 @@ export interface GameEvents {
   'player:dodged': { at: Vec2 };
   'player:roll': { at: Vec2 };
   'player:tired': { at: Vec2 };
-  'player:drink': { heal: number; at: Vec2 };
-  'player:noPotion': Record<string, never>;
+  /** `auto`: the auto-drink setting did it, not a button */
+  'player:drink': { heal: number; at: Vec2; auto: boolean };
+  'player:noPotion': { auto: boolean };
   'player:knockedOut': Record<string, never>;
   /** `camp`: woke at the area's hunter camp instead of the village */
   'player:revived': { at: Vec2; camp: boolean };

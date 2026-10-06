@@ -35,7 +35,8 @@ export function autoIntent(s: GameState, ap: AutoPilotState, dt: number): Intent
   const p = s.player;
   if (p.dead) return intent;
 
-  if (p.hp < p.maxHp * A.potionBelow && p.potions > 0 && p.potCd <= 0) intent.potion = true;
+  // the player's auto-drink setting decides when (core/player.ts autoDrink also covers manual play)
+  if (s.autoPotion > 0 && p.hp < p.maxHp * s.autoPotion && p.potions > 0 && p.potCd <= 0) intent.potion = true;
 
   const target = chooseTarget(s, A.searchRange);
   if (target) {

@@ -546,6 +546,11 @@ export const menu = {
   materials: 'วัสดุ',
   log: 'บันทึก',
   sound: { title: 'เสียง', on: 'เปิดเสียง', volume: 'เอฟเฟกต์', music: 'เพลง' },
+  autoPotion: {
+    title: 'ดื่มยาอัตโนมัติ',
+    help: 'ดื่มยาให้เองเมื่อ HP ต่ำกว่าที่เลือก ทั้งตอนเล่นเองและตอนเปิด AUTO (ไม่ดื่มระหว่างกลิ้งหรือง้างท่า)',
+    off: 'ปิด',
+  },
   // bag
   filters: { all: 'ทั้งหมด', gear: 'อุปกรณ์', material: 'วัสดุ', seed: 'เมล็ด' },
   slots: { weapon: 'อาวุธ', head: 'หมวก', body: 'เสื้อ', charm: 'เครื่องราง' },
@@ -859,6 +864,8 @@ export const log = {
   armorOff: (piece: string) => `ถอด${piece}`,
   armorCrafted: (piece: string) => `ตี${piece}สำเร็จ`,
   brewed: 'ปรุงยา 1 ขวด',
+  autoDrank: (left: number) => `ดื่มยาอัตโนมัติ (เหลือ ${left} ขวด)`,
+  autoNoPotion: 'HP ต่ำแต่ยาหมดแล้ว ปรุงยาที่แค้มป์หรือหมู่บ้าน',
   brewNeedHerbs: (n: number) => `ต้องใช้สมุนไพร ${n} ต้นต่อยา 1 ขวด`,
   revivedCamp: 'พรานเดินป่าลากเจ้ากลับมาที่แค้มป์',
   ate: (meal: string, desc: string) => `กิน${meal} ${desc}`,
