@@ -47,6 +47,26 @@ const NPC_ART: Record<NpcId, NpcArt> = {
     rows: ['............', '...wwwwww...', '..wwwwwwww..', '..wSSSSSSw..', '..SSSSSSSS..', '..ssssssess.', '..swwwwwwss.', '...swwwws...', '..TTttttTT..', '.sTttttttTs.', '..TtttttTT..', '..tttttttt..', '..pppppppp..'],
     pal: { ...SKIN, w: '#f0ece4', T: '#3a5a7a', t: '#4a6e94', p: '#2a2a34', k: '#3b2a20' },
   },
+  // herbalist grandmother: grey bun, green blouse, brown sarong, herb basket on the hip
+  healer: {
+    rows: ['....gggg....', '...gggggg...', '..gggggggg..', '..gSSSSSSg..', '..SSSSSSSS..', '..ssssssess.', '..sssssssss.', '...ssssss...', '..TttttttT..', '.sTttttttTb.', '..TttttttTb.', '..pppppppp..', '..pppppppp..'],
+    pal: { ...SKIN, g: '#c8c4bc', T: '#4a8a4a', t: '#5a9e54', p: '#7a4a2a', b: '#c89a50', k: '#3b2a20' },
+  },
+  // rice farmer: conical hat, faded blue shirt, rolled-up trousers
+  farmer: {
+    rows: ['.....hh.....', '....hhhh....', '...hhhhhh...', '.HHHHHHHHHH.', '...SSSSSS...', '..ssssssess.', '..sssssssss.', '...ssssss...', '..TttttttT..', '.sTttttttTs.', '..TttttttT..', '..pppppppp..', '..pppppppp..'],
+    pal: { ...SKIN, h: '#e8d090', H: '#c8a860', T: '#4a6e94', t: '#5a80a8', p: '#3a3a44', k: '#d39a76' },
+  },
+  // old hunter: grey beard, khaki shirt, bow on the back
+  hunter: {
+    rows: ['.........b..', '...HHHHHH.b.', '..HHHHHHHHb.', '..HSSSSSSHb.', '..SSSSSSSSb.', '..ssssssessb', '..swwwwwwss.', '...swwwws...', '..TttttttT..', '.sTttttttTs.', '..TbbbbbbT..', '..tttttttt..', '..pppppppp..'],
+    pal: { ...SKIN, H: '#5a4a3a', w: '#d8d4cc', T: '#8a7a50', t: '#a08e5e', b: '#6a4a2a', p: '#3a3428', k: '#2a2018' },
+  },
+  // forest ranger: green cap, olive jacket, satchel
+  ranger: {
+    rows: ['............', '...GGGGGG...', '..GGGGGGGG..', '.gggggggggg.', '..SSSSSSSS..', '..ssssssess.', '..sssssssss.', '...ssssss...', '..TttttttT..', '.sTtbtttTTs.', '..TttbtttT..', '..tttttbtt..', '..pppppppp..'],
+    pal: { ...SKIN, G: '#3a6a3a', g: '#2a5a2a', T: '#5a6a34', t: '#6e7e40', b: '#8a5a30', p: '#3a3428', k: '#2a2018' },
+  },
   // buffalo boy: wide straw hat, red shirt, shorts, bare feet
   kid: {
     rows: ['............', '............', '...hhhhhh...', '.HHHHHHHHHH.', '...SSSSSS...', '...ssssess..', '...sssssss..', '...cccccc...', '..sccccccs..', '...tttttt...', '...pppppp...'],

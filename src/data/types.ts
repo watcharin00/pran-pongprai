@@ -453,7 +453,7 @@ export interface Tuning {
 }
 
 /** What an NPC does when the player talks to them. */
-export type NpcRole = 'forge' | 'kitchen' | 'requests' | 'tips';
+export type NpcRole = 'forge' | 'kitchen' | 'requests' | 'tips' | 'herbs' | 'farm' | 'hunter' | 'ranger';
 
 export interface NpcDef {
   /** home tile (stands / wanders around its centre) */
@@ -461,6 +461,8 @@ export interface NpcDef {
   /** wander radius in px (0 = stands still) */
   wander: number;
   role: NpcRole;
+  /** where this villager lives: the home map, or 'wild' = every area except home (placed near the way in) */
+  area: 'home' | 'wild';
 }
 
 /** A hunt request from the village elder. Progress counts only while it is the current request. */

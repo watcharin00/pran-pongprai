@@ -18,11 +18,12 @@ export type ContextAction =
 
 export function contextAction(s: GameState): ContextAction | null {
   const p = s.player;
-  if (p.dead || s.area !== 'home') return null;
+  if (p.dead) return null;
   if (s.monsters.some((m) => Math.hypot(m.x - p.x, m.y - p.y) < V.contextMonsterClear)) return null;
   const near = (o: { x: number; y: number }, r: number): boolean => Math.hypot(o.x - p.x, o.y - p.y) < r;
   const npc = npcNear(s, V.npcTalkRadius);
   if (npc) return { kind: 'npc', npc: npc.id };
+  if (s.area !== 'home') return null;
   if (near(ANVIL, V.stationRadius)) return { kind: 'forge' };
   if (near(POT, V.stationRadius)) return { kind: 'kitchen' };
   // pond slots are water, so they are planted from the bank

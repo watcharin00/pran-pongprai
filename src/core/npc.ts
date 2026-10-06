@@ -1,10 +1,11 @@
 // Villagers: they stroll around a home spot, stop to face the player, and pick
 // what to say from the game state. Lines are returned as keys + data; the Thai
 // text lives in i18n/th.ts.
-import { MEALS, NPC_IDS, NPCS, TUNING, WEAPONS } from '../data';
-import type { ItemBag, MaterialId, MealId, NpcId, WeaponId } from '../data/types';
+import { CROPS, MEALS, MONSTER_IDS, MONSTERS, NPC_IDS, NPCS, TUNING, WEAPONS } from '../data';
+import type { CropId, ItemBag, MaterialId, MealId, MonsterId, NpcId, WeaponId } from '../data/types';
 import { canStand, moveBody } from './collision';
 import { activeMeal, canAfford } from './inventory';
+import { isRipe } from './farm';
 import { T } from './mapgen';
 import { allRequestsDone, currentRequest } from './requests';
 import type { GameState, Inventory, NpcState } from './state';
@@ -21,11 +22,41 @@ export function createNpcs(): NpcState[] {
   });
 }
 
+/** Whether a villager is out in the current area (home villagers at home, the ranger everywhere else). */
+export function npcActive(s: GameState, id: NpcId): boolean {
+  return NPCS[id].area === 'wild' ? s.area !== 'home' : s.area === 'home';
+}
+
+/**
+ * Puts the wild villagers (the ranger) a few tiles from where the player arrives in this area,
+ * on open ground beside the road. Call right after the player is placed.
+ */
+export function placeNpcs(s: GameState): void {
+  if (s.area === 'home') return;
+  // the player has just been placed at the way in
+  const arrive = { x: s.player.x, y: s.player.y };
+  for (const n of s.npcs) {
+    if (NPCS[n.id].area !== 'wild') continue;
+    let spot = { x: arrive.x, y: arrive.y };
+    search: for (let r = 3; r <= 8; r++) {
+      for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const x = arrive.x + dx * r * T;
+        const y = arrive.y + dy * r * T;
+        if (canStand(s.map, x, y, NPC_RADIUS + 2)) {
+          spot = { x, y };
+          break search;
+        }
+      }
+    }
+    Object.assign(n, { x: spot.x, y: spot.y, hx: spot.x, hy: spot.y, waypoint: null, waitT: 1, moving: false });
+  }
+}
+
 export function updateNpcs(s: GameState, dt: number): void {
-  if (s.area !== 'home') return;
   const p = s.player;
   for (const n of s.npcs) {
     n.moving = false;
+    if (!npcActive(s, n.id)) continue;
     const dp = Math.hypot(p.x - n.x, p.y - n.y);
     if (!p.dead && dp < V.npcBubbleRadius) {
       // stop and turn to the player while they are close
@@ -62,12 +93,12 @@ export function updateNpcs(s: GameState, dt: number): void {
   }
 }
 
-/** The nearest villager within `maxD` px of the player (home area only). */
+/** The nearest villager out in this area within `maxD` px of the player. */
 export function npcNear(s: GameState, maxD: number): NpcState | null {
-  if (s.area !== 'home') return null;
   let best: NpcState | null = null;
   let bd = maxD;
   for (const n of s.npcs) {
+    if (!npcActive(s, n.id)) continue;
     const d = Math.hypot(n.x - s.player.x, n.y - s.player.y);
     if (d < bd) {
       bd = d;
@@ -89,7 +120,19 @@ export type NpcLine =
   | { key: 'elder.wait' }
   | { key: 'elder.allDone' }
   /** n-th tip; the UI wraps it around its tip list */
-  | { key: 'kid.tip'; n: number };
+  | { key: 'kid.tip'; n: number }
+  | { key: 'healer.brew'; potions: number }
+  | { key: 'healer.plant'; crop: CropId; meal: MealId }
+  | { key: 'healer.seed'; crop: CropId }
+  | { key: 'healer.potions'; potions: number }
+  | { key: 'farmer.ripe'; n: number }
+  | { key: 'farmer.plant'; crop: CropId; free: number }
+  | { key: 'farmer.seed'; crop: CropId }
+  | { key: 'farmer.happy' }
+  | { key: 'hunter.boss'; monster: MonsterId }
+  | { key: 'hunter.done' }
+  | { key: 'ranger.boss'; monster: MonsterId; hunted: boolean }
+  | { key: 'ranger.home' };
 
 /** What a recipe still needs, given the inventory. */
 export function missingFor(inv: Inventory, recipe: ItemBag): ItemBag {
@@ -111,6 +154,20 @@ function closest<K extends string>(s: GameState, options: readonly [K, ItemBag][
     if (!best || units(missing) < units(best.missing)) best = { id, missing };
   }
   return best;
+}
+
+/** The crop whose harvest is `item`, if any. */
+const cropYielding = (item: MaterialId): CropId | null => (Object.keys(CROPS) as CropId[]).find((c) => CROPS[c].yield.item === item) ?? null;
+
+/** The first boss (a monster that can rage) the player has not hunted yet, in content order = progress order. */
+export function nextBoss(s: GameState): MonsterId | null {
+  return MONSTER_IDS.find((k) => MONSTERS[k].rage !== null && !(s.kills[k] ?? 0)) ?? null;
+}
+
+/** The toughest monster of the current area (its boss when it has one). */
+export function areaBoss(s: GameState): MonsterId | null {
+  const kinds = MONSTER_IDS.filter((k) => MONSTERS[k].area === s.area);
+  return kinds.sort((a, b) => MONSTERS[b].hp - MONSTERS[a].hp)[0] ?? null;
 }
 
 /** What villager `id` says right now. `n` advances rotating lines (the kid's tips). */
@@ -142,5 +199,44 @@ export function npcLine(s: GameState, id: NpcId, n = 0): NpcLine {
     }
     case 'tips':
       return { key: 'kid.tip', n };
+    case 'herbs': {
+      const P = TUNING.player.potion;
+      if (s.player.potions <= 1 && s.inv.herb >= P.herbCost) return { key: 'healer.brew', potions: s.player.potions };
+      // a meal that is short of something the farm grows: plant it (or find its seed)
+      for (const m of Object.keys(MEALS) as MealId[]) {
+        const missing = missingFor(s.inv, MEALS[m].recipe);
+        for (const item of Object.keys(missing) as MaterialId[]) {
+          const crop = cropYielding(item);
+          if (!crop) continue;
+          if (s.inv[CROPS[crop].seed] > 0) return { key: 'healer.plant', crop, meal: m };
+        }
+      }
+      for (const m of Object.keys(MEALS) as MealId[]) {
+        for (const item of Object.keys(missingFor(s.inv, MEALS[m].recipe)) as MaterialId[]) {
+          const crop = cropYielding(item);
+          if (crop) return { key: 'healer.seed', crop };
+        }
+      }
+      return { key: 'healer.potions', potions: s.player.potions };
+    }
+    case 'farm': {
+      const ripe = s.plots.filter((pl) => isRipe(pl, s.now)).length;
+      if (ripe) return { key: 'farmer.ripe', n: ripe };
+      for (const c of Object.keys(CROPS) as CropId[]) {
+        if (s.inv[CROPS[c].seed] <= 0) continue;
+        const free = s.plots.filter((pl) => pl.bed === CROPS[c].bed && !pl.crop).length;
+        if (free) return { key: 'farmer.plant', crop: c, free };
+      }
+      const noSeed = (Object.keys(CROPS) as CropId[]).find((c) => s.inv[CROPS[c].seed] <= 0);
+      return noSeed ? { key: 'farmer.seed', crop: noSeed } : { key: 'farmer.happy' };
+    }
+    case 'hunter': {
+      const boss = nextBoss(s);
+      return boss ? { key: 'hunter.boss', monster: boss } : { key: 'hunter.done' };
+    }
+    case 'ranger': {
+      const boss = areaBoss(s);
+      return boss ? { key: 'ranger.boss', monster: boss, hunted: (s.kills[boss] ?? 0) > 0 } : { key: 'ranger.home' };
+    }
   }
 }

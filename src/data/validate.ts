@@ -391,7 +391,7 @@ export function loadCrops(v: unknown, materials: readonly string[]): CropsData {
   };
 }
 
-const NPC_ROLES: readonly NpcRole[] = ['forge', 'kitchen', 'requests', 'tips'];
+const NPC_ROLES: readonly NpcRole[] = ['forge', 'kitchen', 'requests', 'tips', 'herbs', 'farm', 'hunter', 'ranger'];
 
 export function loadNpcs(v: unknown): Record<NpcId, NpcDef> {
   const o = obj(v, 'npcs');
@@ -405,6 +405,7 @@ export function loadNpcs(v: unknown): Record<NpcId, NpcDef> {
       tile: [num(tile[0], `${p}.tile[0]`, 0, 63), num(tile[1], `${p}.tile[1]`, 0, 47)],
       wander: num(n.wander, `${p}.wander`, 0, 200),
       role: oneOf(n.role, `${p}.role`, NPC_ROLES),
+      area: optional(n, 'area', (x) => oneOf(x, `${p}.area`, ['home', 'wild'] as const)) ?? 'home',
     };
   }
   return out as Record<NpcId, NpcDef>;

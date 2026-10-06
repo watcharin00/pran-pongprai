@@ -402,6 +402,13 @@ export class Sheet {
     return `<div class="goalbox reqbox${ready ? ' ready' : ''}" id="reqbox"><b>${R.title}</b><p>${requestText(r)} <span class="n">${s.requests.progress}/${r.goal.count}</span></p><span class="reqbar"><i style="width:${pct}%"></i></span><p class="meta">${R.reward}: ${rewardText(r)}</p>${ready ? `<p class="note ok">${R.claimHint}</p>` : ''}</div>`;
   }
 
+  /** Opens the bestiary on one monster (the hunters' tips). */
+  openBook(k: MonsterId): void {
+    this.bookArea = 'all';
+    this.bookSel = k;
+    this.open('book');
+  }
+
   /** Opens the bag tab scrolled to the hunt request (talking to the elder). */
   openRequests(): void {
     this.bagSub = 'hunt';

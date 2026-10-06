@@ -8,10 +8,11 @@ import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPi
 import { findMonster } from '../core/combat';
 import { isRipe, plant, plotProgress } from '../core/farm';
 import { ANVIL, BOARD, FARM, FARM_CENTER, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
-import { npcLine, npcNear } from '../core/npc';
+import { areaBoss, nextBoss, npcActive, npcLine, npcNear } from '../core/npc';
 import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
 import { claimRequest, requestReady } from '../core/requests';
 import { loadFromStorage, serialize } from '../core/save';
+import { brewPotion } from '../core/inventory';
 import { createGame, step } from '../core/sim';
 import type { GameState, MonsterState } from '../core/state';
 import { contextAction, type ContextAction } from '../core/village';
@@ -280,7 +281,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     for (const c of this.corpses) c.img.destroy();
     this.corpses = [];
     this.auto = createAutoPilot();
-    for (const v of this.npcViews.values()) v.setVisible(area === 'home');
+    for (const n of s.npcs) this.npcViews.get(n.id)?.setVisible(npcActive(s, n.id));
     const p = s.player;
     this.camFX = Phaser.Math.Clamp(p.x - this.VW / 2, 0, Math.max(0, MW * T - this.VW));
     this.camFY = this.clampCamY(p.y - this.VH / 2);
@@ -424,6 +425,29 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         this.talkN[id] = (this.talkN[id] ?? 0) + 1;
         this.sfx.play('ui');
         break;
+      case 'herbs':
+        // brews on the spot when there are herbs, otherwise shows the farm
+        if (brewPotion(this.s).ok) {
+          this.hud.toast(th.log.brewed);
+          this.sfx.play('harvest');
+          this.save();
+        } else this.sheet.open('farm');
+        break;
+      case 'farm':
+        this.sheet.open('farm');
+        break;
+      case 'hunter': {
+        const k = nextBoss(this.s);
+        if (k) this.sheet.openBook(k);
+        else this.sheet.open('book');
+        break;
+      }
+      case 'ranger': {
+        const k = areaBoss(this.s);
+        if (k) this.sheet.openBook(k);
+        else this.sheet.open('map');
+        break;
+      }
     }
   }
 
@@ -1019,8 +1043,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       v.destroy();
       this.monsterViews.delete(id);
     }
-    if (s.area === 'home') {
+    {
       for (const n of s.npcs) {
+        if (!npcActive(s, n.id)) continue;
         this.npcViews.get(n.id)?.update(n, time);
         sh.fillStyle(0x142814, 0.3).fillEllipse(n.x, n.y + 8, 12, 4);
       }
@@ -1114,7 +1139,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     t.begin();
     // villagers within earshot talk; their station's name label steps aside for the bubble
     // only the nearest one talks, so two bubbles never overlap
-    const nearest = s.area === 'home' && !p.dead ? npcNear(s, TUNING.village.npcBubbleRadius) : null;
+    const nearest = !p.dead ? npcNear(s, TUNING.village.npcBubbleRadius) : null;
     const talking = nearest ? [nearest] : [];
     const roleTalking = (role: string): boolean => talking.some((n) => NPCS[n.id].role === role);
     if (p.inVillage && !p.dead) {

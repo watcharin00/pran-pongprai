@@ -500,7 +500,8 @@ export const hud = {
 /** Labels on the attack button when it turns into the context button. */
 export const context = {
   /** talking to a villager: the button says what it will do, names are too long for it */
-  npc: { forge: 'ตีอาวุธ', kitchen: 'ทำอาหาร', requests: 'งานล่า', tips: 'คุย' },
+  npc: { forge: 'ตีอาวุธ', kitchen: 'ทำอาหาร', requests: 'งานล่า', tips: 'คุย', herbs: 'แปลงผัก', farm: 'แปลงผัก', hunter: 'เคล็ดลับ', ranger: 'เคล็ดลับ' },
+  brew: 'ปรุงยา',
   forge: 'ตีอาวุธ',
   kitchen: 'ทำอาหาร',
   plant: 'ปลูก',
@@ -864,6 +865,10 @@ export const npcs = {
   cook: { name: 'ป้าแก้ว', title: 'แม่ครัว' },
   elder: { name: 'พ่อเฒ่าทอง', title: 'ผู้ใหญ่บ้าน' },
   kid: { name: 'ไอ้จุก', title: 'เด็กเลี้ยงควาย' },
+  healer: { name: 'ยายจันทร์', title: 'หมอยาสมุนไพร' },
+  farmer: { name: 'ลุงพุ่ม', title: 'ชาวนา' },
+  hunter: { name: 'น้ามิ่ง', title: 'พรานเฒ่า' },
+  ranger: { name: 'พรานเดิน', title: 'พรานเดินป่า' },
 } satisfies Record<NpcId, { name: string; title: string }>;
 
 /** Speech bubbles. Keep each line short, with spaces between phrases so it can wrap. */
@@ -878,6 +883,21 @@ export const npcSay = {
   elderProgress: (task: string, progress: number, count: number) => `ฝากด้วยนะ ${task} (${progress}/${count})`,
   elderWait: 'ยังไม่มีงานให้ ไปหาอาวุธที่ดีกว่านี้ก่อน',
   elderAllDone: 'เจ้าเป็นพรานที่เก่งที่สุดในหมู่บ้านแล้ว',
+  healerBrew: (n: number) => `ยาเหลือ ${n} ขวดเองนะหลาน มาให้ยายปรุงให้`,
+  healerPlant: (crop: string, meal: string) => `ปลูก${crop}ไว้สิ จะได้ทำ${meal}`,
+  healerSeed: (crop: string, where: string) => `อยากได้เมล็ด${crop}ไหม ${where}`,
+  healerPotions: (n: number) => `มียาติดตัว ${n} ขวด สมุนไพรสองกำปรุงได้หนึ่งขวด`,
+  farmerRipe: (n: number) => `สุกแล้ว ${n} แปลง เดินผ่านก็เก็บได้เลย`,
+  farmerPlant: (crop: string, free: number) => `แปลงว่าง ${free} ช่อง ปลูก${crop}ไว้สิ`,
+  farmerSeed: (crop: string, where: string) => `เมล็ด${crop}หมดแล้ว ${where}`,
+  farmerHappy: 'นาเขียวดี ปีนี้ข้าวงาม',
+  hunterBoss: (monster: string, area: string, weak: string | null, attack: string) =>
+    `ต่อไปลอง${monster}ที่${area}ดู${weak ? ` มันแพ้${weak}` : ''} ระวังท่า${attack}ให้ดี`,
+  hunterDone: 'บอสทุกตัวเจ้าล่ามาแล้ว ลองไปหาตัวเก๋ากับตัวจ่าฝูงดูสิ',
+  rangerBoss: (monster: string, weak: string | null, attack: string, rear: boolean) =>
+    `${monster}อยู่แถวนี้${weak ? ` แพ้${weak}` : ''} ระวังท่า${attack}${rear ? ' อ้อมหลังมันจะโดนท่าด้านหลัง' : ''}`,
+  rangerHunted: (monster: string) => `เคยล้ม${monster}แล้วรึ ลองล่าแบบไม่โดนตีดูสิ`,
+  rangerHome: 'ทางกลับหมู่บ้านอยู่ทางที่เจ้าเดินเข้ามา',
   kidTips: [
     'วงแดงขึ้นเมื่อไหร่ กดกลิ้งหนีเลย',
     'อ้อมไปตีข้างหลัง จะโดนหางมัน',

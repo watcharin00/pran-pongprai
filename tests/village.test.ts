@@ -62,13 +62,15 @@ describe('villagers', () => {
     expect(kid.face).toBe(1);
   });
 
-  it('are only simulated at home', () => {
+  it('home villagers are only simulated at home', () => {
     const s = homeGame();
-    const before = JSON.stringify(s.npcs);
+    const home = (): string => JSON.stringify(s.npcs.filter((n) => NPCS[n.id].area === 'home'));
+    const before = home();
     s.area = 'bamboo';
     updateNpcs(s, 5);
-    expect(JSON.stringify(s.npcs)).toBe(before);
-    expect(npcNear(s, 9999)).toBeNull();
+    expect(home()).toBe(before);
+    // away from home only the wild ranger can be near
+    expect(NPCS[npcNear(s, 9999)?.id ?? 'ranger'].area).toBe('wild');
   });
 
   it('turn the context button into "talk" when close', () => {

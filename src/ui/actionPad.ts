@@ -1,6 +1,6 @@
 // Thumb-arc action pad (bottom-right). Buttons sit on an arc around the attack
 // button; radius/angle/size per button match the prototype's data-r/data-a/data-s.
-import { NPCS, SKILLS } from '../data';
+import { NPCS, SKILLS, TUNING } from '../data';
 import { dodgeCost } from '../core/inventory';
 import { weaponSkills } from '../core/skills';
 import type { GameState } from '../core/state';
@@ -136,5 +136,6 @@ function contextLabel(s: GameState, ctx: ContextAction | null): string {
   if (!ctx) return th.hud.attack;
   if (ctx.kind !== 'npc') return th.context[ctx.kind];
   if (NPCS[ctx.npc].role === 'requests' && requestReady(s)) return th.request.claim;
+  if (NPCS[ctx.npc].role === 'herbs' && s.inv.herb >= TUNING.player.potion.herbCost) return th.context.brew;
   return th.context.npc[NPCS[ctx.npc].role];
 }

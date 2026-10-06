@@ -8,6 +8,7 @@ import { SPAWN, T, type WorldMap } from './mapgen';
 import { spawnMonster } from './monsterAI';
 import { parkMiller } from './rng';
 import type { GameState, GatherNode } from './state';
+import { placeNpcs } from './npc';
 
 /** Herb / ore nodes for a map. Placement is seeded per area so it never changes. */
 export function createNodes(map: WorldMap): GatherNode[] {
@@ -71,5 +72,6 @@ export function changeArea(s: GameState, to: AreaId, at?: { x: number; y: number
   const arrive = at ?? arrivalExit(from, to)?.arrive ?? SPAWN;
   Object.assign(p, { x: arrive.x, y: arrive.y, lockId: null, path: [], cast: null, dash: null, roll: 0, gatherNode: null, gatherT: 0 });
   if (populate) populateArea(s);
+  placeNpcs(s);
   s.events.emit('area:changed', { area: to, from });
 }
