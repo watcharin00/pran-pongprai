@@ -13,6 +13,7 @@ import { fastTravelCamp, fastTravelHome, inFight } from '../core/travel';
 import { areaThumbUrl } from '../art/mapThumb';
 import { activeMeal, activePerks, attackMul, upgradeCost, upgradeWeapon, weaponLevel, weaponPower, brewPotion, canAfford, cookMeal, craftArmor, craftWeapon, damageReduction, defenseOf, equipArmor, equipWeapon, goalIndex, unequipArmor } from '../core/inventory';
 import type { GameState } from '../core/state';
+import { exportCode, parseCode, type SaveData } from '../core/save';
 import { armorIconUrl, armorSlotIconUrl, materialIconUrl, mealIconUrl, monsterIconUrl, monsterPortrait, playerIconUrl, potionIconUrl, weaponIconUrl } from '../art/icons';
 import * as th from '../i18n/th';
 import { $, ICONS, fmtTime } from './format';
@@ -130,6 +131,8 @@ export interface SheetHooks {
   changed: () => void;
   /** wipe the save and reload */
   reset: () => void;
+  /** replace the save with an imported one and reload */
+  load: (d: SaveData) => void;
   opened: () => void;
   closed: () => void;
   /** world feedback for crafting (sparks at the anvil etc.) */
@@ -146,6 +149,9 @@ export class Sheet {
   private readonly sheet: HTMLElement;
   private readonly body: HTMLElement;
   private resetArm = 0;
+  private loadArm = 0;
+  /** text in the import box, kept across re-renders */
+  private codeDraft = '';
   private filter: BagFilter = 'all';
   private sel: ItemKey | null = null;
   private bookSel: MonsterId | null = null;
@@ -205,6 +211,7 @@ export class Sheet {
     this.body.addEventListener('change', (e) => {
       const t = e.target as HTMLInputElement;
       if (t.id === 'useFert') this.s().useFert = t.checked;
+      if (t.id === 'saveFile') this.readSaveFile(t);
       if (t.id === 'sndOn') {
         this.hooks.sound.set({ ...this.hooks.sound.get(), on: t.checked });
         this.hooks.sfx('ui');
@@ -215,6 +222,7 @@ export class Sheet {
     });
     this.body.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;
+      if (t.id === 'saveCode') this.codeDraft = t.value;
       if (t.id === 'sndVol') this.hooks.sound.set({ ...this.hooks.sound.get(), volume: Number(t.value) / 100 });
       if (t.id === 'sndMusic') this.hooks.sound.set({ ...this.hooks.sound.get(), music: Number(t.value) / 100 });
     });
@@ -399,10 +407,66 @@ export class Sheet {
       .map((v) => `<button type="button" class="seg${v === cur ? ' on' : ''}" data-autopot="${v}" aria-pressed="${v === cur}">${v === 0 ? M.autoPotion.off : `${Math.round(v * 100)}%`}</button>`)
       .join('');
     h += `<div class="autopot"><h3 class="sec">${M.autoPotion.title}</h3><p class="note">${M.autoPotion.help}</p><div class="segs">${opts}</div></div>`;
+    const T = M.transfer;
+    const loadArmed = Date.now() - this.loadArm < 3000;
+    h += `<div class="transfer"><h3 class="sec">${T.title}</h3><p class="note">${T.help}</p><div class="tbtns"><button type="button" class="btn" id="btnCopySave">${T.copy}</button><button type="button" class="btn" id="btnDlSave">${T.download}</button></div><textarea id="saveCode" rows="3" spellcheck="false" autocomplete="off" placeholder="${T.placeholder}" aria-label="${T.placeholder}">${escapeHtml(this.codeDraft)}</textarea><div class="tbtns"><label class="btn" for="saveFile">${T.file}</label><input type="file" id="saveFile" accept=".txt,.json,text/plain,application/json" hidden><button type="button" class="btn${loadArmed ? ' warn' : ''}" id="btnLoadSave">${loadArmed ? T.confirmLoad : T.load}</button></div></div>`;
     const armed = Date.now() - this.resetArm < 3000;
     h += `<div class="row"><h3 class="sec">${M.log}</h3><button type="button" class="btn" id="btnReset">${armed ? M.confirmNewGame : M.newGame}</button></div>`;
     h += `<ul class="log">${this.hud.log.map((l) => `<li class="${l.cls}">${escapeHtml(l.msg)}</li>`).join('')}</ul>`;
     return `${h}</section>`;
+  }
+
+  /** Copies the transfer code; when the clipboard is blocked, shows it selected in the box instead. */
+  private copySave(): void {
+    const code = exportCode(this.s());
+    const shown = (): void => {
+      this.codeDraft = code;
+      const box = this.body.querySelector<HTMLTextAreaElement>('#saveCode');
+      if (box) {
+        box.value = code;
+        box.focus();
+        box.select();
+      }
+    };
+    const fail = (): void => {
+      shown();
+      this.hud.toast(th.menu.transfer.copyManual);
+    };
+    this.hooks.sfx('ui');
+    try {
+      navigator.clipboard.writeText(code).then(() => this.hud.toast(th.menu.transfer.copied, 'gold'), fail);
+    } catch {
+      fail();
+    }
+  }
+
+  private downloadSave(): void {
+    const d = new Date();
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([exportCode(this.s())], { type: 'text/plain' }));
+    a.download = `pranpongprai-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    this.hooks.sfx('ui');
+  }
+
+  /** Puts a chosen save file's text in the import box (the player still confirms the import). */
+  private readSaveFile(input: HTMLInputElement): void {
+    const f = input.files?.[0];
+    input.value = '';
+    if (!f || f.size > 1_000_000) return;
+    void f.text().then((text) => {
+      this.codeDraft = text.trim();
+      const box = this.body.querySelector<HTMLTextAreaElement>('#saveCode');
+      if (box) box.value = this.codeDraft;
+      if (!parseCode(this.codeDraft)) {
+        this.hooks.sfx('error');
+        this.hud.toast(th.menu.transfer.bad, 'bad');
+      }
+    });
   }
 
   /** The elder's current hunt request with progress and reward. */
@@ -983,6 +1047,35 @@ export class Sheet {
     if (!b || b.disabled) return;
     const s = this.s();
     const d = b.dataset;
+    if (b.id === 'btnCopySave') {
+      this.copySave();
+      return;
+    }
+    if (b.id === 'btnDlSave') {
+      this.downloadSave();
+      return;
+    }
+    if (b.id === 'btnLoadSave') {
+      const data = parseCode(this.codeDraft);
+      if (!data) {
+        this.hooks.sfx('error');
+        this.hud.toast(th.menu.transfer.bad, 'bad');
+        return;
+      }
+      if (Date.now() - this.loadArm > 3000) {
+        this.loadArm = Date.now();
+        b.textContent = th.menu.transfer.confirmLoad;
+        b.classList.add('warn');
+        setTimeout(() => {
+          if (!b.isConnected) return;
+          b.textContent = th.menu.transfer.load;
+          b.classList.remove('warn');
+        }, 3000);
+        return;
+      }
+      this.hooks.load(data);
+      return;
+    }
     if (b.id === 'btnReset') {
       if (Date.now() - this.resetArm > 3000) {
         this.resetArm = Date.now();

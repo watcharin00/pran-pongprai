@@ -611,3 +611,9 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .plotpop .pp-bar{height:8px;border-radius:4px;background:#0e1420;overflow:hidden}
 .plotpop .pp-bar i{display:block;height:100%;background:linear-gradient(#a8f0a0,#4fae5a)}
 .plotpop .pp-note{margin:8px 0 0;color:#a8f0a0;font-size:12px}
+/* save transfer (bag > settings) */
+.transfer{display:flex;flex-direction:column;gap:8px}
+.transfer .tbtns{display:flex;gap:8px;flex-wrap:wrap}
+.transfer .btn{margin-top:0;align-self:auto;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--cream);font:inherit;font-size:13.5px}
+.transfer .btn.warn{border-color:#e0664a;background:#4a2a26}
+.transfer textarea{width:100%;box-sizing:border-box;min-height:64px;resize:vertical;padding:8px;border-radius:8px;border:2px solid var(--line2);background:#161e2e;color:var(--cream);font:12px/1.35 ui-monospace,monospace;word-break:break-all}

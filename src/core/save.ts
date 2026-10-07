@@ -191,3 +191,40 @@ export function applySave(s: GameState, d: SaveData): void {
   s.player.hp = s.player.maxHp;
   s.player.st = s.player.maxSt;
 }
+
+// ---------------------------------------------------------------- transfer code
+// Saves live only in one browser's localStorage. To move one to another device the player copies
+// a text code (or a file holding it) and pastes it there. The code is the save JSON in base64
+// behind a short tag, so it survives chat apps that mangle quotes and line breaks.
+
+const CODE_TAG = 'PRAN2:';
+
+function toBase64(text: string): string {
+  let bin = '';
+  for (const b of new TextEncoder().encode(text)) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+function fromBase64(code: string): string {
+  const bin = atob(code);
+  return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+
+/** The current game as a code the player can copy to another device. */
+export function exportCode(s: GameState): string {
+  return CODE_TAG + toBase64(serialize(s));
+}
+
+/** Reads a pasted code (or raw save JSON); null when it is not a usable save. */
+export function parseCode(text: string): SaveData | null {
+  const t = text.replace(/\s+/g, '');
+  if (!t) return null;
+  if (t.startsWith(CODE_TAG)) {
+    try {
+      return parseSave(fromBase64(t.slice(CODE_TAG.length)));
+    } catch {
+      return null;
+    }
+  }
+  return parseSave(text.trim());
+}

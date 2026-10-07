@@ -342,6 +342,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         removeKey(TUNING.save.legacyKey);
         location.reload();
       },
+      load: (d) => {
+        this.noSave = true;
+        writeKey(TUNING.save.key, JSON.stringify(d));
+        location.reload();
+      },
       opened: () => {
         this.sfx.play('ui');
         this.padAttackHeld = false;
