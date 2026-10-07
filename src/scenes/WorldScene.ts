@@ -6,7 +6,8 @@ import { CROPS, MATERIALS, MONSTERS, NPCS, REQUESTS, SKILLS, TUNING, WEAPON_TYPE
 import type { AreaId, MaterialId, NpcId, PartId } from '../data/types';
 import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPilot';
 import { findMonster } from '../core/combat';
-import { isRipe, plant, plotProgress } from '../core/farm';
+import { harvest, isRipe, plant, plotAt, plotProgress } from '../core/farm';
+import { PlotPopup } from '../ui/plotPopup';
 import { ANVIL, BOARD, FARM, FARM_CENTER, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { areaBoss, nextBoss, npcActive, npcLine, npcNear } from '../core/npc';
 import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
@@ -157,6 +158,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private hud!: Hud;
   private pad!: ActionPad;
   private sheet!: Sheet;
+  private plotPop!: PlotPopup;
   private sfx!: Sfx;
   private music!: Music;
   /** seconds since a monster last chased the player (battle music lingers a little) */
@@ -177,7 +179,12 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const save = loadFromStorage(readKey, TUNING.save.key, TUNING.save.legacyKey);
     this.s = createGame({ rngSeed: (Date.now() ^ 0x5f3759df) >>> 0 || 1, now: Date.now(), save, map: data.map });
     // dev only: lets browser smoke tests drive the live game (stripped from production builds)
-    if (import.meta.env.DEV) (window as unknown as { __pranGame?: GameState }).__pranGame = this.s;
+    if (import.meta.env.DEV) {
+      const w = window as unknown as { __pranGame?: GameState; __pranToClient?: (x: number, y: number) => { x: number; y: number } };
+      w.__pranGame = this.s;
+      // smoke tests tap things in the world: world px → CSS px on screen
+      w.__pranToClient = (x, y) => ({ x: ((x - this.camX) * this.S) / this.dpr, y: ((y - this.camY) * this.S) / this.dpr });
+    }
     this.input.enabled = false;
 
     this.worldLayer = this.add.layer();
@@ -358,7 +365,16 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     surface.tabIndex = 0;
     surface.setAttribute('aria-label', th.game.canvasLabel);
-    this.joystick = new Joystick(surface, overlay, (cx, cy) => this.tapWorld(cx, cy), () => !this.sheet.isOpen);
+    this.plotPop = new PlotPopup(overlay, {
+      state: () => this.s,
+      changed: () => {
+        this.save();
+        this.hud.update(this.s);
+      },
+      toast: (msg, cls) => this.hud.toast(msg, cls),
+      sfx: (name) => this.sfx.play(name),
+    });
+    this.joystick = new Joystick(surface, overlay, (cx, cy) => this.tapWorld(cx, cy), () => !this.sheet.isOpen, (cx, cy) => this.tapPlot(cx, cy));
     this.keyboard = new Keyboard((c) => this.onKey(c), () => this.sheet.isOpen);
   }
 
@@ -460,6 +476,20 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         break;
       }
     }
+  }
+
+  /** A quick tap on a farm plot in the village: harvest it if ripe, otherwise open the plot popup. */
+  private tapPlot(clientX: number, clientY: number): void {
+    const s = this.s;
+    if (this.sheet.isOpen || s.area !== 'home' || !s.player.inVillage || s.player.dead) return;
+    const i = plotAt(s, (clientX * this.dpr) / this.S + this.camX, (clientY * this.dpr) / this.S + this.camY);
+    const plot = s.plots[i];
+    if (!plot) return;
+    if (isRipe(plot, s.now)) {
+      if (harvest(s, i)) this.save();
+      return;
+    }
+    this.plotPop.open(i);
   }
 
   /** Tapping directly on a monster locks onto it. */
@@ -749,6 +779,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.draw();
     this.text.update(this, raw);
     this.hud.minimap.draw(s);
+    if (this.sheet.isOpen) this.plotPop.close();
+    this.plotPop.update((wx, wy) => ({ x: ((wx - this.camX) * this.S) / this.dpr, y: ((wy - this.camY) * this.S) / this.dpr }));
 
     this.uiT -= raw;
     if (this.uiT <= 0) {

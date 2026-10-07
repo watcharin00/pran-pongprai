@@ -3,6 +3,9 @@
 import { TUNING } from '../data';
 
 const I = TUNING.input;
+/** a press counts as a tap when it is this short and barely moves (else it is a drag / walk) */
+const TAP_MS = 300;
+const TAP_MOVE = 10;
 
 export class Joystick {
   private pointerId: number | null = null;
@@ -13,6 +16,8 @@ export class Joystick {
   vy = 0;
   private readonly base: HTMLDivElement;
   private readonly knob: HTMLDivElement;
+  /** presses that may still turn out to be taps */
+  private readonly taps = new Map<number, { x: number; y: number; t: number }>();
 
   /**
    * `onTap` gets first look at every press (e.g. tapping a monster to lock on);
@@ -23,6 +28,8 @@ export class Joystick {
     overlay: HTMLElement,
     private readonly onTap: (clientX: number, clientY: number) => boolean,
     private readonly enabled: () => boolean,
+    /** a quick tap anywhere (no drag), e.g. on a farm plot; called on release */
+    private readonly onQuickTap: (clientX: number, clientY: number) => void = () => undefined,
   ) {
     this.base = document.createElement('div');
     this.base.id = 'joy';
@@ -61,6 +68,7 @@ export class Joystick {
     this.surface.focus({ preventScroll: true });
     if (!this.enabled()) return;
     if (this.onTap(e.clientX, e.clientY)) return;
+    this.taps.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now() });
     if (e.clientX < innerWidth * I.joystickArea && this.pointerId === null) {
       this.pointerId = e.pointerId;
       this.bx = e.clientX;
@@ -79,6 +87,8 @@ export class Joystick {
   };
 
   private move = (e: PointerEvent): void => {
+    const tap = this.taps.get(e.pointerId);
+    if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > TAP_MOVE) this.taps.delete(e.pointerId);
     if (e.pointerId !== this.pointerId) return;
     const R = I.joystickRadius;
     const dx = e.clientX - this.bx;
@@ -91,7 +101,9 @@ export class Joystick {
   };
 
   private end = (e: PointerEvent): void => {
-    if (e.pointerId !== this.pointerId) return;
-    this.release();
+    const tap = this.taps.get(e.pointerId);
+    this.taps.delete(e.pointerId);
+    if (e.pointerId === this.pointerId) this.release();
+    if (tap && e.type === 'pointerup' && performance.now() - tap.t < TAP_MS && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= TAP_MOVE) this.onQuickTap(e.clientX, e.clientY);
   };
 }

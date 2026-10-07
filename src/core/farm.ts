@@ -113,3 +113,37 @@ export function plantAll(s: GameState): number {
   }
   return n;
 }
+
+/** Tap radius (px) around a plot's centre, by bed: soil plots are one tile, paddy sections 2×2, pond slots a lily spot. */
+const TAP_RADIUS: Record<CropBed, number> = { soil: 10, paddy: 17, pond: 13 };
+
+/** The plot under world point (wx, wy), or -1. Pure: used for tapping plots on screen. */
+export function plotAt(s: GameState, wx: number, wy: number): number {
+  let best = -1;
+  let bd = Infinity;
+  s.plots.forEach((pl, i) => {
+    const d = Math.hypot(pl.x - wx, pl.y - wy);
+    if (d <= TAP_RADIUS[pl.bed] && d < bd) {
+      bd = d;
+      best = i;
+    }
+  });
+  return best;
+}
+
+/** Fertilises a growing, unfertilised plot: the time still to go shrinks like a fertilised planting. */
+export function fertilize(s: GameState, index: number): boolean {
+  const plot = s.plots[index];
+  if (!plot?.crop || plot.fert || isRipe(plot, s.now) || s.inv.fert <= 0) return false;
+  const elapsed = s.now - plot.at;
+  plot.dur = elapsed + (plot.dur - elapsed) * CROPS_DATA.fertilizerTimeMul;
+  plot.fert = true;
+  s.inv.fert--;
+  return true;
+}
+
+/** Plants `crop` in every empty plot of its bed while seeds last (and selects it). Returns how many. */
+export function plantAllOf(s: GameState, crop: CropId): number {
+  s.selCrop = crop;
+  return plantAll(s);
+}

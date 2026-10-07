@@ -591,3 +591,23 @@ kbd{font:500 10.5px var(--pixel);background:#2a3348;border:1px solid var(--line2
 .autopot .seg.on{border-color:var(--gold);background:#3a3420;color:var(--gold)}
 .pb.pot{overflow:visible}
 .pb.cooling .lbl{visibility:hidden}
+
+/* popup over a tapped farm plot */
+.plotpop{position:absolute;z-index:6;width:min(300px,calc(100vw - 16px));padding:10px;border-radius:12px;background:#1c2438f2;border:2px solid #e8b440;box-shadow:0 0 0 2px #16202e,0 6px 16px rgba(0,0,0,.45);pointer-events:auto;color:var(--cream);font:500 13px var(--body,inherit)}
+.plotpop::after{content:'';position:absolute;left:var(--ax,50%);bottom:-9px;width:14px;height:14px;margin-left:-7px;background:#1c2438;border-right:2px solid #e8b440;border-bottom:2px solid #e8b440;transform:rotate(45deg)}
+.plotpop.below::after{bottom:auto;top:-9px;transform:rotate(225deg)}
+.plotpop .pp-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;font:600 14px var(--display)}
+.plotpop .pp-head span{margin-left:auto;font:600 13px var(--pixel);color:var(--gold)}
+.plotpop .ico{width:22px;height:22px;image-rendering:pixelated}
+.plotpop .pp-seeds{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.plotpop .pp-seed{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:9px;border:2px solid var(--line2);background:#26304a;color:var(--cream);font:500 12px var(--display);padding:4px}
+.plotpop .pp-seed em{font:600 11px var(--pixel);font-style:normal;color:var(--gold)}
+.plotpop .pp-seed.sel{border-color:var(--gold)}
+.plotpop .pp-seed:disabled{opacity:.4}
+.plotpop .pp-btn{display:block;width:100%;min-height:44px;margin-top:8px;border-radius:9px;border:2px solid #e8b440;background:linear-gradient(#e8b440,#b8862a);color:#2a1a08;font:600 13px var(--display)}
+.plotpop .pp-btn:disabled{opacity:.45}
+.plotpop .pp-chip{display:block;width:100%;min-height:44px;margin-top:6px;border-radius:9px;border:2px solid var(--line2);background:#26304a;color:var(--cream);font:500 12px var(--display)}
+.plotpop .pp-chip.on{border-color:#7ae07a;color:#c8ffc0}
+.plotpop .pp-bar{height:8px;border-radius:4px;background:#0e1420;overflow:hidden}
+.plotpop .pp-bar i{display:block;height:100%;background:linear-gradient(#a8f0a0,#4fae5a)}
+.plotpop .pp-note{margin:8px 0 0;color:#a8f0a0;font-size:12px}

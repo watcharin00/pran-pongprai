@@ -835,6 +835,18 @@ export const medals = {
   veteran: { name: 'ล้มตัวเก๋า', desc: 'ล่าตัวเก๋าได้ (ปรากฏหลังตีอาวุธขั้นสุดท้าย)' },
 } satisfies Record<MedalId, { name: string; desc: string }>;
 
+/** Popup over a tapped farm plot. */
+export const plotPop = {
+  empty: (bed: string) => `${bed} ว่าง เลือกเมล็ดที่จะปลูก`,
+  noSeed: (source: string) => `ไม่มีเมล็ด หาได้จากการ${source}`,
+  plantAll: (crop: string, n: number) => `ปลูก${crop}ทุกช่องว่าง (${n})`,
+  plantedAll: (crop: string, n: number) => `ปลูก${crop} ${n} ช่อง`,
+  useFert: (n: number, on: boolean) => `ใส่ปุ๋ยตอนปลูก: ${on ? 'เปิด' : 'ปิด'} (มี ${n})`,
+  fertilize: (n: number) => `ใส่ปุ๋ย โตเร็วขึ้น 2 เท่า (มี ${n})`,
+  fertilized: 'ใส่ปุ๋ยแล้ว',
+  fertilizedLog: 'ใส่ปุ๋ยแล้ว พืชโตเร็วขึ้น',
+};
+
 export const log = {
   welcome: 'ลากนิ้วด้านซ้ายเพื่อเดิน กดปุ่มส้มเพื่อตี',
   loaded: 'โหลดความคืบหน้าเดิมแล้ว',
