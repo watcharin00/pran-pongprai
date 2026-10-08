@@ -299,6 +299,8 @@ export interface GameState {
   /** upgrade level per weapon (+0 when missing) */
   weaponLevels: Partial<Record<WeaponId, number>>;
   ownedArmor: Set<ArmorId>;
+  /** upgrade level per armor piece (+0 when missing) */
+  armorLevels: Partial<Record<ArmorId, number>>;
   /** equipped armor per slot */
   armor: Record<ArmorSlot, ArmorId | null>;
   selCrop: CropId;

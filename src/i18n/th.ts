@@ -590,6 +590,7 @@ export const menu = {
   craftArmor: 'ตีชุดเกราะ',
   upgrade: (lv: number) => `อัปเกรดเป็น +${lv}`,
   maxLevel: 'อัปเกรดสูงสุดแล้ว',
+  armorUpgradeHint: (max: number) => `ตีบวกเกราะได้ถึง +${max} ใช้วัสดุชนิดเดียวกับที่ใช้ตีชิ้นนั้น (ไม่ใช้ของหายาก) กับแร่ เพิ่มป้องกัน HP และความอึด`,
   upgradeHint: (final: number, max: number) => `อัปเกรดได้ถึง +${max} ขั้น +${final} ต้องใช้วัสดุหายาก ขั้น +${final + 1} ถึง +${max} ต้องใช้ตราพรานเอก (ได้จากมอนตัวเก๋า)`,
   bagEmpty: 'ยังไม่มีของในหมวดนี้',
   bagHelp: 'แตะไอเท็มเพื่อดูว่าได้มาจากไหนและใช้ทำอะไร',
@@ -938,6 +939,7 @@ export const log = {
 
 /** Weapon name with its upgrade level, e.g. "ดาบกระดูก +2". */
 export const weaponName = (id: WeaponId, level: number): string => (level > 0 ? `${weapons[id].name} +${level}` : weapons[id].name);
+export const armorName = (id: ArmorId, level: number): string => (level > 0 ? `${armor[id].name} +${level}` : armor[id].name);
 
 // ---------------------------------------------------------------- villagers
 

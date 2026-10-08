@@ -10,7 +10,7 @@ import tuningJson from './tuning.json';
 import armorJson from './armor.json';
 import npcsJson from './npcs.json';
 import requestsJson from './requests.json';
-import { DataError, loadArmor, loadArmorPerks, loadCrops, loadMaterials, loadMonsters, loadNpcs, loadRequests, loadSkills, loadWeapons } from './validate';
+import { DataError, loadArmor, loadArmorPerks, loadArmorUpgrade, loadCrops, loadMaterials, loadMonsters, loadNpcs, loadRequests, loadSkills, loadWeapons } from './validate';
 import type { ArmorId, MaterialId, MealsData, MonsterDef, MonsterId, NpcId, SkillId, Tuning } from './types';
 
 export type * from './types';
@@ -31,6 +31,7 @@ export const WEAPON_TYPES = WEAPONS_DATA.types;
 export const ARMOR_PERKS = loadArmorPerks(armorJson);
 export const ARMOR = loadArmor(armorJson, MATERIAL_IDS, Object.keys(ARMOR_PERKS));
 export const ARMOR_IDS = Object.keys(ARMOR) as ArmorId[];
+export const ARMOR_UPGRADE = loadArmorUpgrade(armorJson);
 
 export const NPCS = loadNpcs(npcsJson);
 export const NPC_IDS = Object.keys(NPCS) as NpcId[];

@@ -1,5 +1,5 @@
 // Materials, crafting, potions and meals.
-import { ARMOR, ARMOR_PERKS, MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
+import { ARMOR, ARMOR_PERKS, ARMOR_UPGRADE, MATERIALS, MATERIAL_IDS, MEALS, MEALS_DATA, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import { ARMOR_SLOTS, type ArmorId, type ArmorPerk, type ItemBag, type PerkId, type MealEffect, type MealId, type WeaponId } from '../data/types';
 import type { GameState, Inventory } from './state';
 
@@ -57,14 +57,50 @@ export function walkSpeed(s: GameState): number {
 
 // ----- armor -----
 
+export function armorLevel(s: GameState, id: ArmorId): number {
+  return s.armorLevels[id] ?? 0;
+}
+
+/** A piece's defense / max HP / stamina at an upgrade level (current level when omitted). */
+export function armorStat(s: GameState, id: ArmorId, stat: 'defense' | 'maxHp' | 'stamina', level = armorLevel(s, id)): number {
+  return Math.round(ARMOR[id][stat] * (ARMOR_UPGRADE.statMul[level] ?? 1));
+}
+
 /** Sum of a stat over the equipped armor pieces. */
 function armorSum(s: GameState, stat: 'defense' | 'maxHp' | 'stamina'): number {
   let n = 0;
   for (const slot of ARMOR_SLOTS) {
     const id = s.armor[slot];
-    if (id) n += ARMOR[id][stat];
+    if (id) n += armorStat(s, id, stat);
   }
   return n;
+}
+
+/** Materials to take a piece to its next level, or null at max level. */
+export function armorUpgradeCost(s: GameState, id: ArmorId): ItemBag | null {
+  const next = armorLevel(s, id) + 1;
+  if (next > ARMOR_UPGRADE.maxLevel) return null;
+  const cost: ItemBag = {};
+  for (const [k, n] of Object.entries(ARMOR[id].recipe)) {
+    const m = MATERIALS[k as keyof Inventory];
+    // rare drops (and hunter seals) are only needed to make the piece, not for every level
+    if (!n || (m.rarity ?? 0) >= 2 || k === 'seal') continue;
+    cost[k as keyof Inventory] = Math.max(1, Math.ceil(n * ARMOR_UPGRADE.recipeShare)) * next;
+  }
+  if (ARMOR_UPGRADE.orePerLevel > 0) cost.ore = (cost.ore ?? 0) + ARMOR_UPGRADE.orePerLevel * next;
+  return cost;
+}
+
+export function upgradeArmor(s: GameState, id: ArmorId): ActionResult {
+  if (!s.player.inVillage) return { ok: false, reason: 'notInVillage' };
+  if (!s.ownedArmor.has(id)) return { ok: false, reason: 'notOwned' };
+  const cost = armorUpgradeCost(s, id);
+  if (!cost) return { ok: false, reason: 'maxLevel' };
+  if (!canAfford(s.inv, cost)) return { ok: false, reason: 'cannotAfford' };
+  spend(s.inv, cost);
+  s.armorLevels[id] = armorLevel(s, id) + 1;
+  refreshStats(s);
+  return { ok: true };
 }
 
 /** Perks switched on by the worn armor: each complete head + body set, plus single-piece perks. */

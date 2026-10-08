@@ -4,6 +4,7 @@
 // Every loader here takes `unknown`, checks it, and returns the typed value.
 import type {
   ArmorDef,
+  ArmorUpgradeDef,
   ArmorPerk,
   PerkId,
   ArmorId,
@@ -339,6 +340,14 @@ export function loadArmorPerks(v: unknown): Record<PerkId, ArmorPerk> {
     out[k] = perk;
   }
   return out as Record<PerkId, ArmorPerk>;
+}
+
+export function loadArmorUpgrade(v: unknown): ArmorUpgradeDef {
+  const u = obj(obj(v, 'armor').upgrade, 'armor.upgrade');
+  const maxLevel = num(u.maxLevel, 'armor.upgrade.maxLevel', 1, 20);
+  const statMul = arr(u.statMul, 'armor.upgrade.statMul').map((x, i) => num(x, `armor.upgrade.statMul[${i}]`, 1, 5));
+  if (statMul.length !== maxLevel + 1) throw new DataError('armor.upgrade.statMul', 'needs one multiplier per level, from +0');
+  return { maxLevel, statMul, orePerLevel: num(u.orePerLevel, 'armor.upgrade.orePerLevel', 0), recipeShare: num(u.recipeShare, 'armor.upgrade.recipeShare', 0, 2) };
 }
 
 export function loadArmor(v: unknown, materials: readonly string[], perks: readonly string[]): Record<ArmorId, ArmorDef> {

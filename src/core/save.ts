@@ -1,5 +1,5 @@
 // Save format + migration. Storage access (localStorage) lives outside core.
-import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, REQUESTS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
+import { ARMOR, ARMOR_UPGRADE, CROPS, MATERIALS, MEALS, MONSTERS, REQUESTS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import { ARMOR_SLOTS, MEDALS, type ArmorId, type ArmorSlot, type CropId, type MaterialId, type MealId, type MedalId, type MonsterId, type WeaponId, type AreaId } from '../data/types';
 import { refreshStats, startingInventory } from './inventory';
 import { AREA_IDS } from './areas';
@@ -22,6 +22,7 @@ export interface SaveData {
   weapon: WeaponId;
   weaponLevels: Partial<Record<WeaponId, number>>;
   ownedArmor: ArmorId[];
+  armorLevels: Partial<Record<ArmorId, number>>;
   armor: Record<ArmorSlot, ArmorId | null>;
   potions: number;
   meal: Meal | null;
@@ -56,6 +57,7 @@ export function snapshot(s: GameState): SaveData {
     weapon: s.player.weapon,
     weaponLevels: { ...s.weaponLevels },
     ownedArmor: [...s.ownedArmor],
+    armorLevels: { ...s.armorLevels },
     armor: { ...s.armor },
     potions: s.player.potions,
     meal: s.player.meal ? { ...s.player.meal } : null,
@@ -117,6 +119,12 @@ export function parseSave(raw: string | null): SaveData | null {
 
   const ownedArmor = new Set<ArmorId>();
   if (Array.isArray(d.ownedArmor)) for (const k of d.ownedArmor) if (typeof k === 'string' && k in ARMOR) ownedArmor.add(k as ArmorId);
+  const armorLevels: Partial<Record<ArmorId, number>> = {};
+  if (isObj(d.armorLevels)) {
+    for (const [k, v] of Object.entries(d.armorLevels)) {
+      if (ownedArmor.has(k as ArmorId) && isNum(v) && v >= 1) armorLevels[k as ArmorId] = Math.min(ARMOR_UPGRADE.maxLevel, Math.floor(v));
+    }
+  }
   const armor: Record<ArmorSlot, ArmorId | null> = { head: null, body: null, charm: null };
   if (isObj(d.armor)) {
     for (const slot of ARMOR_SLOTS) {
@@ -182,6 +190,7 @@ export function parseSave(raw: string | null): SaveData | null {
     weapon,
     weaponLevels,
     ownedArmor: [...ownedArmor],
+    armorLevels,
     armor,
     potions: isNum(d.potions) && d.potions >= 0 ? Math.floor(d.potions) : 2,
     meal,
@@ -209,6 +218,7 @@ export function applySave(s: GameState, d: SaveData): void {
   s.weaponLevels = { ...d.weaponLevels };
   s.player.weapon = d.weapon;
   s.ownedArmor = new Set(d.ownedArmor);
+  s.armorLevels = { ...d.armorLevels };
   s.armor = { ...d.armor };
   s.player.potions = d.potions;
   s.player.meal = d.meal;

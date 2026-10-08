@@ -269,6 +269,19 @@ export interface ArmorDef {
   recipe: ItemBag;
 }
 
+/** Armor upgrades at the forge (+1..+maxLevel). */
+export interface ArmorUpgradeDef {
+  maxLevel: number;
+  /** defense, max HP and stamina of a piece are multiplied by statMul[level] */
+  statMul: number[];
+  orePerLevel: number;
+  /**
+   * going to +n costs ceil(recipe amount × recipeShare) × n of each of the piece's own common
+   * materials (rare drops and hunter seals are left out), plus ore
+   */
+  recipeShare: number;
+}
+
 /** Gear bonuses from armor sets / single pieces. Missing fields mean "no effect". */
 export interface ArmorPerk {
   /** multiplies stamina regeneration */
