@@ -23,12 +23,12 @@ describe('limestone cave', () => {
     expect(arrivalExit('cave', 'limestone')?.edge).toBe('n');
   });
 
-  it('spawns its three monsters only there', () => {
+  it('spawns its monsters only there', () => {
     const s = createGame({ rngSeed: 9, now: NOW });
     changeArea(s, 'limestone');
     expect(s.monsters.some((m) => MONSTERS[m.kind].area === 'cave')).toBe(false);
     changeArea(s, 'cave');
-    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['flyingfox', 'kingcobra', 'porcupine']);
+    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['centipede', 'flyingfox', 'kingcobra', 'porcupine']);
   });
 
   it('a porcupine stabs its quills back at a player behind it, without turning', () => {

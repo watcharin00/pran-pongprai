@@ -129,13 +129,17 @@ function loadAttack(v: unknown, path: string): AttackDef {
   const minRange = optional(a, 'minRange', (r) => num(r, `${path}.minRange`, 0));
   const extra = minRange === undefined ? {} : { minRange };
   if (shape === 'circle') {
+    const offset = num(a.offset, `${path}.offset`, -100);
+    const burrow = optional(a, 'burrow', (b) => bool(b, `${path}.burrow`));
+    if (burrow && offset !== 0) throw new DataError(`${path}.offset`, 'a burrow attack is centred on the player: offset must be 0');
     return {
       ...common,
       ...extra,
       shape,
       radius: num(a.radius, `${path}.radius`, 1),
       // negative = a rear attack (tail whip) centred behind the monster
-      offset: num(a.offset, `${path}.offset`, -100),
+      offset,
+      ...(burrow ? { burrow } : {}),
     };
   }
   return {

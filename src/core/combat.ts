@@ -44,6 +44,7 @@ export function nearestMonster(s: GameState, maxD: number, preferAggro: boolean)
   let best: MonsterState | null = null;
   let bd = maxD;
   for (const m of s.monsters) {
+    if (m.burrow) continue;
     let d = Math.hypot(m.x - p.x, m.y - p.y);
     if (preferAggro && m.aggro) d *= 0.7;
     if (d < bd) {
@@ -58,6 +59,8 @@ export function nearestMonster(s: GameState, maxD: number, preferAggro: boolean)
 export function chooseTarget(s: GameState, maxD: number): MonsterState | null {
   const p = s.player;
   const locked = findMonster(s, p.lockId);
+  // a burrowed lock stays locked but is not a target until it comes back up
+  if (locked?.burrow) return null;
   if (locked && Math.hypot(locked.x - p.x, locked.y - p.y) < Math.max(maxD, C.lockKeepRange)) return locked;
   return nearestMonster(s, maxD, true);
 }
@@ -79,7 +82,8 @@ export interface HitOptions {
 
 /** Player damages a monster. `mult` scales weapon damage (skills). */
 export function hitMonster(s: GameState, m: MonsterState, mult: number, o: HitOptions = {}): void {
-  if (!s.monsters.includes(m)) return;
+  // underground (burrow attack): nothing reaches it
+  if (!s.monsters.includes(m) || m.burrow) return;
   const w = WEAPONS[s.player.weapon];
   const def = MONSTERS[m.kind];
   const part = partFor(m, s.player.x);
@@ -233,6 +237,7 @@ export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void 
         mm.mode = 'wander';
         mm.shape = null;
       }
+      mm.burrow = false;
       mm.aggro = false;
       mm.huntT = null;
     }

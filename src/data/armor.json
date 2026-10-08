@@ -44,6 +44,7 @@
     "nagahelm":       {"slot": "head", "defense": 24, "maxHp": 38, "stamina": 5, "color": "#6a7a42", "set": "nagascale", "recipe": {"kingskin": 4, "kinghood": 1, "quill": 2}},
     "nagamail":       {"slot": "body", "defense": 28, "maxHp": 50, "stamina": 5, "color": "#5a6a3a", "set": "nagascale", "recipe": {"kingskin": 6, "kingtail": 1, "porcupinehide": 3}},
     "batcharm":       {"slot": "charm", "defense": 4, "maxHp": 10, "stamina": 40, "color": "#5a4048", "recipe": {"batfang": 2, "batwing": 3}},
+    "centcharm":      {"slot": "charm", "defense": 8, "maxHp": 25, "stamina": 25, "color": "#d8402a", "recipe": {"centclaw": 2, "centshell": 4, "venom": 1}},
     "nagacharm":      {"slot": "charm", "defense": 10, "maxHp": 40, "stamina": 35, "color": "#5ad8ff", "recipe": {"nagagem": 1, "kinghood": 1}},
     "salthelm":       {"slot": "head", "defense": 27, "maxHp": 44, "stamina": 5, "color": "#6a6a4a", "set": "tidecaller", "recipe": {"salthide": 5, "saltfang": 1, "crabshell": 2}},
     "saltmail":       {"slot": "body", "defense": 32, "maxHp": 58, "stamina": 5, "color": "#5a5a3e", "set": "tidecaller", "recipe": {"salthide": 7, "salttail": 1, "otterpelt": 3}},

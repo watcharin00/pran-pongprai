@@ -665,6 +665,14 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const m = findMonster(this.s, e.id);
       if (m) snd(MONSTERS[e.kind].size >= 12 ? 'telegraphBig' : 'telegraph', m);
     });
+    ev.on('monster:burrow', (e) => {
+      fx.burst(e.at.x, e.at.y, '#8a6a4a', 14, 70, 'dust');
+      snd('roll');
+    });
+    ev.on('monster:emerge', (e) => {
+      fx.burst(e.at.x, e.at.y, '#8a6a4a', 22, 110, 'chunk');
+      bump(0, 0.16);
+    });
     ev.on('monster:dashEnd', (e) => {
       if (MONSTERS[e.kind].size >= 12) bump(0, 0.14);
     });
@@ -1225,6 +1233,15 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       }
       v.update(m, time);
       const size = MONSTERS[m.kind].size;
+      v.img.setVisible(!m.burrow);
+      if (m.burrow) {
+        // underground: a moving ridge of loose earth instead of the sprite
+        for (let i = 0; i < 4; i++) {
+          const k = Math.sin(time * 14 + i * 1.7);
+          sh.fillStyle(i % 2 ? 0x8a6a4a : 0x6a4a30, 0.85).fillEllipse(m.x - m.dirX * i * 3, m.y + 2 - Math.max(0, k), 6 - i, 3);
+        }
+        continue;
+      }
       const feet = MonsterView.feet(m, v.img.height);
       sh.fillStyle(0x142814, 0.3).fillEllipse(m.x, feet, size * 1.9, size * 0.64);
       if (m.rage) sa.fillStyle(0xff501e, 0.14 + 0.08 * Math.sin(time * 10)).fillEllipse(m.x, m.y, (size + 6) * 2, size * 1.6);
@@ -1284,7 +1301,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
           g.fillStyle(0xffd35c, 1).fillRect(Math.round(m.x + Math.cos(a) * 9), Math.round(m.y - v.img.height / 2 - 4 + Math.sin(a) * 2), 2, 2);
         }
       }
-      if (!(m.aggro || lock === m)) continue;
+      if (!(m.aggro || lock === m) || m.burrow) continue;
       const bw = def.size * 2;
       const yy = Math.round(m.y - v.img.height / 2 - 5);
       g.fillStyle(0x151c2b, 1).fillRect(m.x - bw / 2 - 1, yy - 1, bw + 2, 4);

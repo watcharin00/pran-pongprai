@@ -28,7 +28,7 @@ export function createMonster(id: number, kind: MonsterId, x: number, y: number,
     vet: isVet, alpha, maxHp: hp,
     id, kind, x, y, hx: x, hy: y, hp, parts, mode: 'wander', t: 0, tt: 1, dirX, turnT: 0, wanderT: 0, waypoint: null,
     atkCd: 0, flash: 0, stunMeter: 0, stunT: 0, huntT: null, aggro: false, leash: 0, rage: false, shape: null, attack: null,
-    dashLeft: 0, dashHit: false, anim: 0, tipT: 0, hitPlayer: false,
+    dashLeft: 0, dashHit: false, anim: 0, tipT: 0, hitPlayer: false, burrow: false,
   };
 }
 
@@ -115,14 +115,21 @@ export function updateFacing(m: MonsterState, want: 1 | -1, dt: number, turnTime
 /** Rear attacks (tail whips) are circles with a negative offset: used on players standing behind. */
 export const isRearAttack = (a: AttackDef): boolean => a.shape === 'circle' && a.offset < 0;
 
-export function startAttack(m: MonsterState, a: AttackDef, ux: number, uy: number): void {
+/** Share of a burrow telegraph during which the circle keeps following the player. */
+export const BURROW_TRACK = 0.5;
+
+export function startAttack(m: MonsterState, a: AttackDef, ux: number, uy: number, target?: { x: number; y: number }): void {
   m.mode = 'tele';
   m.attack = a;
   m.t = a.telegraph * C.telegraphMul;
   m.tt = m.t;
   m.turnT = 0;
   let shape: Shape;
-  if (a.shape === 'circle' && isRearAttack(a)) {
+  if (a.shape === 'circle' && a.burrow) {
+    // digs in: the circle starts under the player and follows them for a while
+    m.burrow = true;
+    shape = { kind: 'circle', cx: target?.x ?? m.x, cy: target?.y ?? m.y, r: a.radius };
+  } else if (a.shape === 'circle' && isRearAttack(a)) {
     // keeps facing forward; the circle sits on the tail side
     shape = { kind: 'circle', cx: m.x + m.dirX * a.offset, cy: m.y, r: a.radius };
   } else {
@@ -138,10 +145,46 @@ export function startAttack(m: MonsterState, a: AttackDef, ux: number, uy: numbe
 function calmDown(s: GameState, m: MonsterState): void {
   m.mode = 'wander';
   m.shape = null;
+  m.burrow = false;
   m.aggro = false;
   m.huntT = null;
   m.leash = 0;
   if (s.player.lockId === m.id) s.player.lockId = null;
+}
+
+/**
+ * Underground: the circle follows the player for the first BURROW_TRACK of the telegraph (not into
+ * the village or a camp), then stays put; the monster tunnels toward it, out of reach of attacks.
+ */
+function burrowMove(s: GameState, m: MonsterState, dt: number, spd: number, playerSafe: boolean): void {
+  const sh = m.shape;
+  if (!sh || sh.kind !== 'circle') return;
+  const p = s.player;
+  if (!playerSafe && !p.dead && m.t > m.tt * (1 - BURROW_TRACK)) {
+    sh.cx = p.x;
+    sh.cy = p.y;
+  }
+  const dx = sh.cx - m.x;
+  const dy = sh.cy - m.y;
+  const d = Math.hypot(dx, dy);
+  if (d > 1) {
+    const step = Math.min(d, spd * 2 * dt);
+    moveBody(s.map, m, (dx / d) * step, (dy / d) * step, MONSTERS[m.kind].size * 0.5);
+    m.dirX = dx >= 0 ? 1 : -1;
+  }
+}
+
+/** Bursts out at the circle (when it can stand there and it is not safe ground), else where it is. */
+function emerge(s: GameState, m: MonsterState, x: number, y: number): void {
+  m.burrow = false;
+  const r = MONSTERS[m.kind].size * 0.5;
+  const safe = (s.area === 'home' && inVillagePx(x, y)) || inCampPx(s.map, x, y, TUNING.camp.safeRadius);
+  if (!safe && canStand(s.map, x, y, r)) {
+    m.x = x;
+    m.y = y;
+  }
+  m.dirX = s.player.x >= m.x ? 1 : -1;
+  s.events.emit('monster:emerge', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
 }
 
 export function updateMonster(s: GameState, m: MonsterState, dt: number): void {
@@ -242,8 +285,9 @@ function think(s: GameState, m: MonsterState, dt: number): void {
         const opts = def.attacks.filter((a) => (isRearAttack(a) ? behind && !facing : facing) && d <= a.range && (a.minRange === undefined || d >= a.minRange));
         const a = pickWeighted(opts, s.rng.next());
         if (a) {
-          startAttack(m, a, dx / d, dy / d);
+          startAttack(m, a, dx / d, dy / d, p);
           s.events.emit('monster:telegraph', { id: m.id, kind: m.kind, attackId: a.id });
+          if (m.burrow) s.events.emit('monster:burrow', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
           return;
         }
       }
@@ -253,6 +297,7 @@ function think(s: GameState, m: MonsterState, dt: number): void {
 
     case 'tele': {
       m.t -= dt * (rage ? rage.telegraphRate : 1) * (m.vet ? V.telegraphRate : 1) * (m.alpha ? A.telegraphRate : 1);
+      if (m.burrow) burrowMove(s, m, dt, spd, playerInVillage);
       if (m.t > 0) return;
       const a = m.attack;
       const sh = m.shape;
@@ -268,6 +313,7 @@ function think(s: GameState, m: MonsterState, dt: number): void {
         return;
       }
       if (sh.kind === 'circle') {
+        if (m.burrow) emerge(s, m, sh.cx, sh.cy);
         if (Math.hypot(p.x - sh.cx, p.y - sh.cy) <= sh.r + 3) resolveMonsterHit(s, m, a);
         s.events.emit('monster:strike', { id: m.id, kind: m.kind, at: { x: sh.cx, y: sh.cy }, radius: sh.r });
       } else {

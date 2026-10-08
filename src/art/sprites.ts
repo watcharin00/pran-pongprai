@@ -590,6 +590,54 @@ function buildPorcupine(f: number, tb: boolean): HTMLCanvasElement {
   return finish(b);
 }
 
+/**
+ * ตะขาบยักษ์ (giant centipede): a long row of glossy dark-red segments with orange legs rippling
+ * along it, a red head with curved venom claws (head part), two trailing tail legs (tail part).
+ */
+function buildCentipede(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(33, 15);
+  const o = 1;
+  const B = '#5a1e1a';
+  const H = '#8a2e24';
+  const LEG = '#f0902a';
+  const n = tb ? 6 : 7;
+  const x0 = tb ? 7 : 4;
+  // segments from the tail (left) to the head (right), bobbing in a wave
+  for (let i = 0; i < n; i++) {
+    const x = x0 + i * 3.4;
+    const y = 8 + Math.round(Math.sin(f * 1.57 + i * 0.9) * 0.8);
+    // a pair of legs per segment, swinging out of phase with their neighbours
+    const sw = (i + f) % 2 === 0 ? 1 : -1;
+    sp(b, Math.round(x) + sw + o, y + 3 + o, LEG);
+    sp(b, Math.round(x) + sw * 2 + o, y + 4 + o, LEG);
+    sp(b, Math.round(x) - sw + o, y - 3 + o, LEG);
+    sp(b, Math.round(x) - sw * 2 + o, y - 4 + o, LEG);
+    ell(b, x + o, y + o, 2.2, 2.4, i % 2 ? B : '#6a2420');
+    sp(b, Math.round(x) - 1 + o, y - 1 + o, H);
+  }
+  if (!tb) {
+    // the long trailing tail legs
+    line(b, 4 + o, 8 + o, 0 + o, 5 + o, LEG);
+    line(b, 4 + o, 9 + o, 0 + o, 11 + o, LEG);
+  } else {
+    rect(b, 5 + o, 8 + o, 2, 1, '#3a1410');
+  }
+  // head with antennae
+  const hx = x0 + n * 3.4 + 0.5;
+  ell(b, hx + o, 8 + o, 2.6, 2.4, '#c8402a');
+  sp(b, Math.round(hx) + o, 7 + o, '#ff7a4a');
+  line(b, Math.round(hx) + 1 + o, 6 + o, Math.round(hx) + 4 + o, 2 + o, '#e8a040');
+  line(b, Math.round(hx) + 2 + o, 7 + o, Math.round(hx) + 5 + o, 5 + o, '#e8a040');
+  if (!hb) {
+    // curved venom claws
+    ([[2, 9], [3, 10], [3, 11], [2, 11]] as const).forEach(([dx, dy]) => sp(b, Math.round(hx) + dx + o, dy + o, '#1a0e0e'));
+    ([[3, 8], [4, 9]] as const).forEach(([dx, dy]) => sp(b, Math.round(hx) + dx + o, dy + o, '#2a1410'));
+  } else {
+    sp(b, Math.round(hx) + 2 + o, 9 + o, '#5a2a20');
+  }
+  return finish(b);
+}
+
 /** งูจงอาง (king cobra): big olive coils with pale bands, tall neck, long narrow hood, long tail. Head part = hood. */
 function buildKingcobra(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   const b = createBuffer(41, 33);
@@ -954,6 +1002,7 @@ export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
   saltcroc: (f, hb, tb) => buildSaltcroc(f, hb, tb),
   flyingfox: (f, hb) => buildFlyingfox(f, hb),
   porcupine: (f, _hb, tb) => buildPorcupine(f, tb),
+  centipede: (f, hb, tb) => buildCentipede(f, hb, tb),
   kingcobra: (f, hb, tb) => buildKingcobra(f, hb, tb),
   muntjac: (f, hb) => buildMuntjac(f, hb),
   elephant: (f, hb, tb) => buildElephant(f, hb, tb),

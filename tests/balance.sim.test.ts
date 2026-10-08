@@ -36,7 +36,7 @@ const STAGES: Stage[] = [
   { goal: 5, weapon: 'cobrafang', level: 2, armor: ['tigerhood', 'tigercoat', 'tigereyecharm'], targets: ['monitor', 'crocodile'], next: ['crocmaul', 'lizardbow'] },
   { goal: 6, weapon: 'crocmaul', level: 2, armor: ['crochelm', 'crocmail', 'tigereyecharm'], targets: ['serow', 'bear'], next: ['serowspear', 'bearblade'] },
   { goal: 7, weapon: 'bearblade', level: 2, armor: ['bearhood', 'bearcoat', 'serowcharm'], targets: ['muntjac', 'elephant'], next: ['kingblade', 'kingbow'] },
-  { goal: 8, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['flyingfox', 'porcupine', 'kingcobra'], next: ['nagamaul', 'batbow', 'nagablade'] },
+  { goal: 8, weapon: 'kingblade', level: 3, armor: ['elehelm', 'elecoat', 'spiritcharm'], targets: ['flyingfox', 'porcupine', 'centipede', 'kingcobra'], next: ['nagamaul', 'batbow', 'nagablade'] },
   { goal: 9, weapon: 'nagablade', level: 3, armor: ['nagahelm', 'nagamail', 'nagacharm'], targets: ['otter', 'mudcrab', 'saltcroc'], next: ['tidespear', 'crabsword', 'pearlbow'] },
   { goal: 10, weapon: 'crabsword', level: 3, armor: ['salthelm', 'saltmail', 'pearlcharm'], targets: ['marbledcat', 'tapir', 'panther'], next: ['tapirhammer', 'catbow', 'pantherglaive'] },
   { goal: 11, weapon: 'pantherglaive', level: 3, armor: ['pantherhood', 'panthercoat', 'panthercharm'], targets: ['peafowl', 'sambar', 'wildbuffalo'], next: ['hornspear', 'plumesword', 'meadowblade'] },

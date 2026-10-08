@@ -160,6 +160,8 @@ export interface MonsterState {
   tipT: number;
   /** this monster has landed a hit on the player (spoils "flawless" requests) */
   hitPlayer: boolean;
+  /** underground during a burrow attack: hidden, cannot be hit or targeted */
+  burrow: boolean;
   /** endgame "veteran" variant: tougher, better drops (tuning.veteran) */
   vet: boolean;
   /** post-game "alpha": a veteran made tougher again (tuning.alpha stacks on tuning.veteran) */

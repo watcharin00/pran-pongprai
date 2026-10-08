@@ -316,6 +316,7 @@
       { "id": "quillring", "shape": "circle", "radius": 30, "offset": 0,   "telegraph": 0.9,  "damage": 28, "range": 26, "weight": 2 }
     ]
   },
+  "centipede": {"weakTo": "hammer", "area": "cave", "hp": 2000, "speed": 50, "size": 10, "aggroRadius": 62, "zone": "forest", "spawnMinVillageDist": 0, "huntTime": 110, "turnTime": 0.4, "recover": 0.8, "respawn": 18, "count": 2, "rage": null, "parts": {"head": {"hp": 520, "drop": {"centclaw": 1}, "offset": [6, -2]}, "tail": {"hp": 400, "drop": {"centshell": 2}, "offset": [-9, -1]}}, "carve": [{"item": "centshell", "min": 2, "max": 3}, {"item": "venom", "min": 0, "max": 1}, {"item": "fert", "min": 1, "max": 1}], "bonus": {}, "rare": {}, "attacks": [{"id": "bite", "shape": "circle", "radius": 13, "offset": 10, "telegraph": 0.55, "damage": 26, "range": 18, "weight": 3}, {"id": "burrow", "shape": "circle", "radius": 20, "offset": 0, "burrow": true, "telegraph": 1.1, "damage": 34, "range": 150, "minRange": 36, "weight": 3}, {"id": "taillash", "shape": "circle", "radius": 16, "offset": -12, "telegraph": 0.7, "damage": 24, "range": 26, "weight": 2}]},
   "kingcobra": {
     "weakTo": "hammer",
     "area": "cave",

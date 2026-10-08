@@ -27,6 +27,9 @@ export interface GameEvents {
   /** a circle attack resolved (hit or miss) */
   'monster:strike': { id: number; kind: MonsterId; at: Vec2; radius: number };
   'monster:dashEnd': { id: number; kind: MonsterId; at: Vec2 };
+  /** dug in for a burrow attack / burst back out of the ground */
+  'monster:burrow': { id: number; kind: MonsterId; at: Vec2 };
+  'monster:emerge': { id: number; kind: MonsterId; at: Vec2 };
   'monster:killed': { id: number; kind: MonsterId; at: Vec2; drops: Drops; rare: MaterialId | null; corpse: CorpseInfo;
     /** it never hit the player */
     flawless: boolean;

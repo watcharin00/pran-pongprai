@@ -48,6 +48,11 @@ export interface CircleAttackDef {
   radius: number;
   /** distance of the circle centre from the monster, along its facing */
   offset: number;
+  /**
+   * the monster digs in and the circle follows the player for the first part of the telegraph,
+   * then it bursts out under it (centred on the player, so `offset` must be 0)
+   */
+  burrow?: boolean;
   telegraph: number;
   damage: number;
   range: number;
