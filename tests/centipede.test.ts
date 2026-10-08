@@ -98,7 +98,7 @@ describe('giant centipede burrow attack', () => {
     run(s, T + 0.3, () => {
       t += 1 / 60;
       // roll sideways just after the circle locks
-      return t > T * BURROW_TRACK + 0.05 && t < T * BURROW_TRACK + 0.1 ? intent({ dodge: true, my: 1 }) : intent();
+      return t > T * BURROW_TRACK + 0.05 && t < T * BURROW_TRACK + 0.1 ? intent({ dodge: true, move: { x: 0, y: 1 } }) : intent();
     });
     expect(s.player.hp).toBe(hp);
   });
