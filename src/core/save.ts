@@ -125,7 +125,7 @@ export function parseSave(raw: string | null): SaveData | null {
       if (ownedArmor.has(k as ArmorId) && isNum(v) && v >= 1) armorLevels[k as ArmorId] = Math.min(ARMOR_UPGRADE.maxLevel, Math.floor(v));
     }
   }
-  const armor: Record<ArmorSlot, ArmorId | null> = { head: null, body: null, charm: null };
+  const armor: Record<ArmorSlot, ArmorId | null> = { head: null, body: null, feet: null, charm: null };
   if (isObj(d.armor)) {
     for (const slot of ARMOR_SLOTS) {
       const id = d.armor[slot];

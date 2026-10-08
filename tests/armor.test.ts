@@ -76,7 +76,7 @@ describe('armor', () => {
     equipArmor(s, 'fangcharm');
     const t = createGame({ rngSeed: 1, now: NOW, map: MAP, save: parseSave(serialize(s)), noMonsters: true });
     expect([...t.ownedArmor].sort()).toEqual(['fangcharm', 'mosshood']);
-    expect(t.armor).toEqual({ head: 'mosshood', body: null, charm: 'fangcharm' });
+    expect(t.armor).toEqual({ head: 'mosshood', body: null, feet: null, charm: 'fangcharm' });
     expect(t.player.maxHp).toBe(TUNING.player.maxHp + ARMOR.mosshood.maxHp);
   });
 
@@ -84,11 +84,39 @@ describe('armor', () => {
     const old = JSON.stringify({ version: 2, inv: { hide: 2 }, owned: ['bone'], weapon: 'bone', potions: 1, meal: null, selCrop: 'herb', autoOn: false, plots: [] });
     const d = parseSave(old);
     expect(d?.ownedArmor).toEqual([]);
-    expect(d?.armor).toEqual({ head: null, body: null, charm: null });
+    expect(d?.armor).toEqual({ head: null, body: null, feet: null, charm: null });
   });
 
   it('drops equipped pieces that are not owned or are in the wrong slot', () => {
     const bad = JSON.stringify({ version: 2, inv: {}, ownedArmor: ['mosshood'], armor: { head: 'mossvest', body: 'mosshood', charm: 'emberamulet' } });
-    expect(parseSave(bad)?.armor).toEqual({ head: null, body: null, charm: null });
+    expect(parseSave(bad)?.armor).toEqual({ head: null, body: null, feet: null, charm: null });
+  });
+});
+
+describe('boots', () => {
+  it('each boot fills the feet slot and brings a movement perk', async () => {
+    const { ARMOR, ARMOR_IDS, ARMOR_PERKS } = await import('../src/data');
+    const boots = ARMOR_IDS.filter((id) => ARMOR[id].slot === 'feet');
+    expect(boots.length).toBeGreaterThanOrEqual(6);
+    for (const id of boots) {
+      const perk = ARMOR[id].perk;
+      expect(perk, id).not.toBeNull();
+      if (!perk) continue;
+      const k = ARMOR_PERKS[perk];
+      expect(k.walkSpeedMul ?? k.dodgeCostDelta ?? k.rollIframeBonus ?? k.staminaRegenMul, id).toBeDefined();
+    }
+  });
+
+  it('worn boots speed the player up without touching other slots', async () => {
+    const { craftArmor, walkSpeed } = await import('../src/core/inventory');
+    const { game } = await import('./helpers');
+    const s = game();
+    const base = walkSpeed(s);
+    s.inv.hide = 3;
+    s.inv.fang = 1;
+    expect(craftArmor(s, 'dholeboots').ok).toBe(true);
+    expect(s.armor.feet).toBe('dholeboots');
+    expect(s.armor.head).toBeNull();
+    expect(walkSpeed(s)).toBeCloseTo(base * 1.05);
   });
 });

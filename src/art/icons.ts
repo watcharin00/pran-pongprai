@@ -230,6 +230,16 @@ const ARMOR_SHAPES: Record<ArmorSlot, ShapeDrawer> = {
     rect(b, 4, 10, 10, 1, tint(c, -0.35));
     rect(b, 5, 5, 2, 4, tint(c, 0.3));
   },
+  feet: (b, c) => {
+    // a boot: shaft, foot and a darker sole, lit from the upper left
+    rect(b, 5, 3, 6, 9, c);
+    rect(b, 5, 10, 10, 4, c);
+    ell(b, 14, 12, 2, 2, c);
+    rect(b, 4, 14, 12, 2, tint(c, -0.45));
+    rect(b, 5, 3, 6, 1, tint(c, 0.4));
+    rect(b, 6, 4, 1, 6, tint(c, 0.3));
+    rect(b, 5, 7, 6, 1, tint(c, -0.3));
+  },
   charm: (b, c) => {
     line(b, 4, 2, 9, 8, '#8a6a3a');
     line(b, 14, 2, 9, 8, '#8a6a3a');

@@ -338,13 +338,13 @@ export class Sheet {
     const M = th.menu;
     const wkey: ItemKey = `w:${p.weapon}`;
     const wslot = `<button type="button" class="slot${this.sel === wkey ? ' sel' : ''}" data-item="${wkey}" aria-label="${M.slots.weapon}">${img(weaponIconUrl(p.weapon))}<span>${M.slots.weapon}</span></button>`;
-    const [head, body, charm] = ARMOR_SLOTS.map((k) => {
+    const [head, body, feet, charm] = ARMOR_SLOTS.map((k) => {
       const id = s.armor[k];
       if (!id) return `<div class="slot empty">${img(armorSlotIconUrl(k))}<span>${M.slots[k]}</span></div>`;
       const key: ItemKey = `a:${id}`;
       return `<button type="button" class="slot${this.sel === key ? ' sel' : ''}" data-item="${key}" aria-label="${th.armor[id].name}">${img(armorIconUrl(id))}<span>${M.slots[k]}</span></button>`;
     });
-    let h = `<aside class="fcompare bagchar"><h4>${th.menu.bagTab.character}</h4><div class="eqp"><div class="slots">${wslot}${head}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${body}${charm}</div></div>`;
+    let h = `<aside class="fcompare bagchar"><h4>${th.menu.bagTab.character}</h4><div class="eqp"><div class="slots">${wslot}${charm}</div><div class="hero">${img(playerIconUrl(), 'portrait')}</div><div class="slots">${head}${body}${feet}</div></div>`;
     const atk = Math.round(weaponPower(s, p.weapon) * attackMul(s));
     h += `<ul class="fstats">${this.statRow(M.stats.attack, `${atk}`)}${this.statRow(M.stats.defense, `${defenseOf(s)} · ${M.reduction(Math.round(damageReduction(s) * 100))}`)}${this.statRow(M.stats.hp, `${p.maxHp}`)}${this.statRow(M.stats.stamina, `${p.maxSt}`)}</ul>`;
     const perksOn = activePerks(s);

@@ -14,7 +14,14 @@
     "nightstalker": {"lowHpAttackMul": 1.2, "tailDamageMul": 1.1},
     "herdbreaker": {"noKnockback": true, "dashDamageMul": 0.8},
     "nimble":     {"dodgeCostDelta": -3},
-    "slither":    {"walkSpeedMul": 1.05}
+    "slither":    {"walkSpeedMul": 1.05},
+    "swiftfoot": {"walkSpeedMul": 1.05},
+    "lightstep": {"dodgeCostDelta": -3},
+    "cliffstep": {"walkSpeedMul": 1.07, "staminaRegenMul": 1.05},
+    "burrowstep": {"rollIframeBonus": 0.04},
+    "tidefoot": {"staminaRegenMul": 1.12, "walkSpeedMul": 1.03},
+    "catstep": {"walkSpeedMul": 1.06, "dodgeCostDelta": -2},
+    "masterstep": {"walkSpeedMul": 1.05, "rollIframeBonus": 0.05}
   },
   "armor": {
     "mosshood":       {"slot": "head", "defense": 4, "maxHp": 10, "stamina": 0, "color": "#b5552e", "set": "pack", "recipe": {"hide": 3, "fang": 1}},
@@ -58,6 +65,13 @@
     "buffalohelm":    {"slot": "head", "defense": 33, "maxHp": 54, "stamina": 10, "color": "#4a4a50", "set": "herdbreaker", "recipe": {"buffalohide": 5, "buffalohorn": 1, "sambarhide": 2}},
     "buffalomail":    {"slot": "body", "defense": 39, "maxHp": 68, "stamina": 10, "color": "#3a3a40", "set": "herdbreaker", "recipe": {"buffalohide": 7, "buffalotail": 1, "plume": 3}},
     "plumecharm":     {"slot": "charm", "defense": 6, "maxHp": 20, "stamina": 55, "color": "#3ab0a0", "recipe": {"peacocktrain": 1, "plume": 3}},
-    "meadowcharm":    {"slot": "charm", "defense": 16, "maxHp": 56, "stamina": 48, "color": "#e8d870", "recipe": {"meadowheart": 1, "buffalohorn": 1}}
+    "meadowcharm":    {"slot": "charm", "defense": 16, "maxHp": 56, "stamina": 48, "color": "#e8d870", "recipe": {"meadowheart": 1, "buffalohorn": 1}},
+    "dholeboots":     {"slot": "feet", "defense": 2, "maxHp": 5, "stamina": 5, "color": "#b5552e", "perk": "swiftfoot", "recipe": {"hide": 3, "fang": 1}},
+    "monkeyboots":    {"slot": "feet", "defense": 4, "maxHp": 8, "stamina": 10, "color": "#a8784a", "perk": "lightstep", "recipe": {"monkeyfur": 3, "hide": 2}},
+    "serowboots":     {"slot": "feet", "defense": 7, "maxHp": 12, "stamina": 12, "color": "#6a6a5a", "perk": "cliffstep", "recipe": {"serowhide": 4, "serowhorn": 1}},
+    "centboots":      {"slot": "feet", "defense": 9, "maxHp": 15, "stamina": 15, "color": "#6a2420", "perk": "burrowstep", "recipe": {"centshell": 4, "centclaw": 1}},
+    "otterboots":     {"slot": "feet", "defense": 11, "maxHp": 18, "stamina": 25, "color": "#6a4a32", "perk": "tidefoot", "recipe": {"otterpelt": 4, "ottertail": 1}},
+    "catboots":       {"slot": "feet", "defense": 12, "maxHp": 20, "stamina": 20, "color": "#8a7a60", "perk": "catstep", "recipe": {"catpelt": 4, "cattail": 1}},
+    "masterboots":    {"slot": "feet", "defense": 14, "maxHp": 25, "stamina": 25, "color": "#e8c060", "perk": "masterstep", "recipe": {"seal": 3, "serowhide": 3, "catpelt": 2}}
   }
 }

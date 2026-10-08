@@ -62,7 +62,7 @@ export function createGame(o: CreateOptions): GameState {
     weaponLevels: {},
     ownedArmor: new Set(),
     armorLevels: {},
-    armor: { head: null, body: null, charm: null },
+    armor: { head: null, body: null, feet: null, charm: null },
     selCrop: 'herb',
     useFert: false,
     autoOn: false,
