@@ -23,12 +23,12 @@ describe('mangrove coast', () => {
     expect(arrivalExit('mangrove', 'swamp')?.edge).toBe('s');
   });
 
-  it('spawns its three monsters only there', () => {
+  it('spawns its monsters only there', () => {
     const s = createGame({ rngSeed: 9, now: NOW });
     changeArea(s, 'swamp');
     expect(s.monsters.some((m) => MONSTERS[m.kind].area === 'mangrove')).toBe(false);
     changeArea(s, 'mangrove');
-    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['mudcrab', 'otter', 'saltcroc']);
+    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['crabmacaque', 'mudcrab', 'otter', 'saltcroc']);
   });
 
   it("a mud crab's claws break from the front and drop claws", () => {

@@ -1,6 +1,6 @@
 // Player simulation: instant actions (dodge, skills, potion) and per-frame movement/attacks.
 import { TUNING, WEAPONS } from '../data';
-import { chooseTarget, findMonster, hitMonster, reachOf } from './combat';
+import { chooseTarget, findMonster, hitMonster, hurtPlayer, reachOf } from './combat';
 import type { Vec2 } from './events';
 import { moveBody } from './collision';
 import { harvest, isRipe, plotReach } from './farm';
@@ -24,6 +24,8 @@ export function processActions(s: GameState, intent: Intent): void {
   if (intent.potion) drink(s);
   else autoDrink(s);
   if (intent.dodge) dodge(s, intent.move);
+  // coiled up: the only way out is a roll
+  if (p.grab) return;
   intent.skills.forEach((pressed, i) => {
     if (pressed) castSkill(s, i, intent.move);
   });
@@ -121,6 +123,10 @@ export function dodge(s: GameState, move: Vec2 | null): boolean {
   p.st -= cost;
   p.stDelay = P.staminaDelay;
   p.path = [];
+  if (p.grab) {
+    p.grab = null;
+    s.events.emit('player:escaped', { at: { x: p.x, y: p.y } });
+  }
   if (Math.abs(p.rdx) > 0.1) p.face = p.rdx > 0 ? 1 : -1;
   s.events.emit('player:roll', { at: { x: p.x, y: p.y } });
   return true;
@@ -176,6 +182,31 @@ function basicAttack(s: GameState, m: MonsterState): void {
   else hitMonster(s, m, 1);
 }
 
+/** Held in a coil: squeezed every half second, pinned to the snake, until it lets go or the player rolls out. */
+function updateGrab(s: GameState, dt: number): boolean {
+  const p = s.player;
+  const g = p.grab;
+  const m = g ? findMonster(s, g.id) : null;
+  if (!g || !m) {
+    p.grab = null;
+    return false;
+  }
+  g.t -= dt;
+  g.tick -= dt;
+  if (g.tick <= 0) {
+    g.tick += 0.5;
+    hurtPlayer(s, g.dmg, m, false);
+    if (p.dead) return true;
+  }
+  if (g.t <= 0) {
+    p.grab = null;
+    return false;
+  }
+  p.x = m.x + m.dirX * 4;
+  p.y = m.y + 1;
+  return true;
+}
+
 function tickTimers(s: GameState, dt: number): void {
   const p = s.player;
   p.atkCd -= dt;
@@ -227,6 +258,7 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   }
   p.moving = false;
 
+  if (p.grab && updateGrab(s, dt)) return;
   if (updateWindup(s, dt)) return;
   if (updateDash(s, dt)) return;
   if (p.roll > 0) {

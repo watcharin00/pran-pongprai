@@ -30,6 +30,17 @@ export interface GameEvents {
   /** dug in for a burrow attack / burst back out of the ground */
   'monster:burrow': { id: number; kind: MonsterId; at: Vec2 };
   'monster:emerge': { id: number; kind: MonsterId; at: Vec2 };
+  /** a hit glanced off a shell (front guard) */
+  'monster:guarded': { id: number; kind: MonsterId; at: Vec2 };
+  /** a melee swing could not reach a flier in the air */
+  'monster:airborne': { id: number; kind: MonsterId; at: Vec2 };
+  /** a pack animal called the rest of its pack */
+  'monster:howl': { id: number; kind: MonsterId; at: Vec2; joined: number };
+  'monster:stole': { id: number; kind: MonsterId; at: Vec2; potions: number };
+  /** a thief was hunted: what it stole comes back */
+  'monster:returned': { kind: MonsterId; at: Vec2; potions: number };
+  'player:grabbed': { kind: MonsterId; at: Vec2 };
+  'player:escaped': { at: Vec2 };
   'monster:killed': { id: number; kind: MonsterId; at: Vec2; drops: Drops; rare: MaterialId | null; corpse: CorpseInfo;
     /** it never hit the player */
     flawless: boolean;

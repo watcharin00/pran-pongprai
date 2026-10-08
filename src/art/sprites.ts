@@ -638,6 +638,160 @@ function buildCentipede(f: number, hb: boolean, tb: boolean): HTMLCanvasElement 
   return finish(b);
 }
 
+/** ตะพาบน้ำ (softshell turtle): flat olive shell with a soft rim, long snorkel nose. Tail part = shell rim. */
+function buildSoftshell(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(25, 15);
+  const o = 1;
+  const step = Math.round(Math.sin((f * Math.PI) / 2));
+  // flippers paddling
+  for (const [x, y, ph] of [[6, 11, 1], [16, 11, -1], [7, 3, -1], [15, 3, 1]] as const) ell(b, x + step * ph + o, y + o, 2, 1.2, '#8a9a6a');
+  ell(b, 11 + o, 7 + o, 8, 4.6, tb ? '#6a7a4a' : '#7a8a5a');
+  if (!tb) for (let x = 4; x <= 18; x++) sp(b, x + o, 11 + o, '#a8b880');
+  ell(b, 11 + o, 6.5 + o, 6, 3.2, '#6a7a4a');
+  for (const [x, y] of [[8, 5], [11, 4], [14, 6], [10, 8], [13, 8]] as const) sp(b, x + o, y + o, '#4a5a34');
+  // neck and pointed snout
+  ell(b, 20 + o, 7 + o, 2.4, 1.6, '#8a9a6a');
+  rect(b, 22 + o, 7 + o, 2, 1, '#6a7a4a');
+  sp(b, 20 + o, 6 + o, '#221a2a');
+  return finish(b);
+}
+
+/** นกอินทรี (eagle): brown wings spread, pale head, hooked yellow beak. Tail part = tail feathers. */
+function buildEagle(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(27, 17);
+  const o = 1;
+  const flap = [0, -2, -3, -1][f % 4] ?? 0;
+  // wings
+  for (let i = 0; i < 9; i++) {
+    const y = 7 + flap + Math.round(i * 0.25);
+    rect(b, 4 + i + o, y - 1 + o, 1, 3, i % 3 === 0 ? '#5a3418' : '#7a4a22');
+    rect(b, 13 + i + o, y - 1 + o, 1, 3, i % 3 === 2 ? '#5a3418' : '#7a4a22');
+  }
+  if (!tb) {
+    rect(b, 1 + o, 8 + o, 5, 2, '#5a3418');
+    sp(b, 0 + o, 8 + o, '#f0e8d8');
+  } else rect(b, 4 + o, 8 + o, 2, 2, '#5a3418');
+  ell(b, 12 + o, 9 + o, 5, 2.6, '#6a4020');
+  // head
+  ell(b, 18 + o, 8 + o, 2.4, 2.2, '#f0e8d8');
+  sp(b, 19 + o, 7 + o, '#221a2a');
+  rect(b, 20 + o, 8 + o, 2, 1, '#f0c040');
+  sp(b, 21 + o, 9 + o, '#c89020');
+  // talons
+  rect(b, 11 + o, 12 + o, 1, 2, '#f0c040');
+  rect(b, 13 + o, 12 + o, 1, 2, '#f0c040');
+  return finish(b);
+}
+
+/** กระจง (lesser mouse deer): tiny tan body, white throat stripes, thin legs, small tusks (head part). */
+function buildMousedeer(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(17, 13);
+  const o = 1;
+  const B = '#b8804a';
+  const D = '#8a5a30';
+  legs(b, f, [[4 + o, 0], [5 + o, 1], [9 + o, 0], [10 + o, 1]], 8 + o, 1, 3, B, D, '#2a1e16');
+  ell(b, 7.5 + o, 6.5 + o, 4.2, 2.4, B);
+  ell(b, 7 + o, 7.5 + o, 3, 1, '#d8b080');
+  ell(b, 12 + o, 4.5 + o, 2, 1.8, B);
+  sp(b, 12 + o, 4 + o, '#221a2a');
+  rect(b, 13 + o, 5 + o, 2, 1, '#6a4020');
+  rect(b, 11 + o, 6 + o, 1, 2, '#f4ead8');
+  if (!hb) sp(b, 13 + o, 6 + o, '#ffffff');
+  sp(b, 3 + o, 5 + o, D);
+  return finish(b);
+}
+
+/** หมาจิ้งจอก (golden jackal): sandy coat, dark saddle, black-tipped tail. Head part = head. */
+function buildJackal(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(25, 17);
+  const o = 1;
+  const B = '#c8904a';
+  const D = '#9a6a30';
+  ell(b, 4 + o, 7 + o, 3.4, 1.6, B);
+  ell(b, 2 + o, 6.5 + o, 1.6, 1.3, '#2a1e1a');
+  legs(b, f, [[6 + o, 0], [8 + o, 1], [14 + o, 0], [16 + o, 1]], 10 + o, 2, 3, B, D, '#3a2418');
+  ell(b, 10.5 + o, 8 + o, 6.4, 3.2, B);
+  ell(b, 10 + o, 6.6 + o, 4.8, 1.4, '#5a4a3a');
+  ell(b, 10.5 + o, 10 + o, 4.4, 1.2, '#f0d8a8');
+  ell(b, 16.5 + o, 6.5 + o, 3.4, 2.8, B);
+  sp(b, 15 + o, 3 + o, D);
+  sp(b, 15 + o, 2 + o, D);
+  sp(b, 17 + o, 3 + o, D);
+  rect(b, 18 + o, 6 + o, 3, 2, '#f0d8a8');
+  sp(b, 21 + o, 6 + o, '#2a1e1a');
+  if (!hb) sp(b, 19 + o, 8 + o, '#ffffff');
+  sp(b, 17 + o, 5 + o, '#221a2a');
+  return finish(b);
+}
+
+/** งูหลาม (python): thick coils with a brown-and-tan net pattern, wedge head. Head and tail parts. */
+function buildPython(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(33, 21);
+  const o = 1;
+  const sway = Math.round(Math.sin((f * Math.PI) / 2));
+  // tail trailing behind
+  const tail = tb ? 4 : 9;
+  for (let i = 0; i < tail; i++) ell(b, 9 - i + o, 14 + Math.round(Math.sin(i * 0.8 + f) * 0.6) + o, 1.6 - i * 0.1, 1.4 - i * 0.08, '#8a7a4a');
+  // coils
+  ell(b, 15 + o, 13 + o, 8, 4.4, '#8a7a4a');
+  ell(b, 15 + o, 11 + o, 6.4, 3.2, '#a8945a');
+  for (const [x, y] of [[10, 12], [13, 10], [17, 11], [20, 13], [14, 14], [18, 15]] as const) {
+    rect(b, x + o, y + o, 2, 1, '#4a3a22');
+    sp(b, x + o, y - 1 + o, '#d8c890');
+  }
+  // raised neck and head
+  for (let i = 0; i < 5; i++) ell(b, 20 + i + o, 9 - i + sway * (i / 4) + o, 1.8, 1.6, '#8a7a4a');
+  const hx = 25;
+  const hy = 4 + sway;
+  ell(b, hx + o, hy + o, 2.8, 2, '#9a8a52');
+  sp(b, hx + o, hy - 1 + o, '#221a2a');
+  if (!hb) {
+    rect(b, hx + 2 + o, hy + o, 2, 1, '#6a5a32');
+    sp(b, hx - 1 + o, hy + o, '#4a3a22');
+  }
+  return finish(b);
+}
+
+/** อ้นป่า (bamboo rat): round grey-brown body, tiny ears, orange incisors (head part). */
+function buildBamboorat(f: number, hb: boolean): HTMLCanvasElement {
+  const b = createBuffer(17, 12);
+  const o = 1;
+  const B = '#8a7a6a';
+  const D = '#6a5a4a';
+  legs(b, f, [[4 + o, 0], [6 + o, 1], [9 + o, 0], [11 + o, 1]], 8 + o, 1, 2, B, D, '#3a2a20');
+  ell(b, 7.5 + o, 6 + o, 5.2, 3.4, B);
+  ell(b, 6.5 + o, 5 + o, 3, 1.6, '#a89a8a');
+  ell(b, 12.5 + o, 6 + o, 2.4, 2.2, B);
+  sp(b, 12 + o, 3.5 + o, D);
+  sp(b, 13 + o, 5 + o, '#221a2a');
+  sp(b, 15 + o, 6 + o, '#e8a0a0');
+  if (!hb) rect(b, 14 + o, 7 + o, 1, 2, '#f0902a');
+  sp(b, 2 + o, 7 + o, '#d8a0a0');
+  return finish(b);
+}
+
+/** ลิงแสม (crab-eating macaque): grey-brown, long tail (tail part), pale face, a crab claw in hand. */
+function buildCrabmacaque(f: number, tb: boolean): HTMLCanvasElement {
+  const b = createBuffer(23, 18);
+  const o = 1;
+  const B = '#8a7a5a';
+  const D = '#6a5a3e';
+  if (!tb) {
+    ([[5, 10], [4, 9], [3, 9], [2, 8], [1, 7], [1, 6], [2, 5], [3, 5]] as const).forEach(([x, y]) => rect(b, x + o, y + o, 2, 1, D));
+  } else sp(b, 5 + o, 10 + o, D);
+  legs(b, f, [[7 + o, 0], [9 + o, 1], [13 + o, 0], [15 + o, 1]], 12 + o, 2, 3, B, D, '#3a2418');
+  ell(b, 11 + o, 9.5 + o, 5.2, 3.6, B);
+  ell(b, 10 + o, 8 + o, 3, 1.6, '#a8987a');
+  ell(b, 16 + o, 6 + o, 3.2, 3, B);
+  ell(b, 17.5 + o, 6.5 + o, 1.8, 1.8, '#d8b0a0');
+  sp(b, 17 + o, 6 + o, '#221a2a');
+  sp(b, 15 + o, 3 + o, D);
+  rect(b, 15 + o, 10 + o, 3, 1, D);
+  sp(b, 19 + o, 10 + o, '#e0603a');
+  sp(b, 19 + o, 9 + o, '#e0603a');
+  return finish(b);
+}
+
 /** งูจงอาง (king cobra): big olive coils with pale bands, tall neck, long narrow hood, long tail. Head part = hood. */
 function buildKingcobra(f: number, hb: boolean, tb: boolean): HTMLCanvasElement {
   const b = createBuffer(41, 33);
@@ -1003,6 +1157,13 @@ export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
   flyingfox: (f, hb) => buildFlyingfox(f, hb),
   porcupine: (f, _hb, tb) => buildPorcupine(f, tb),
   centipede: (f, hb, tb) => buildCentipede(f, hb, tb),
+  softshell: (f, _hb, tb) => buildSoftshell(f, tb),
+  eagle: (f, _hb, tb) => buildEagle(f, tb),
+  mousedeer: (f, hb) => buildMousedeer(f, hb),
+  jackal: (f, hb) => buildJackal(f, hb),
+  python: (f, hb, tb) => buildPython(f, hb, tb),
+  bamboorat: (f, hb) => buildBamboorat(f, hb),
+  crabmacaque: (f, _hb, tb) => buildCrabmacaque(f, tb),
   kingcobra: (f, hb, tb) => buildKingcobra(f, hb, tb),
   muntjac: (f, hb) => buildMuntjac(f, hb),
   elephant: (f, hb, tb) => buildElephant(f, hb, tb),

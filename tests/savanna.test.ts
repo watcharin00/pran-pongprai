@@ -29,12 +29,12 @@ describe('Huai Kha Khaeng grassland', () => {
     expect(trees('savanna')).toBeLessThan(trees('deepwild') / 3);
   });
 
-  it('spawns its three monsters only there', () => {
+  it('spawns its monsters only there', () => {
     const s = createGame({ rngSeed: 9, now: NOW });
     changeArea(s, 'limestone');
     expect(s.monsters.some((m) => MONSTERS[m.kind].area === 'savanna')).toBe(false);
     changeArea(s, 'savanna');
-    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['peafowl', 'sambar', 'wildbuffalo']);
+    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['jackal', 'peafowl', 'sambar', 'wildbuffalo']);
   });
 
   it("a sambar's antlers break from the front", () => {

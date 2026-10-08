@@ -14,7 +14,7 @@ const recipeItems = (r: ItemBag | null): MaterialId[] => (r ? (Object.keys(r) as
 describe('wildlife content', () => {
   it('home has the five Thai animals; every other area has its own', () => {
     expect(MONSTER_IDS.filter((k) => MONSTERS[k].area === 'home')).toEqual(['junglefowl', 'dhole', 'boar', 'gaur', 'tiger']);
-    expect(MONSTER_IDS.filter((k) => MONSTERS[k].area === 'bamboo')).toEqual(['macaque', 'cobra']);
+    expect(MONSTER_IDS.filter((k) => MONSTERS[k].area === 'bamboo')).toEqual(['macaque', 'cobra', 'bamboorat']);
     expect(th.monsters.tiger.name).toBe('เสือโคร่ง');
   });
 

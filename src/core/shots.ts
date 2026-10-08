@@ -83,7 +83,7 @@ export function updateShots(s: GameState, dt: number): void {
       const m = s.monsters.find((mm) => !mm.burrow && !shot.hit.has(mm.id) && Math.hypot(mm.x - shot.x, mm.y - shot.y) < MONSTERS[mm.kind].size * BODY_MUL + SHOT_SLOP);
       if (!m) continue;
       shot.hit.add(m.id);
-      hitMonster(s, m, shot.mult, { stun: shot.stun, partMul: shot.partMul, big: shot.big });
+      hitMonster(s, m, shot.mult, { stun: shot.stun, partMul: shot.partMul, big: shot.big, ranged: true });
       if (shot.pierce <= 0) {
         shot.left = 0;
         break;

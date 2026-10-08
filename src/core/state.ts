@@ -106,6 +106,8 @@ export interface PlayerState {
   /** on the safe ground of a hunter camp (wild areas) */
   inCamp: boolean;
   zone: ZoneId | null;
+  /** coiled by a monster (python): cannot move or attack until it lets go or the player rolls free */
+  grab: { id: number; t: number; tick: number; dmg: number } | null;
 }
 
 export type Shape =
@@ -115,7 +117,7 @@ export type Shape =
 /** Leg animation frames per monster sprite. */
 export const MONSTER_FRAME_COUNT = 4;
 
-export type MonsterMode = 'wander' | 'chase' | 'tele' | 'dash' | 'recover' | 'stun';
+export type MonsterMode = 'wander' | 'chase' | 'tele' | 'dash' | 'recover' | 'stun' | 'hold' | 'tunnel';
 
 export interface PartState {
   hp: number;
@@ -162,6 +164,16 @@ export interface MonsterState {
   hitPlayer: boolean;
   /** underground during a burrow attack: hidden, cannot be hit or targeted */
   burrow: boolean;
+  /** a flier in the air: only projectiles reach it */
+  air: boolean;
+  /** seconds left running away (after stealing) */
+  fleeT: number;
+  /** potions it has stolen; handed back when it is hunted */
+  stolen: number;
+  /** hits taken since it last tunnelled */
+  hitsTaken: number;
+  /** where a tunnelling monster comes back up (px) */
+  tunnel: { x: number; y: number } | null;
   /** endgame "veteran" variant: tougher, better drops (tuning.veteran) */
   vet: boolean;
   /** post-game "alpha": a veteran made tougher again (tuning.alpha stacks on tuning.veteran) */

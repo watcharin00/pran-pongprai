@@ -53,6 +53,12 @@ export interface CircleAttackDef {
    * then it bursts out under it (centred on the player, so `offset` must be 0)
    */
   burrow?: boolean;
+  /** same as burrow, but from the air: a flier swoops down onto the circle */
+  dive?: boolean;
+  /** a hit coils around the player for this many seconds; rolling breaks free */
+  grab?: number;
+  /** a hit snatches a potion; the thief runs off and gives it back when hunted */
+  steal?: boolean;
   telegraph: number;
   damage: number;
   range: number;
@@ -71,6 +77,8 @@ export interface LineAttackDef {
   minRange?: number;
   /** the monster travels along the line instead of striking in place */
   dash: boolean;
+  /** a hit snatches a potion; the thief runs off and gives it back when hunted */
+  steal?: boolean;
   weight: number;
 }
 
@@ -125,6 +133,16 @@ export interface MonsterDef {
   /** weapon type that deals `combat.weakMul` extra damage to this monster */
   weakTo: WeaponType | null;
   attacks: AttackDef[];
+  /** shell: hits from in front of it deal only this share of damage */
+  frontGuard?: number;
+  /** flies while chasing: only arrows reach it until it lands (after a dive or swoop) */
+  flier?: boolean;
+  /** runs from the player instead of closing in; only fights when cornered */
+  flee?: boolean;
+  /** aggroing one calls every same-kind monster within this many px */
+  pack?: number;
+  /** after this many hits it tunnels away and comes up somewhere else */
+  tunnelAfterHits?: number;
 }
 
 export interface WeaponTypeDef {

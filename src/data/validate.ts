@@ -132,7 +132,10 @@ function loadAttack(v: unknown, path: string): AttackDef {
   if (shape === 'circle') {
     const offset = num(a.offset, `${path}.offset`, -100);
     const burrow = optional(a, 'burrow', (b) => bool(b, `${path}.burrow`));
-    if (burrow && offset !== 0) throw new DataError(`${path}.offset`, 'a burrow attack is centred on the player: offset must be 0');
+    const dive = optional(a, 'dive', (b) => bool(b, `${path}.dive`));
+    if ((burrow || dive) && offset !== 0) throw new DataError(`${path}.offset`, 'a burrow/dive attack is centred on the player: offset must be 0');
+    const grab = optional(a, 'grab', (g) => num(g, `${path}.grab`, 0.2, 6));
+    const steal = optional(a, 'steal', (b) => bool(b, `${path}.steal`));
     return {
       ...common,
       ...extra,
@@ -141,6 +144,9 @@ function loadAttack(v: unknown, path: string): AttackDef {
       // negative = a rear attack (tail whip) centred behind the monster
       offset,
       ...(burrow ? { burrow } : {}),
+      ...(dive ? { dive } : {}),
+      ...(grab !== undefined ? { grab } : {}),
+      ...(steal ? { steal } : {}),
     };
   }
   return {
@@ -150,6 +156,7 @@ function loadAttack(v: unknown, path: string): AttackDef {
     length: num(a.length, `${path}.length`, 1),
     width: num(a.width, `${path}.width`, 1),
     dash: bool(a.dash, `${path}.dash`),
+    ...(optional(a, 'steal', (b) => bool(b, `${path}.steal`)) ? { steal: true } : {}),
   };
 }
 
@@ -162,6 +169,23 @@ function loadRage(v: unknown, path: string): RageDef | null {
     telegraphRate: num(r.telegraphRate, `${path}.telegraphRate`, 0),
     damageMul: num(r.damageMul, `${path}.damageMul`, 0),
   };
+}
+
+/** Optional special behaviours (shell, flight, fleeing, pack, tunnelling), checked for consistency. */
+function behaviour(m: Record<string, unknown>, p: string, attacks: AttackDef[]): Partial<MonsterDef> {
+  const out: Partial<MonsterDef> = {};
+  const fg = optional(m, 'frontGuard', (x) => num(x, `${p}.frontGuard`, 0, 1));
+  if (fg !== undefined) out.frontGuard = fg;
+  if (optional(m, 'flier', (x) => bool(x, `${p}.flier`))) out.flier = true;
+  if (optional(m, 'flee', (x) => bool(x, `${p}.flee`))) out.flee = true;
+  const pack = optional(m, 'pack', (x) => num(x, `${p}.pack`, 20, 400));
+  if (pack !== undefined) out.pack = pack;
+  const tun = optional(m, 'tunnelAfterHits', (x) => num(x, `${p}.tunnelAfterHits`, 1, 50));
+  if (tun !== undefined) out.tunnelAfterHits = Math.round(tun);
+  // a flier has to come down sometime, or melee could never hit it
+  if (out.flier && !attacks.some((a) => (a.shape === 'circle' && a.dive) || (a.shape === 'line' && a.dash))) throw new DataError(`${p}.flier`, 'a flier needs a dive or a dash attack to land');
+  if (attacks.some((a) => a.shape === 'circle' && a.dive) && !out.flier) throw new DataError(`${p}.attacks`, 'dive attacks are for fliers');
+  return out;
 }
 
 export function loadMonsters(v: unknown, materials: readonly string[]): Record<string, MonsterDef> {
@@ -214,6 +238,7 @@ export function loadMonsters(v: unknown, materials: readonly string[]): Record<s
       // the type itself is checked against weapons.json in data/index.ts (loaded after monsters)
       weakTo: optional(m, 'weakTo', (x) => str(x, `${p}.weakTo`) as WeaponType) ?? null,
       attacks,
+      ...behaviour(m, p, attacks),
     };
   }
   return out;

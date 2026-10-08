@@ -665,6 +665,43 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const m = findMonster(this.s, e.id);
       if (m) snd(MONSTERS[e.kind].size >= 12 ? 'telegraphBig' : 'telegraph', m);
     });
+    // shell clinks and out-of-reach swings repeat on every hit: say it at most every 0.8 s per monster
+    const said = new Map<number, number>();
+    const once = (id: number): boolean => {
+      const last = said.get(id) ?? -9;
+      if (this.s.time - last < 0.8) return false;
+      said.set(id, this.s.time);
+      return true;
+    };
+    ev.on('monster:guarded', (e) => {
+      fx.burst(e.at.x, e.at.y, '#e8f0ff', 5, 50, 'spark');
+      if (once(e.id)) float(e.at.x, e.at.y - 12, th.monsterFx.guarded, '#c8d4e8');
+      snd('strike');
+    });
+    ev.on('monster:airborne', (e) => {
+      if (once(e.id)) float(e.at.x, e.at.y - 26, th.monsterFx.airborne, '#c8d4e8');
+    });
+    ev.on('monster:howl', (e) => {
+      float(e.at.x, e.at.y - 16, th.monsterFx.howl(e.joined), '#ffb070', true);
+      snd('enrage');
+    });
+    ev.on('monster:stole', (e) => {
+      float(e.at.x, e.at.y - 16, th.monsterFx.stole, '#ff8fb0', true);
+      hud.toast(th.monsterFx.stoleLog(th.monsters[e.kind].name, e.potions), 'bad');
+      snd('pickup');
+    });
+    ev.on('monster:returned', (e) => {
+      float(e.at.x, e.at.y - 26, th.monsterFx.returned(e.potions), '#ff8fb0', true);
+      hud.toast(th.monsterFx.returned(e.potions), 'gold');
+    });
+    ev.on('player:grabbed', (e) => {
+      float(e.at.x, e.at.y - 22, th.monsterFx.grabbed, '#ff6b5e', true);
+      vibrate(60);
+    });
+    ev.on('player:escaped', (e) => {
+      float(e.at.x, e.at.y - 18, th.monsterFx.escaped, '#9fe07a', true);
+      fx.burst(e.at.x, e.at.y, '#8a7a4a', 10, 60, 'dust');
+    });
     ev.on('monster:burrow', (e) => {
       fx.burst(e.at.x, e.at.y, '#8a6a4a', 14, 70, 'dust');
       snd('roll');
@@ -1234,6 +1271,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       v.update(m, time);
       const size = MONSTERS[m.kind].size;
       v.img.setVisible(!m.burrow);
+      // fliers circle well above their shadow
+      if (m.air) v.img.y -= 16 + Math.round(Math.sin(time * 4 + m.id) * 2);
       if (m.burrow) {
         // underground: a moving ridge of loose earth instead of the sprite
         for (let i = 0; i < 4; i++) {
@@ -1279,6 +1318,15 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
   private drawOverlays(time: number): void {
     const g = this.gBars.clear();
+    const pl = this.s.player;
+    if (pl.grab) {
+      // the python's coils around the player
+      for (let i = 0; i < 3; i++) {
+        const y = pl.y - 2 - i * 5 + Math.sin(time * 9 + i) * 0.6;
+        g.lineStyle(3, 0x8a7a4a, 1).strokeEllipse(pl.x, y, 16 - i, 6);
+        g.lineStyle(1, 0xd8c890, 1).strokeEllipse(pl.x, y - 1, 14 - i, 4);
+      }
+    }
     const s = this.s;
     const lock = findMonster(s, s.player.lockId);
     if (lock) {

@@ -3,7 +3,8 @@ import { MONSTERS, TUNING, WEAPONS } from '../data';
 import type { AttackDef, ItemBag, MaterialId, PartId } from '../data/types';
 import type { Vec2 } from './events';
 import { attackMul, damageReduction, gearPerk, give, weaponPower } from './inventory';
-import { moveBody } from './collision';
+import { canStand, moveBody } from './collision';
+import { inVillagePx } from './mapgen';
 import { MONSTER_FRAME_COUNT, type GameState, type MonsterState } from './state';
 
 const C = TUNING.combat;
@@ -78,14 +79,62 @@ export interface HitOptions {
   stun?: number;
   partMul?: number;
   big?: boolean;
+  /** arrows and bolts: the only thing that reaches a flier in the air */
+  ranged?: boolean;
+}
+
+/** A pack animal that turns on the player brings every packmate in earshot along. */
+export function packCall(s: GameState, m: MonsterState): void {
+  const r = MONSTERS[m.kind].pack;
+  if (!r) return;
+  let joined = 0;
+  for (const o of s.monsters) {
+    if (o === m || o.kind !== m.kind || o.aggro || Math.hypot(o.x - m.x, o.y - m.y) > r) continue;
+    aggro(o);
+    joined++;
+  }
+  if (joined) s.events.emit('monster:howl', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y }, joined });
+}
+
+/** Digs in and heads for a spot 70-110 px from the player, out of reach until it comes up. */
+export function startTunnel(s: GameState, m: MonsterState): void {
+  const p = s.player;
+  const r = MONSTERS[m.kind].size * 0.5;
+  for (let i = 0; i < 12; i++) {
+    const a = s.rng.range(0, Math.PI * 2);
+    const d = s.rng.range(70, 110);
+    const x = p.x + Math.cos(a) * d;
+    const y = p.y + Math.sin(a) * d;
+    if (!canStand(s.map, x, y, r) || (s.area === 'home' && inVillagePx(x, y))) continue;
+    m.tunnel = { x, y };
+    m.burrow = true;
+    m.mode = 'tunnel';
+    m.t = 1.6;
+    m.shape = null;
+    m.hitsTaken = 0;
+    if (s.player.lockId === m.id) s.player.lockId = null;
+    s.events.emit('monster:burrow', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
+    return;
+  }
 }
 
 /** Player damages a monster. `mult` scales weapon damage (skills). */
 export function hitMonster(s: GameState, m: MonsterState, mult: number, o: HitOptions = {}): void {
   // underground (burrow attack): nothing reaches it
   if (!s.monsters.includes(m) || m.burrow) return;
-  const w = WEAPONS[s.player.weapon];
   const def = MONSTERS[m.kind];
+  if (m.air && !o.ranged) {
+    s.events.emit('monster:airborne', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
+    aggro(m);
+    return;
+  }
+  // a shell turns blows from the front: circle round to the back
+  const front = (s.player.x - m.x) * m.dirX > def.size * 0.25;
+  if (def.frontGuard !== undefined && front) {
+    mult *= def.frontGuard;
+    s.events.emit('monster:guarded', { id: m.id, kind: m.kind, at: { x: m.x + m.dirX * def.size * 0.5, y: m.y } });
+  }
+  const w = WEAPONS[s.player.weapon];
   const part = partFor(m, s.player.x);
   const perk = gearPerk(s);
   const weak = def.weakTo === w.type ? C.weakMul : 1;
@@ -123,7 +172,10 @@ export function hitMonster(s: GameState, m: MonsterState, mult: number, o: HitOp
   }
   m.hp -= dmg;
   m.flash = 0.09;
+  const wasAggro = m.aggro;
   aggro(m);
+  if (!wasAggro) packCall(s, m);
+  if (def.tunnelAfterHits && m.hp > 0 && (m.mode === 'chase' || m.mode === 'recover') && ++m.hitsTaken >= def.tunnelAfterHits) startTunnel(s, m);
   if (def.rage && !m.rage && m.hp > 0 && m.hp / m.maxHp < def.rage.below) {
     m.rage = true;
     s.events.emit('monster:enraged', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
@@ -170,6 +222,10 @@ export function killMonster(s: GameState, m: MonsterState): void {
   const def = MONSTERS[m.kind];
   const { drops, rare } = rollCarve(s, m);
   give(s, drops);
+  if (m.stolen > 0) {
+    s.player.potions += m.stolen;
+    s.events.emit('monster:returned', { kind: m.kind, at: { x: m.x, y: m.y }, potions: m.stolen });
+  }
   s.kills[m.kind] = (s.kills[m.kind] ?? 0) + 1;
   removeMonster(s, m);
   s.events.emit('monster:killed', {
@@ -194,21 +250,45 @@ export function removeMonster(s: GameState, m: MonsterState): void {
   if (s.player.lockId === m.id) s.player.lockId = null;
 }
 
-/** A monster attack connects with the player's position; i-frames turn it into a dodge. */
-export function resolveMonsterHit(s: GameState, m: MonsterState, a: AttackDef): void {
-  const p = s.player;
-  if (p.dead) return;
-  if (p.rollIF > 0) {
-    s.events.emit('player:dodged', { at: { x: p.x, y: p.y } });
-    return;
-  }
-  if (p.hurtIF > 0) return;
+/** Damage multiplier of a monster's attacks (rage, veteran, alpha). */
+export function monsterDamageMul(m: MonsterState): number {
   const rage = MONSTERS[m.kind].rage;
-  const dash = a.shape === 'line' && a.dash ? (gearPerk(s).dashDamageMul ?? 1) : 1;
-  hurtPlayer(s, a.damage * (m.rage && rage ? rage.damageMul : 1) * (m.vet ? TUNING.veteran.damageMul : 1) * (m.alpha ? TUNING.alpha.damageMul : 1) * dash, m);
+  return (m.rage && rage ? rage.damageMul : 1) * (m.vet ? TUNING.veteran.damageMul : 1) * (m.alpha ? TUNING.alpha.damageMul : 1);
 }
 
-export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void {
+/**
+ * A monster attack connects with the player's position; i-frames turn it into a dodge.
+ * Returns true when it landed (for grabs and thefts).
+ */
+export function resolveMonsterHit(s: GameState, m: MonsterState, a: AttackDef): boolean {
+  const p = s.player;
+  if (p.dead) return false;
+  if (p.rollIF > 0) {
+    s.events.emit('player:dodged', { at: { x: p.x, y: p.y } });
+    return false;
+  }
+  if (p.hurtIF > 0) return false;
+  const dash = a.shape === 'line' && a.dash ? (gearPerk(s).dashDamageMul ?? 1) : 1;
+  hurtPlayer(s, a.damage * monsterDamageMul(m) * dash, m, !(a.shape === 'circle' && a.grab));
+  if (p.dead) return true;
+  if (a.steal && p.potions > 0) {
+    p.potions--;
+    m.stolen++;
+    m.fleeT = 6;
+    s.events.emit('monster:stole', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y }, potions: p.potions });
+  }
+  if (a.shape === 'circle' && a.grab) {
+    p.grab = { id: m.id, t: a.grab, tick: 0.5, dmg: a.damage * 0.3 * monsterDamageMul(m) };
+    p.roll = 0;
+    p.cast = null;
+    p.dash = null;
+    p.x = m.x + m.dirX * 4;
+    s.events.emit('player:grabbed', { kind: m.kind, at: { x: p.x, y: p.y } });
+  }
+  return true;
+}
+
+export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState, knock = true): void {
   const p = s.player;
   const H = TUNING.player.hurt;
   const dmg = Math.max(1, Math.round(rawDmg * (1 - damageReduction(s))));
@@ -218,7 +298,7 @@ export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void 
   p.hurtIF = H.iframe;
   const perk = gearPerk(s);
   if (!perk.castSuperArmor) p.cast = null; // getting hit cancels a skill wind-up
-  if (!perk.noKnockback) {
+  if (!perk.noKnockback && knock) {
     const dx = p.x - m.x;
     const dy = p.y - m.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -232,12 +312,15 @@ export function hurtPlayer(s: GameState, rawDmg: number, m: MonsterState): void 
     p.lockId = null;
     p.path = [];
     p.dash = null;
+    p.grab = null;
     for (const mm of s.monsters) {
       if (mm.mode !== 'wander') {
         mm.mode = 'wander';
         mm.shape = null;
       }
       mm.burrow = false;
+      mm.air = false;
+      mm.fleeT = 0;
       mm.aggro = false;
       mm.huntT = null;
     }

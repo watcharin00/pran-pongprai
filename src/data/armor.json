@@ -72,6 +72,10 @@
     "centboots":      {"slot": "feet", "defense": 9, "maxHp": 15, "stamina": 15, "color": "#6a2420", "perk": "burrowstep", "recipe": {"centshell": 4, "centclaw": 1}},
     "otterboots":     {"slot": "feet", "defense": 11, "maxHp": 18, "stamina": 25, "color": "#6a4a32", "perk": "tidefoot", "recipe": {"otterpelt": 4, "ottertail": 1}},
     "catboots":       {"slot": "feet", "defense": 12, "maxHp": 20, "stamina": 20, "color": "#8a7a60", "perk": "catstep", "recipe": {"catpelt": 4, "cattail": 1}},
-    "masterboots":    {"slot": "feet", "defense": 14, "maxHp": 25, "stamina": 25, "color": "#e8c060", "perk": "masterstep", "recipe": {"seal": 3, "serowhide": 3, "catpelt": 2}}
+    "masterboots":    {"slot": "feet", "defense": 14, "maxHp": 25, "stamina": 25, "color": "#e8c060", "perk": "masterstep", "recipe": {"seal": 3, "serowhide": 3, "catpelt": 2}},
+    "turtlecharm": {"slot": "charm", "defense": 10, "maxHp": 20, "stamina": 10, "color": "#7a8a5a", "recipe": {"turtleshell": 3, "lizardhide": 2}},
+    "eaglecharm": {"slot": "charm", "defense": 4, "maxHp": 15, "stamina": 35, "color": "#8a5a2a", "perk": "swiftfoot", "recipe": {"eaglefeather": 4, "serowhide": 1}},
+    "jackalboots": {"slot": "feet", "defense": 13, "maxHp": 22, "stamina": 22, "color": "#c8904a", "perk": "cliffstep", "recipe": {"jackalpelt": 4, "buffalohide": 1}},
+    "pythoncharm": {"slot": "charm", "defense": 14, "maxHp": 55, "stamina": 20, "color": "#8a7a4a", "recipe": {"pythonskin": 4, "tapirhide": 2}}
   }
 }

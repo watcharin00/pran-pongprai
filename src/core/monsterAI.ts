@@ -4,7 +4,7 @@
 import { MONSTERS, TUNING } from '../data';
 import { goalIndex } from './inventory';
 import type { AttackDef, MonsterId, PartId } from '../data/types';
-import { aggro, removeMonster, resolveMonsterHit } from './combat';
+import { aggro, packCall, removeMonster, resolveMonsterHit } from './combat';
 import { canStand, moveBody } from './collision';
 import { inCampPx, inVillagePx, PLAZA, T, type WorldMap } from './mapgen';
 import type { GameState, MonsterState, PartState, Shape } from './state';
@@ -28,7 +28,7 @@ export function createMonster(id: number, kind: MonsterId, x: number, y: number,
     vet: isVet, alpha, maxHp: hp,
     id, kind, x, y, hx: x, hy: y, hp, parts, mode: 'wander', t: 0, tt: 1, dirX, turnT: 0, wanderT: 0, waypoint: null,
     atkCd: 0, flash: 0, stunMeter: 0, stunT: 0, huntT: null, aggro: false, leash: 0, rage: false, shape: null, attack: null,
-    dashLeft: 0, dashHit: false, anim: 0, tipT: 0, hitPlayer: false, burrow: false,
+    dashLeft: 0, dashHit: false, anim: 0, tipT: 0, hitPlayer: false, burrow: false, air: false, fleeT: 0, stolen: 0, hitsTaken: 0, tunnel: null,
   };
 }
 
@@ -125,9 +125,10 @@ export function startAttack(m: MonsterState, a: AttackDef, ux: number, uy: numbe
   m.tt = m.t;
   m.turnT = 0;
   let shape: Shape;
-  if (a.shape === 'circle' && a.burrow) {
-    // digs in: the circle starts under the player and follows them for a while
-    m.burrow = true;
+  if (a.shape === 'circle' && (a.burrow || a.dive)) {
+    // digs in (or climbs high): the circle starts under the player and follows them for a while
+    m.burrow = !!a.burrow;
+    m.air = !!a.dive || m.air;
     shape = { kind: 'circle', cx: target?.x ?? m.x, cy: target?.y ?? m.y, r: a.radius };
   } else if (a.shape === 'circle' && isRearAttack(a)) {
     // keeps facing forward; the circle sits on the tail side
@@ -146,6 +147,10 @@ function calmDown(s: GameState, m: MonsterState): void {
   m.mode = 'wander';
   m.shape = null;
   m.burrow = false;
+  m.air = false;
+  m.fleeT = 0;
+  m.tunnel = null;
+  if (s.player.grab?.id === m.id) s.player.grab = null;
   m.aggro = false;
   m.huntT = null;
   m.leash = 0;
@@ -177,6 +182,7 @@ function burrowMove(s: GameState, m: MonsterState, dt: number, spd: number, play
 /** Bursts out at the circle (when it can stand there and it is not safe ground), else where it is. */
 function emerge(s: GameState, m: MonsterState, x: number, y: number): void {
   m.burrow = false;
+  m.air = false;
   const r = MONSTERS[m.kind].size * 0.5;
   const safe = (s.area === 'home' && inVillagePx(x, y)) || inCampPx(s.map, x, y, TUNING.camp.safeRadius);
   if (!safe && canStand(s.map, x, y, r)) {
@@ -191,6 +197,8 @@ export function updateMonster(s: GameState, m: MonsterState, dt: number): void {
   const ox = m.x;
   const oy = m.y;
   think(s, m, dt);
+  // fliers are up in the air while hunting, and only come down after a dive or a swoop
+  if (MONSTERS[m.kind].flier) m.air = m.mode === 'chase' || m.mode === 'tele' || m.mode === 'dash';
   if (s.monsters.includes(m)) m.anim += Math.hypot(m.x - ox, m.y - oy) * 0.2;
   m.tipT -= dt;
 }
@@ -247,7 +255,10 @@ function think(s: GameState, m: MonsterState, dt: number): void {
           m.dirX = wx > 0 ? 1 : -1;
         }
       }
-      if (!p.dead && d < def.aggroRadius && !playerInVillage) aggro(m);
+      if (!p.dead && d < def.aggroRadius && !playerInVillage) {
+        aggro(m);
+        packCall(s, m);
+      }
       return;
     }
     default:
@@ -269,9 +280,26 @@ function think(s: GameState, m: MonsterState, dt: number): void {
 
   switch (m.mode) {
     case 'chase': {
-      const want: 1 | -1 = dx >= 0 ? 1 : -1;
+      m.fleeT -= dt;
+      // a thief runs off with its loot; a timid one keeps its distance
+      const fleeing = m.fleeT > 0 || (def.flee === true && d < 110);
+      const want: 1 | -1 = (dx >= 0) !== fleeing ? 1 : -1;
       const facing = updateFacing(m, want, dt, def.turnTime);
       m.atkCd -= dt;
+      if (fleeing) {
+        // cornered prey still lashes out at a hunter right on top of it
+        if (m.fleeT <= 0 && m.atkCd <= 0) {
+          const close = def.attacks.filter((a) => d <= a.range && (a.minRange === undefined || d >= a.minRange));
+          const a = pickWeighted(close, s.rng.next());
+          if (a) {
+            startAttack(m, a, dx / d, dy / d, p);
+            s.events.emit('monster:telegraph', { id: m.id, kind: m.kind, attackId: a.id });
+            return;
+          }
+        }
+        moveBody(s.map, m, (-dx / d) * spd * dt, (-dy / d) * spd * dt, r);
+        return;
+      }
       if (d > C.monsterLeashFarDistance) {
         m.leash += dt;
         if (m.leash > C.monsterLeashFar) {
@@ -297,7 +325,8 @@ function think(s: GameState, m: MonsterState, dt: number): void {
 
     case 'tele': {
       m.t -= dt * (rage ? rage.telegraphRate : 1) * (m.vet ? V.telegraphRate : 1) * (m.alpha ? A.telegraphRate : 1);
-      if (m.burrow) burrowMove(s, m, dt, spd, playerInVillage);
+      const atk = m.attack;
+      if (atk?.shape === 'circle' && (atk.burrow || atk.dive)) burrowMove(s, m, dt, spd, playerInVillage);
       if (m.t > 0) return;
       const a = m.attack;
       const sh = m.shape;
@@ -313,9 +342,16 @@ function think(s: GameState, m: MonsterState, dt: number): void {
         return;
       }
       if (sh.kind === 'circle') {
-        if (m.burrow) emerge(s, m, sh.cx, sh.cy);
-        if (Math.hypot(p.x - sh.cx, p.y - sh.cy) <= sh.r + 3) resolveMonsterHit(s, m, a);
+        if (a.shape === 'circle' && (a.burrow || a.dive)) emerge(s, m, sh.cx, sh.cy);
+        const landed = Math.hypot(p.x - sh.cx, p.y - sh.cy) <= sh.r + 3 && resolveMonsterHit(s, m, a);
         s.events.emit('monster:strike', { id: m.id, kind: m.kind, at: { x: sh.cx, y: sh.cy }, radius: sh.r });
+        if (landed && p.grab?.id === m.id) {
+          // holds on until the player rolls free or lets go after `grab` seconds
+          m.mode = 'hold';
+          m.t = p.grab.t;
+          m.shape = null;
+          return;
+        }
       } else {
         // a line attack that stays put (spit, tail sweep): hits anything inside the strip
         const rx = p.x - sh.sx;
@@ -352,6 +388,34 @@ function think(s: GameState, m: MonsterState, dt: number): void {
         m.shape = null;
         s.events.emit('monster:dashEnd', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
       }
+      return;
+    }
+
+    case 'hold':
+      m.t -= dt;
+      if (p.grab?.id !== m.id || m.t <= 0) {
+        if (p.grab?.id === m.id) p.grab = null;
+        m.mode = 'recover';
+        m.t = def.recover;
+      }
+      return;
+
+    case 'tunnel': {
+      m.t -= dt;
+      const to = m.tunnel;
+      if (to) {
+        const tx = to.x - m.x;
+        const ty = to.y - m.y;
+        const td = Math.hypot(tx, ty);
+        if (td > 1) moveBody(s.map, m, (tx / td) * Math.min(td, spd * 2.5 * dt), (ty / td) * Math.min(td, spd * 2.5 * dt), r);
+        if (td > 2 && m.t > 0) return;
+      }
+      m.tunnel = null;
+      m.burrow = false;
+      m.mode = 'recover';
+      m.t = 0.6;
+      m.dirX = p.x >= m.x ? 1 : -1;
+      s.events.emit('monster:emerge', { id: m.id, kind: m.kind, at: { x: m.x, y: m.y } });
       return;
     }
 

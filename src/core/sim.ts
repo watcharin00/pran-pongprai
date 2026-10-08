@@ -35,7 +35,7 @@ export function createPlayer(): PlayerState {
     potions: P.potion.startCount, meal: null, path: [], repath: 0, lockId: null, gatherT: 0, gatherNode: null,
     cds: [0, 0, 0], cast: null, dash: null, spin: 0, atkCd: 0, swing: 0, swingAng: 0, roll: 0, rdx: 1, rdy: 0,
     rollIF: 0, hurtIF: 0, hurt: 0, dodgeCd: 0, dodgeBuf: 0, dodgeBufMove: null, stDelay: 0, potCd: 0, dead: false, autoPotionWarned: false, deadT: 0, moving: false, walkT: 0,
-    inVillage: true, inCamp: false, zone: null,
+    inVillage: true, inCamp: false, zone: null, grab: null,
   };
 }
 

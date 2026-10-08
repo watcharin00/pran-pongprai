@@ -222,7 +222,7 @@ describe('bamboo forest content', () => {
     expect(s.monsters.some((m) => m.kind === 'macaque' || m.kind === 'cobra')).toBe(false);
     changeArea(s, 'bamboo');
     const kinds = new Set(s.monsters.map((m) => m.kind));
-    expect([...kinds].sort()).toEqual(['cobra', 'macaque']);
+    expect([...kinds].sort()).toEqual(['bamboorat', 'cobra', 'macaque']);
   });
 
   it("a cobra's spit hits along its line without the cobra moving", async () => {

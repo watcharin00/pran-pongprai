@@ -29,12 +29,12 @@ describe('peat swamp forest', () => {
     expect(water).toBeGreaterThan(50);
   });
 
-  it('spawns its three monsters only there', () => {
+  it('spawns its monsters only there', () => {
     const s = createGame({ rngSeed: 9, now: NOW });
     changeArea(s, 'deepwild');
     expect(s.monsters.some((m) => MONSTERS[m.kind].area === 'peat')).toBe(false);
     changeArea(s, 'peat');
-    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['marbledcat', 'panther', 'tapir']);
+    expect([...new Set(s.monsters.map((m) => m.kind))].sort()).toEqual(['marbledcat', 'panther', 'python', 'tapir']);
   });
 
   it("a tapir's snout breaks from the front", () => {
