@@ -3,6 +3,7 @@ import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, REQUESTS, TUNING, WEAPONS, WE
 import { ARMOR_SLOTS, MEDALS, type ArmorId, type ArmorSlot, type CropId, type MaterialId, type MealId, type MedalId, type MonsterId, type WeaponId, type AreaId } from '../data/types';
 import { refreshStats, startingInventory } from './inventory';
 import { AREA_IDS } from './areas';
+import { makeHen } from './ranch';
 import type { GameState, Inventory, Meal } from './state';
 
 export const SAVE_VERSION = 2;
@@ -36,6 +37,15 @@ export interface SaveData {
   requestProgress: number;
   /** bestiary medals per monster kind */
   medals: Partial<Record<MonsterId, MedalId[]>>;
+  /** chicken coop (positions are not kept: hens start at random spots in the pen) */
+  ranch: SavedRanch;
+}
+
+export interface SavedRanch {
+  hens: { born: number; love: number; pettedAt: number; nextLay: number }[];
+  nest: number[];
+  trough: number;
+  basket: Partial<Record<MaterialId, number>>;
 }
 
 export function snapshot(s: GameState): SaveData {
@@ -58,6 +68,12 @@ export function snapshot(s: GameState): SaveData {
     requestsDone: [...s.requests.done],
     requestProgress: s.requests.progress,
     medals: Object.fromEntries(Object.entries(s.medals).map(([k, v]) => [k, [...(v ?? [])]])),
+    ranch: {
+      hens: s.ranch.hens.map((h) => ({ born: h.born, love: h.love, pettedAt: h.pettedAt, nextLay: h.nextLay })),
+      nest: [...s.ranch.nest],
+      trough: s.ranch.trough,
+      basket: { ...s.ranch.basket },
+    },
   };
 }
 
@@ -139,6 +155,26 @@ export function parseSave(raw: string | null): SaveData | null {
     }
   }
 
+  const R = TUNING.ranch;
+  const ranch: SavedRanch = { hens: [], nest: [], trough: 0, basket: {} };
+  if (isObj(d.ranch)) {
+    const r = d.ranch;
+    if (Array.isArray(r.hens)) {
+      for (const h of r.hens) {
+        if (!isObj(h) || !isNum(h.born) || ranch.hens.length >= R.maxHens) continue;
+        ranch.hens.push({
+          born: h.born,
+          love: isNum(h.love) ? Math.max(0, Math.min(R.maxLove, Math.floor(h.love))) : 0,
+          pettedAt: isNum(h.pettedAt) ? h.pettedAt : 0,
+          nextLay: isNum(h.nextLay) && h.nextLay > 0 ? h.nextLay : 0,
+        });
+      }
+    }
+    if (Array.isArray(r.nest)) for (const t of r.nest) if (isNum(t) && ranch.hens.length + ranch.nest.length < R.maxHens) ranch.nest.push(t);
+    if (isNum(r.trough)) ranch.trough = Math.max(0, Math.min(R.troughMax, Math.floor(r.trough)));
+    if (isObj(r.basket)) for (const [k, v] of Object.entries(r.basket)) if (k in MATERIALS && isNum(v) && v > 0) ranch.basket[k as MaterialId] = Math.floor(v);
+  }
+
   return {
     version: SAVE_VERSION,
     inv,
@@ -158,6 +194,7 @@ export function parseSave(raw: string | null): SaveData | null {
     requestsDone,
     requestProgress: isNum(d.requestProgress) && d.requestProgress > 0 ? Math.floor(d.requestProgress) : 0,
     medals,
+    ranch,
   };
 }
 
@@ -183,6 +220,12 @@ export function applySave(s: GameState, d: SaveData): void {
   s.requests.done = new Set(d.requestsDone);
   s.requests.progress = d.requestProgress;
   s.medals = Object.fromEntries(Object.entries(d.medals).map(([k, v]) => [k, [...(v ?? [])]]));
+  s.ranch = {
+    hens: d.ranch.hens.map((h) => makeHen(s, h.born, h)),
+    nest: [...d.ranch.nest],
+    trough: d.ranch.trough,
+    basket: { ...d.ranch.basket },
+  };
   d.plots.forEach((sp, i) => {
     const plot = s.plots[i];
     if (plot) Object.assign(plot, sp);

@@ -13,6 +13,7 @@ import { Rng } from './rng';
 import { createNpcs, updateNpcs } from './npc';
 import { createRequests, trackRequests } from './requests';
 import { trackMedals } from './medals';
+import { createRanch, updateRanch } from './ranch';
 import { applySave, type SaveData } from './save';
 import type { GameState, Intent, PlayerState } from './state';
 
@@ -71,6 +72,7 @@ export function createGame(o: CreateOptions): GameState {
     npcRng: new Rng((o.rngSeed ^ 0x2545f491) >>> 0 || 7),
     requests: createRequests(),
     medals: {},
+    ranch: createRanch(),
   };
   trackRequests(s);
   trackMedals(s);
@@ -108,6 +110,7 @@ export function step(s: GameState, intent: Intent, dt: number, now: number): voi
 
   updatePlayer(s, intent, dt);
   updateNpcs(s, dt);
+  updateRanch(s, dt);
   updateShots(s, dt);
   for (const m of s.monsters.slice()) updateMonster(s, m, dt);
 

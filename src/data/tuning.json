@@ -54,6 +54,26 @@
     "safeRadius": 52,
     "fireRadius": 30
   },
+  "ranch": {
+    "maxHens": 4,
+    "hatchSec": 40,
+    "growSec": 90,
+    "laySec": 120,
+    "feed": ["rice", "yam", "banana"],
+    "feedPerItem": 2,
+    "troughMax": 12,
+    "basketMax": 12,
+    "maxLove": 5,
+    "petCooldownSec": 180,
+    "doubleEggPerLove": 0.08,
+    "featherLove": 3,
+    "featherChance": 0.25,
+    "hatchRadius": 18,
+    "feedRadius": 18,
+    "petRadius": 16,
+    "collectRadius": 14,
+    "henSpeed": 14
+  },
   "village": {
     "contextMonsterClear": 80,
     "stationRadius": 26,

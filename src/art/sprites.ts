@@ -972,6 +972,61 @@ export const MONSTER_SPRITES: Record<MonsterId, MonsterSpriteBuilder> = {
 
 export const MONSTER_FRAMES = 4;
 
+// ---------- coop chickens (village, core/ranch.ts) ----------
+
+/**
+ * Village hen (ไก่บ้าน), facing right: plump russet body, darker wing, short upright black-green
+ * tail, small red comb and wattle. Frames: 0 stand, 1-2 walk, 3 peck (head down).
+ */
+export function buildHenFrames(): HTMLCanvasElement[] {
+  return [0, 1, 2, 3].map((f) => {
+    const b = createBuffer(16, 15);
+    const peck = f === 3;
+    const step = f === 1 ? 1 : f === 2 ? -1 : 0;
+    // tail
+    ([[2, 3], [1, 4], [2, 4], [1, 5], [2, 5], [3, 5], [2, 6]] as const).forEach(([x, y]) => sp(b, x, y, '#24382e'));
+    sp(b, 2, 2, '#3a5a46');
+    // legs
+    rect(b, 6 + step, 11, 1, 3, '#e8a83a');
+    rect(b, 9 - step, 11, 1, 3, '#d8962a');
+    rect(b, 5 + step, 13, 3, 1, '#e8a83a');
+    rect(b, 8 - step, 13, 3, 1, '#d8962a');
+    // body
+    ell(b, 7.5, 8, 5, 3.6, '#c8743a');
+    ell(b, 7.5, 10, 3.6, 1.6, '#e0a060');
+    ell(b, 6.5, 7.5, 3, 1.8, '#9a4e24');
+    sp(b, 5, 8, '#7a3a1a');
+    sp(b, 7, 8, '#7a3a1a');
+    // neck + head (lowered when pecking)
+    const hx = peck ? 13 : 12;
+    const hy = peck ? 9 : 4;
+    ell(b, peck ? 11.5 : 11, peck ? 8 : 6, 2, 2.2, '#d88848');
+    ell(b, hx, hy, 2, 1.8, '#e09858');
+    sp(b, hx + 1, hy - 1, '#1a1420');
+    rect(b, hx + 2, hy, 2, 1, '#f0c040');
+    sp(b, hx + 1, hy + 1, '#e0302a');
+    ([[hx - 1, hy - 2], [hx, hy - 3], [hx, hy - 2], [hx + 1, hy - 2]] as const).forEach(([x, y]) => sp(b, x, y, '#ff3a30'));
+    return finish(b);
+  });
+}
+
+/** Chick: a yellow puff with a tiny beak. Frames: 0 stand, 1 hop, 2 peck. */
+export function buildChickFrames(): HTMLCanvasElement[] {
+  return [0, 1, 2].map((f) => {
+    const b = createBuffer(9, 9);
+    const up = f === 1 ? 1 : 0;
+    rect(b, 3, 7, 1, 1, '#e8a83a');
+    rect(b, 5, 7, 1, 1, '#e8a83a');
+    ell(b, 4, 5 - up, 3, 2.4, '#ffd84a');
+    ell(b, 3.5, 4.5 - up, 1.8, 1.2, '#fff08a');
+    const hy = f === 2 ? 5 : 3 - up;
+    ell(b, 5.5, hy, 1.6, 1.5, '#ffe060');
+    sp(b, 6, hy - 1, '#1a1420');
+    sp(b, 7, hy, '#f08a2a');
+    return finish(b);
+  });
+}
+
 // ---------- weapons ----------
 export function buildWeapon(w: WeaponDef): HTMLCanvasElement {
   if (w.type === 'spear') {

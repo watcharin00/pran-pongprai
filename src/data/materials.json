@@ -88,5 +88,7 @@
   "seed_lotus":      { "color": "#d890b0", "category": "seed", "icon": "seed" },
   "seed_ginger":     { "color": "#c8a060", "category": "seed", "icon": "bulb" },
   "fry":             { "color": "#9aaab8", "category": "seed", "icon": "fish" },
-  "fert":            { "color": "#8a6b45", "category": "seed", "icon": "sack" }
+  "fert":            { "color": "#8a6b45", "category": "seed", "icon": "sack" },
+  "jfegg":           { "color": "#d8b88a", "category": "seed", "icon": "egg" },
+  "egg":             { "color": "#f6ead0", "category": "material", "icon": "egg" }
 }

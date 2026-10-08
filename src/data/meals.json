@@ -12,6 +12,8 @@
     "deergrill":  { "recipe": { "deermeat": 2, "lemongrass": 1, "pepper": 1 },  "color": "#c86a5a", "effect": { "attackMul": 1.25 } },
     "plaphao":    { "recipe": { "fish": 2, "lemongrass": 1 },                  "color": "#8a9aa8", "effect": { "maxHpBonus": 15, "defense": 8 } },
     "crabcurry":  { "recipe": { "crabmeat": 1, "pepper": 1, "rice": 1 },         "color": "#e8a040", "effect": { "defense": 12, "attackMul": 1.1 } },
-    "hormok":     { "recipe": { "fish": 1, "banana": 1, "pepper": 1 },         "color": "#d8a040", "effect": { "attackMul": 1.15, "staminaRegenMul": 1.2 } }
+    "hormok":     { "recipe": { "fish": 1, "banana": 1, "pepper": 1 },         "color": "#d8a040", "effect": { "attackMul": 1.15, "staminaRegenMul": 1.2 } },
+    "omelet":     { "recipe": { "egg": 2, "lemongrass": 1 },                   "color": "#f0c850", "effect": { "maxHpBonus": 20, "staminaRegenMul": 1.3 } },
+    "khaophat":   { "recipe": { "egg": 1, "rice": 1, "pepper": 1 },            "color": "#e8b048", "effect": { "attackMul": 1.12, "defense": 6 } }
   }
 }

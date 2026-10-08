@@ -1216,6 +1216,7 @@ function sourceText(x: ItemSource): string {
   if (x.kind === 'gather') return x.chance >= 1 ? S.gather[x.node] : S.gatherChance(S.gather[x.node], pct(x.chance));
   if (x.kind === 'veteran') return S.veteran;
   if (x.kind === 'request') return S.request;
+  if (x.kind === 'coop') return x.feather ? S.coopFeather : S.coop;
   const mon = th.monsters[x.monster];
   const icon = img(monsterIconUrl(x.monster), 'ico mon');
   if (x.kind === 'part') return `${icon}${S.part((mon.parts as Partial<Record<string, string>>)[x.part] ?? x.part, mon.name)}`;
@@ -1233,6 +1234,8 @@ function useText(x: ItemUse): string {
   if (x.kind === 'meal') return `${img(mealIconUrl(x.meal), 'ico sm')}${U.meal(th.meals[x.meal].name)}`;
   if (x.kind === 'potion') return `${img(potionIconUrl(), 'ico sm')}${U.potion}`;
   if (x.kind === 'plant') return U.plant(th.crops[x.crop].name);
+  if (x.kind === 'hatch') return U.hatch;
+  if (x.kind === 'feed') return U.feed;
   return U.fertilizer;
 }
 

@@ -156,6 +156,15 @@ const SHAPES: Record<IconShape, ShapeDrawer> = {
     ell(b, 8, 10, 2, 1.5, tint(c, 0.25));
     ([[7, 12], [10, 13], [12, 10]] as const).forEach(([x, y]) => sp(b, x, y, '#5a8a3a'));
   },
+  egg: (b, c) => {
+    // egg, narrower at the top, lit from the upper left
+    ell(b, 9, 10, 4.5, 5.5, c);
+    ell(b, 9, 7, 3.5, 2.5, c);
+    ell(b, 10, 12, 3, 2.5, tint(c, -0.12));
+    ell(b, 7.5, 7.5, 1.4, 1.8, tint(c, 0.5));
+    // jungle-fowl eggs are speckled
+    if (c !== '#f6ead0') ([[11, 9], [8, 12], [11, 13], [7, 10]] as const).forEach(([x, y]) => sp(b, x, y, tint(c, -0.35)));
+  },
 };
 
 function drawWeapon(w: WeaponDef): PixelBuffer {

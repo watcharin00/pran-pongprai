@@ -239,6 +239,40 @@ export interface RequestState {
 
 export type Inventory = Record<MaterialId, number>;
 
+/** A chicken in the village coop (core/ranch.ts). */
+export interface Hen {
+  id: number;
+  /** epoch ms it hatched; it lays once grown (`ranch.growSec`) */
+  born: number;
+  /** 0..maxLove hearts, raised by petting: more double eggs, feathers */
+  love: number;
+  /** epoch ms of the last pet that raised love */
+  pettedAt: number;
+  /** epoch ms the next egg is due; 0 = waiting for feed in the trough */
+  nextLay: number;
+  // strolling inside the pen (not saved)
+  x: number;
+  y: number;
+  tx: number;
+  ty: number;
+  wait: number;
+  face: 1 | -1;
+  moving: boolean;
+  walkT: number;
+  /** seconds left of a pecking pause (drawn head down) */
+  peck: number;
+}
+
+export interface RanchState {
+  hens: Hen[];
+  /** jungle-fowl eggs in the nest: epoch ms each one hatches */
+  nest: number[];
+  /** feed portions in the trough; each egg eats one */
+  trough: number;
+  /** eggs (and feathers) waiting in the nest basket; walking past collects them */
+  basket: Partial<Record<MaterialId, number>>;
+}
+
 export interface GameState {
   /** the area the player is in; swapped by core/travel.ts */
   map: WorldMap;
@@ -280,4 +314,5 @@ export interface GameState {
   requests: RequestState;
   /** bestiary medals earned per monster kind */
   medals: Partial<Record<MonsterId, MedalId[]>>;
+  ranch: RanchState;
 }

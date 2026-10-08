@@ -3,6 +3,7 @@
 import { ARMOR, CROPS, MATERIALS, MEALS, MONSTERS, MONSTER_IDS, REQUESTS, TUNING, WEAPONS, WEAPONS_DATA } from '../data';
 import * as th from '../i18n/th';
 import type { AreaId, ArmorId, CropId, ItemBag, MaterialId, MealId, MonsterId, PartId, WeaponId } from '../data/types';
+import { FEED_ITEMS } from '../core/ranch';
 
 export type ItemSource =
   | { kind: 'part'; monster: MonsterId; part: PartId }
@@ -14,7 +15,9 @@ export type ItemSource =
   /** any veteran (endgame) */
   | { kind: 'veteran' }
   /** reward from an elder's hunt request */
-  | { kind: 'request' };
+  | { kind: 'request' }
+  /** laid by hens in the village coop (feathers only from much-loved hens) */
+  | { kind: 'coop'; feather: boolean };
 
 export type ItemUse =
   | { kind: 'weapon'; weapon: WeaponId }
@@ -24,6 +27,8 @@ export type ItemUse =
   | { kind: 'masterUpgrade'; from: number; to: number }
   | { kind: 'meal'; meal: MealId }
   | { kind: 'potion' }
+  | { kind: 'hatch' }
+  | { kind: 'feed' }
   | { kind: 'plant'; crop: CropId }
   | { kind: 'fertilizer' };
 
@@ -47,6 +52,8 @@ export function itemSources(id: MaterialId): ItemSource[] {
   for (const node of ['herb', 'ore'] as const) if (NODE_ITEMS[node] === id) out.push({ kind: 'gather', node, chance: 1 });
   if (id === 'seed_herb') out.push({ kind: 'gather', node: 'herb', chance: TUNING.gather.herbSeedChance });
   if (id === 'seal' && TUNING.veteran.seals > 0) out.push({ kind: 'veteran' });
+  if (id === 'egg') out.push({ kind: 'coop', feather: false });
+  if (id === 'feather') out.push({ kind: 'coop', feather: true });
   // request rewards only count for items nothing else gives (ore etc. would just add noise)
   if (out.length === 0 || id === 'seal') if (REQUESTS.some((r) => (r.reward.items[id] ?? 0) > 0)) out.push({ kind: 'request' });
   return out;
@@ -64,6 +71,8 @@ export function itemUses(id: MaterialId): ItemUse[] {
   if (id === 'seal' && UP.sealsPerLevel > 0 && UP.maxLevel > UP.finalLevel) out.push({ kind: 'masterUpgrade', from: UP.finalLevel + 1, to: UP.maxLevel });
   for (const meal of Object.keys(MEALS) as MealId[]) if ((MEALS[meal].recipe[id] ?? 0) > 0) out.push({ kind: 'meal', meal });
   if (id === 'herb') out.push({ kind: 'potion' });
+  if (id === 'jfegg') out.push({ kind: 'hatch' });
+  if (FEED_ITEMS.includes(id)) out.push({ kind: 'feed' });
   for (const crop of Object.keys(CROPS) as CropId[]) if (CROPS[crop].seed === id) out.push({ kind: 'plant', crop });
   if (id === 'fert') out.push({ kind: 'fertilizer' });
   return out;

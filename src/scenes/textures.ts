@@ -13,6 +13,8 @@ export const TEX = {
   npc: (id: NpcId, frame: number) => `npc:${id}:${frame}`,
   rice: (stage: number, sway: boolean) => `rice:${stage}${sway ? 'b' : ''}`,
   lotus: (stage: number) => `lotus:${stage}`,
+  hen: (frame: number) => `hen:${frame}`,
+  chick: (frame: number) => `chick:${frame}`,
 } as const;
 
 export const PLAYER_FRAMES = 3;

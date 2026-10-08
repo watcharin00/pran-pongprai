@@ -67,6 +67,16 @@ export interface GameEvents {
   'request:ready': { id: string };
   'request:claimed': { id: string; items: Drops; potions: number };
   'medal:earned': { kind: MonsterId; medal: MedalId };
+  /** a jungle-fowl egg went into the nest */
+  'ranch:incubate': { at: Vec2 };
+  'ranch:hatched': { id: number; at: Vec2 };
+  /** a chick grew into a laying hen */
+  'ranch:grown': { id: number; at: Vec2 };
+  'ranch:fed': { item: MaterialId; trough: number; at: Vec2 };
+  /** `loved`: the pet raised a heart (otherwise it was just a happy cluck) */
+  'ranch:petted': { id: number; love: number; loved: boolean; at: Vec2 };
+  'ranch:laid': { id: number; at: Vec2 };
+  'ranch:collected': { items: Drops; at: Vec2 };
 }
 
 type Handler<T> = (payload: T) => void;

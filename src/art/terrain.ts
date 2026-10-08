@@ -4,7 +4,7 @@ import { hash, vnoise } from '../core/rng';
 import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
 import { signposts } from '../core/signs';
 import { drawAnvil, drawBoard, drawCamp, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
-import { drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
+import { drawCoop, drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
 interface GroundPalette {
@@ -143,6 +143,7 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   drawFieldHut(mb);
   drawScarecrow(mb, SCARECROW.x, SCARECROW.y);
   drawSala(mb, SALA);
+  drawCoop(mb);
   drawFountain(mb);
   drawAnvil(mb);
   drawPot(mb);

@@ -8,7 +8,7 @@ import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPi
 import { findMonster } from '../core/combat';
 import { harvest, isRipe, plant, plotAt, plotProgress } from '../core/farm';
 import { PlotPopup } from '../ui/plotPopup';
-import { ANVIL, BOARD, FARM, FARM_CENTER, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { ANVIL, BOARD, COOP, COOP_CENTER, FARM, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { areaBoss, nextBoss, npcActive, npcLine, npcNear } from '../core/npc';
 import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
 import { claimRequest, requestReady } from '../core/requests';
@@ -30,6 +30,8 @@ import { readKey, removeKey, writeKey } from '../storage';
 import { PlayerView } from '../entities/Player';
 import { MonsterView } from '../entities/Monster';
 import { NpcView } from '../entities/Npc';
+import { HenView } from '../entities/Hen';
+import { basketCount, feedTrough, FEED_ITEMS, hatchEgg, petHen, canLove } from '../core/ranch';
 import { lineText, requestText } from '../ui/talk';
 import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
@@ -119,6 +121,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   /** signposts of the current area (labels show when the player walks up to one) */
   private signs: Signpost[] = [];
   private npcViews = new Map<NpcId, NpcView>();
+  private henViews = new Map<number, HenView>();
   /** which line each villager is on (advances when the kid is tapped) */
   private talkN: Partial<Record<NpcId, number>> = {};
   private nodeImgs = new Map<number, Phaser.GameObjects.Image>();
@@ -436,7 +439,29 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         this.sfx.play('error');
       }
       this.hud.update(this.s);
-    } else this.sheet.open(c.kind);
+    } else if (c.kind === 'hatch' || c.kind === 'feed' || c.kind === 'pet') this.runCoop(c);
+    else this.sheet.open(c.kind);
+  }
+
+  /** Coop buttons: one tap = one egg in the nest / one crop in the trough / one pat. */
+  private runCoop(c: Extract<ContextAction, { kind: 'hatch' | 'feed' | 'pet' }>): void {
+    const s = this.s;
+    const R = TUNING.ranch;
+    if (c.kind === 'hatch') {
+      if (hatchEgg(s)) this.save();
+      else {
+        this.hud.toast(s.inv.jfegg > 0 ? th.ranch.full_coop(R.maxHens) : th.ranch.noEgg, 'bad');
+        this.sfx.play('error');
+      }
+    } else if (c.kind === 'feed') {
+      const r = feedTrough(s);
+      if (r.ok) this.save();
+      else {
+        this.hud.toast(r.reason === 'full' ? th.ranch.full : th.ranch.noFeed(FEED_ITEMS.map((k) => th.materials[k]).join(' / ')), 'bad');
+        this.sfx.play('error');
+      }
+    } else if (petHen(s, c.hen)) this.save();
+    this.hud.update(s);
   }
 
   /** The context button next to a villager. */
@@ -480,6 +505,30 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         else this.sheet.open('map');
         break;
       }
+    }
+  }
+
+  /** Coop chickens: views follow the ranch state (hatching adds one), hidden away from home. */
+  private updateHens(sh: Phaser.GameObjects.Graphics): void {
+    const s = this.s;
+    const home = s.area === 'home';
+    const live = new Set<number>();
+    for (const h of s.ranch.hens) {
+      live.add(h.id);
+      let v = this.henViews.get(h.id);
+      if (!v) {
+        v = new HenView(this, (o) => this.inWorld(o), h);
+        this.henViews.set(h.id, v);
+      }
+      v.setVisible(home);
+      if (!home) continue;
+      v.update(h, s.now);
+      sh.fillStyle(0x142814, 0.25).fillEllipse(h.x, h.y + 3, 9, 3);
+    }
+    for (const [id, v] of this.henViews) {
+      if (live.has(id)) continue;
+      v.destroy();
+      this.henViews.delete(id);
     }
   }
 
@@ -628,7 +677,49 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       snd('kill');
       hud.toast(th.log.hunted(monName(e.kind), fmtItems(e.drops)));
       if (e.rare) hud.toast(th.log.rareDrop(th.materials[e.rare]), 'gold');
+      // first jungle-fowl egg: point the way to the coop
+      if ((e.drops.jfegg ?? 0) > 0 && this.s.ranch.hens.length + this.s.ranch.nest.length === 0) hud.toast(th.ranch.firstEgg, 'gold');
       this.corpses.at(-1)?.img.setScale(e.corpse.dirX, 1);
+      this.save();
+    });
+    ev.on('ranch:incubate', (e) => {
+      fx.burst(e.at.x, e.at.y - 2, '#f6ead0', 8, 40, 'dust');
+      snd('plant');
+      hud.toast(th.ranch.incubate(this.s.inv.jfegg));
+    });
+    let lastHatch = -1;
+    ev.on('ranch:hatched', (e) => {
+      // several eggs can hatch in the same frame (e.g. after reopening the game): one message
+      if (this.s.time !== lastHatch) float(e.at.x, e.at.y - 10, th.ranch.hatched, '#ffe08a', true);
+      lastHatch = this.s.time;
+      fx.burst(e.at.x, e.at.y, '#ffd84a', 12, 60, 'chunk');
+      snd('harvest');
+      this.save();
+    });
+    ev.on('ranch:grown', (e) => {
+      if (this.s.area === 'home') hud.toast(th.ranch.grown, 'gold');
+      fx.burst(e.at.x, e.at.y, '#e09858', 8, 40, 'dust');
+    });
+    ev.on('ranch:fed', (e) => {
+      fx.burst(e.at.x, e.at.y - 2, '#e8d890', 8, 40, 'chunk');
+      snd('plant');
+      hud.toast(th.ranch.fed(th.materials[e.item], e.trough, TUNING.ranch.troughMax));
+      this.sheet.markDirty();
+    });
+    ev.on('ranch:petted', (e) => {
+      float(e.at.x, e.at.y - 14, e.loved ? `♥ ${e.love}/${TUNING.ranch.maxLove}` : th.ranch.happy, e.loved ? '#ff8fb0' : '#fff3c4', e.loved);
+      if (e.loved) fx.burst(e.at.x, e.at.y - 6, '#ff8fb0', 6, 30, 'dust');
+      snd(e.loved ? 'pickup' : 'ui');
+    });
+    ev.on('ranch:laid', (e) => {
+      if (this.s.area === 'home') fx.burst(e.at.x, e.at.y, '#f6ead0', 4, 25, 'dust');
+    });
+    ev.on('ranch:collected', (e) => {
+      float(e.at.x, e.at.y - 12, fmtItems(e.items), '#ffd166', true);
+      fx.burst(e.at.x, e.at.y, '#f6ead0', 10, 60, 'chunk');
+      snd('harvest');
+      hud.toast(th.ranch.collected(fmtItems(e.items)), 'gold');
+      this.sheet.markDirty();
       this.save();
     });
     ev.on('monster:fled', (e) => {
@@ -957,6 +1048,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const hg = Math.max(1, Math.round((3 - Math.abs(ox)) * 1.3 + Math.sin(time * 13 + i * 1.7)));
       for (let k = 0; k < hg; k++) px(POT.x + ox, POT.y + 5 - k, k / hg < 0.5 ? 0xffd35c : 0xff6a2a);
     }
+    this.drawCoopLive(px, time);
     // crops
     this.s.plots.forEach((pl, i) => {
       const img = this.cropImgs.get(i);
@@ -987,6 +1079,47 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         px(X + 2, Y + 14, parseInt(CROPS[pl.crop].color.slice(1), 16), Math.max(1, Math.round(12 * pr)), 2);
       }
     });
+  }
+
+  /** Feed in the trough, eggs in the nest basket (laid ones and ones still hatching), love hearts. */
+  private drawCoopLive(px: (x: number, y: number, c: number, w?: number, h?: number, a?: number) => void, time: number): void {
+    const r = this.s.ranch;
+    const R = TUNING.ranch;
+    const fill = Math.min(1, r.trough / R.troughMax);
+    if (fill > 0) {
+      const w = Math.max(2, Math.round(12 * fill));
+      px(TROUGH.x - 6, TROUGH.y - 2, 0xe8d890, w, 2);
+      for (let k = 0; k < w; k += 3) px(TROUGH.x - 6 + k, TROUGH.y - 3, 0xc8a050, 1, 1);
+    }
+    // eggs in the basket: up to 5 drawn, the label carries the count
+    const eggs = Math.min(5, basketCount(r));
+    const spots = [[-3, -2], [1, -2], [-1, -3], [3, -3], [-4, -3]] as const;
+    for (let i = 0; i < eggs; i++) {
+      const [dx, dy] = spots[i] ?? [0, 0];
+      px(NEST.x + dx, NEST.y + dy, 0xf6ead0, 2, 3);
+      px(NEST.x + dx, NEST.y + dy, 0xffffff, 1, 1);
+    }
+    // eggs still hatching wobble now and then
+    r.nest.forEach((_, i) => {
+      const wob = Math.sin(time * 9 + i * 2) > 0.85 ? 1 : 0;
+      const x = NEST.x + 4 - i * 4 + wob;
+      px(x, NEST.y - 4, 0xd8b88a, 3, 4);
+      px(x + 1, NEST.y - 3, 0x9a7a4a, 1, 1);
+    });
+    // a heart over hens that can be petted again (only once the player is close)
+    const p = this.s.player;
+    if (Math.hypot(COOP_CENTER.x - p.x, COOP_CENTER.y - p.y) < 70) {
+      for (const h of r.hens) {
+        if (!canLove(h, this.s.now)) continue;
+        const y = Math.round(h.y - 14 + Math.sin(time * 3 + h.id) * 1.2);
+        const x = Math.round(h.x);
+        px(x - 2, y, 0xff6a8a, 2, 2);
+        px(x + 1, y, 0xff6a8a, 2, 2);
+        px(x - 1, y + 2, 0xff6a8a, 3, 1);
+        px(x, y + 3, 0xff6a8a, 1, 1);
+        px(x - 1, y, 0xffd0dc, 1, 1);
+      }
+    }
   }
 
   /**
@@ -1106,6 +1239,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       v.destroy();
       this.monsterViews.delete(id);
     }
+    this.updateHens(sh);
     {
       for (const n of s.npcs) {
         if (!npcActive(s, n.id)) continue;
@@ -1212,6 +1346,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       if (near(FARM_CENTER)) {
         const ripe = s.plots.filter((pl) => isRipe(pl, s.now)).length;
         t.label(this, ripe ? th.places.farmRipe(ripe) : th.places.farm, FARM_CENTER.x, (FARM.y0 - 1) * T - 4, ripe ? '#ffe08a' : '#ffe7a6');
+      }
+      if (near(COOP_CENTER)) {
+        const eggs = basketCount(s.ranch);
+        t.label(this, eggs ? th.places.coopEggs(eggs) : th.places.coop, COOP_CENTER.x - 8, COOP.y * T - 6, eggs ? '#ffe08a' : '#ffe7a6');
       }
       for (const [bed, at, name] of [['paddy', PADDY_CENTER, th.places.paddy], ['pond', POND_CENTER, th.places.pond]] as const) {
         if (!near(at)) continue;

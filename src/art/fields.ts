@@ -1,6 +1,6 @@
 // Rice paddy and fish pond art. The ground pass paints them pixel by pixel (soft,
 // natural edges); crops on top are small pre-built textures swapped by growth stage.
-import { FIELD_HUT, JETTY, PADDY, POND_AREA, POND_SHAPE, POND_SLOTS, pondDepth, T } from '../core/mapgen';
+import { COOP, COOP_GATE, FIELD_HUT, HENHOUSE, JETTY, NEST, PADDY, POND_AREA, POND_SHAPE, POND_SLOTS, pondDepth, T, TROUGH } from '../core/mapgen';
 import { hash, vnoise } from '../core/rng';
 import { createBuffer, ell, rect, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
@@ -219,4 +219,72 @@ export function buildLotus(stage: number): HTMLCanvasElement {
     ell(b, 19.5, 5, 1.4, 2, '#e888a8');
   }
   return toCanvas(b);
+}
+
+// ---------------------------------------------------------------- chicken coop
+
+/**
+ * The coop's static parts: scratched dirt inside the pen, a henhouse on stilts with a thatched
+ * roof and a ladder, the empty feed trough and the straw nest basket. Feed, eggs and hens are
+ * drawn live by WorldScene.
+ */
+export function drawCoop(b: PixelBuffer): void {
+  // scratched earth and straw inside the fence
+  for (let y = (COOP.y + 1) * T; y < (COOP.y + COOP.h - 1) * T; y++) {
+    for (let x = (COOP.x + 1) * T; x < (COOP.x + COOP.w - 1) * T; x++) {
+      const n = vnoise(x * 0.09, y * 0.09, 41) + (hash(x, y) - 0.5) * 0.12;
+      if (n > 0.56) sp(b, x, y, n > 0.72 ? '#b89060' : '#c8a46c', n > 0.64 ? 0.95 : 0.55);
+      else if (hash(x, y * 7) > 0.985) sp(b, x, y, '#f0d88a');
+    }
+  }
+  // the gate gap gets trodden earth too
+  for (let y = COOP_GATE.y * T; y < (COOP_GATE.y + 1) * T; y++) for (let x = COOP_GATE.x * T + 2; x < (COOP_GATE.x + 1) * T - 2; x++) if (hash(x, y) > 0.35) sp(b, x, y, '#c8a46c', 0.8);
+
+  // henhouse on stilts
+  const X = HENHOUSE.x * T;
+  const Y = HENHOUSE.y * T;
+  const W = HENHOUSE.w * T;
+  ell(b, X + W / 2 + 1, Y + 30, W / 2 - 1, 3, '#000000', 0.2);
+  for (const px of [X + 4, X + W - 6]) {
+    rect(b, px, Y + 20, 2, 10, '#6a4020');
+    rect(b, px, Y + 20, 1, 10, '#9a6a3a');
+  }
+  // plank walls
+  for (let y = Y + 9; y < Y + 21; y++) for (let x = X + 3; x < X + W - 3; x++) sp(b, x, y, (x - X) % 5 === 0 ? '#8a5530' : y === Y + 9 ? '#d89a5a' : '#b8743e');
+  rect(b, X + 3, Y + 20, W - 6, 1, '#5a3418');
+  // door hole and a little ladder down to the nest
+  rect(b, X + 6, Y + 13, 6, 7, '#3a2210');
+  rect(b, X + 6, Y + 13, 6, 1, '#5a3418');
+  for (let y = Y + 21; y < Y + 29; y += 2) rect(b, X + 7, y, 4, 1, '#9a6a3a');
+  rect(b, X + 6, Y + 21, 1, 8, '#6a4020');
+  rect(b, X + 11, Y + 21, 1, 8, '#6a4020');
+  // thatch roof, wider than the walls
+  for (let r = 0; r < 10; r++) {
+    const y = Y + 10 - r;
+    const half = W / 2 + 3 - Math.floor(r * 1.1);
+    for (let x = X + W / 2 - half; x < X + W / 2 + half; x++) {
+      const edge = x === X + W / 2 - half || x === X + W / 2 + half - 1 || r === 0 || r === 9;
+      sp(b, x, y, edge ? '#5a3a10' : r < 2 ? '#a87828' : (x + r * 2) % 5 === 0 ? '#c8983c' : x < X + W / 2 ? '#f0d080' : '#d8b058');
+    }
+  }
+
+  // feed trough: a hollowed log on two little feet
+  const tx = Math.round(TROUGH.x);
+  const ty = Math.round(TROUGH.y);
+  ell(b, tx, ty + 3, 8, 2, '#000000', 0.18);
+  rect(b, tx - 6, ty + 1, 2, 2, '#5a3418');
+  rect(b, tx + 4, ty + 1, 2, 2, '#5a3418');
+  rect(b, tx - 7, ty - 3, 14, 4, '#9a6434');
+  rect(b, tx - 7, ty - 3, 14, 1, '#c88a4a');
+  rect(b, tx - 6, ty - 2, 12, 2, '#4a2a12');
+  rect(b, tx - 7, ty + 1, 14, 1, '#5a3418');
+
+  // straw nest basket
+  const nx = Math.round(NEST.x);
+  const ny = Math.round(NEST.y);
+  ell(b, nx, ny + 2, 7, 2, '#000000', 0.18);
+  ell(b, nx, ny, 6.5, 3.2, '#a8782c');
+  ell(b, nx, ny - 1, 5, 2, '#5a3a14');
+  for (let x = nx - 6; x <= nx + 6; x++) if ((x + ny) % 2 === 0) sp(b, x, ny + 1, '#d8b058');
+  for (const [dx, dy] of [[-6, -2], [5, -2], [-3, -3], [3, -3], [6, 0]] as const) sp(b, nx + dx, ny + dy, '#f0d080');
 }

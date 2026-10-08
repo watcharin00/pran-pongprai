@@ -31,7 +31,7 @@ export const MEDALS = ['flawless', 'parts', 'swift', 'veteran'] as const;
 export type MedalId = (typeof MEDALS)[number];
 
 /** Procedural icon shape drawn by art/icons.ts; `color` tints it. */
-export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack', 'feather', 'meat', 'stalk', 'grain', 'fish'] as const;
+export const ICON_SHAPES = ['pelt', 'fang', 'ore', 'leaf', 'scale', 'horn', 'tail', 'orb', 'root', 'chili', 'seed', 'bulb', 'sack', 'feather', 'meat', 'stalk', 'grain', 'fish', 'egg'] as const;
 export type IconShape = (typeof ICON_SHAPES)[number];
 
 export interface MaterialDef {
@@ -402,6 +402,35 @@ export interface Tuning {
     safeRadius: number;
     /** px from the campfire for the brew button */
     fireRadius: number;
+  };
+  /** chicken coop in the village (core/ranch.ts); times are real seconds */
+  ranch: {
+    maxHens: number;
+    /** a jungle-fowl egg in the nest hatches after this long */
+    hatchSec: number;
+    /** a chick grows into a laying hen after this long */
+    growSec: number;
+    /** a fed hen lays one egg per this long */
+    laySec: number;
+    /** crops (harvest items) that fill the trough, and how many feed portions each gives */
+    feed: string[];
+    feedPerItem: number;
+    troughMax: number;
+    /** eggs and feathers waiting in the nest basket stop piling up here */
+    basketMax: number;
+    maxLove: number;
+    /** petting raises love at most once per hen per this long */
+    petCooldownSec: number;
+    /** chance per heart that a laid egg comes with a second one */
+    doubleEggPerLove: number;
+    /** from this love up, a lay may also leave a feather */
+    featherLove: number;
+    featherChance: number;
+    hatchRadius: number;
+    feedRadius: number;
+    petRadius: number;
+    collectRadius: number;
+    henSpeed: number;
   };
   village: {
     contextMonsterClear: number;

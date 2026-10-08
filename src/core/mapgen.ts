@@ -65,7 +65,8 @@ export const LAMPS: readonly (readonly [number, number])[] = [
   [PLAZA.x - 6, PLAZA.y - 3],
   [PLAZA.x + 5, PLAZA.y - 3],
   [PLAZA.x - 6, PLAZA.y + 3],
-  [PLAZA.x + 5, PLAZA.y + 3],
+  // the prototype had this one a row lower; the chicken coop's fence runs there now
+  [PLAZA.x + 5, PLAZA.y + 2],
 ];
 
 // --- Points of interest (pixel coordinates) ---
@@ -142,6 +143,35 @@ export const POND_SLOTS: readonly { x: number; y: number }[] = [
 
 export const PADDY_CENTER = { x: ((PADDY.x0 + PADDY.x1 + 1) * T) / 2, y: ((PADDY.y0 + PADDY.y1 + 1) * T) / 2 } as const;
 export const POND_CENTER = { x: POND_SHAPE.cx, y: POND_SHAPE.cy } as const;
+
+// --- Chicken coop (east of the vegetable plot, between the plaza and the pond) ---
+/** fenced pen, fence included */
+export const COOP: Rect = { x: 18, y: 30, w: 6, h: 5 };
+/** henhouse on stilts in the pen's north-east corner (HOUSE tiles) */
+export const HENHOUSE: Rect = { x: 22, y: 30, w: 2, h: 2 };
+/** gap in the south fence the player walks in through */
+export const COOP_GATE = { x: 20, y: 34 } as const;
+/** feed trough by the west fence (px) */
+export const TROUGH = { x: 19 * T + 10, y: 33 * T + 8 } as const;
+/** nest basket in front of the henhouse door: eggs and hatching go here (px) */
+export const NEST = { x: 22 * T + 8, y: 32 * T + 10 } as const;
+/** where hens stroll (px), clear of the henhouse and the nest */
+export const HEN_ROAM = { x0: 19 * T + 4, y0: 31 * T + 8, x1: 22 * T - 3, y1: 34 * T - 5 } as const;
+export const COOP_CENTER = { x: (COOP.x + COOP.w / 2) * T, y: (COOP.y + COOP.h / 2) * T } as const;
+
+/** Stamps the chicken coop onto a home-map tile array (after generation). */
+export function stampCoop(tiles: Uint8Array): void {
+  const set = (x: number, y: number, t: number): void => {
+    tiles[y * MW + x] = t;
+  };
+  for (let y = COOP.y; y < COOP.y + COOP.h; y++) {
+    for (let x = COOP.x; x < COOP.x + COOP.w; x++) {
+      const edge = x === COOP.x || x === COOP.x + COOP.w - 1 || y === COOP.y || y === COOP.y + COOP.h - 1;
+      set(x, y, edge && !(x === COOP_GATE.x && y === COOP_GATE.y) ? Tile.FENCE : Tile.GRASS);
+    }
+  }
+  for (let y = HENHOUSE.y; y < HENHOUSE.y + HENHOUSE.h; y++) for (let x = HENHOUSE.x; x < HENHOUSE.x + HENHOUSE.w; x++) set(x, y, Tile.HOUSE);
+}
 
 /** Stamps the paddy and the pond onto a home-map tile array (after generation). */
 export function stampEastFields(tiles: Uint8Array): void {

@@ -3,7 +3,7 @@ import { MONSTER_IDS, NPC_IDS, WEAPONS } from '../data';
 import type { WeaponId } from '../data/types';
 import { areaMap } from '../core/areas';
 import { MONSTER_FRAME_COUNT } from '../core/state';
-import { buildGlow, buildHerb, buildOre, buildNpcFrames, buildPlayerFrames, buildWeapon, MONSTER_SPRITES } from '../art/sprites';
+import { buildGlow, buildHerb, buildOre, buildNpcFrames, buildHenFrames, buildChickFrames, buildPlayerFrames, buildWeapon, MONSTER_SPRITES } from '../art/sprites';
 import { buildTerrain } from '../art/terrain';
 import { buildLotus, buildRiceSection } from '../art/fields';
 import { TEX } from './textures';
@@ -25,6 +25,8 @@ export class BootScene extends Phaser.Scene {
     t.addCanvas(TEX.canopy, terrain.canopy);
     buildPlayerFrames().forEach((c, i) => t.addCanvas(TEX.player(i), c));
     for (const id of NPC_IDS) buildNpcFrames(id).forEach((c, i) => t.addCanvas(TEX.npc(id, i), c));
+    buildHenFrames().forEach((c, i) => t.addCanvas(TEX.hen(i), c));
+    buildChickFrames().forEach((c, i) => t.addCanvas(TEX.chick(i), c));
     for (const kind of MONSTER_IDS) {
       for (let f = 0; f < MONSTER_FRAME_COUNT; f++) {
         for (const hb of [false, true]) for (const tb of [false, true]) t.addCanvas(TEX.monster(kind, f, hb, tb), MONSTER_SPRITES[kind](f, hb, tb));

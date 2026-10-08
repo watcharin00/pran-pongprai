@@ -108,6 +108,8 @@ export const materials = {
   seed_ginger: 'เหง้าขิง',
   fry: 'ลูกปลาช่อน',
   fert: 'ปุ๋ยซาก',
+  jfegg: 'ไข่ไก่ป่า',
+  egg: 'ไข่ไก่',
 } satisfies Record<MaterialId, string>;
 
 export const rarity = { 1: 'หายาก', 2: 'หายากมาก' } as const;
@@ -428,6 +430,8 @@ export const meals = {
   kaengsom: { name: 'แกงส้มสายบัว', desc: 'ป้องกัน +10 โจมตี +10%' },
   plaphao: { name: 'ปลาช่อนเผาเกลือ', desc: 'HP สูงสุด +15 ป้องกัน +8' },
   crabcurry: { name: 'ปูผัดพริกเพลิง', desc: 'ป้องกัน +12 โจมตี +10%' },
+  omelet: { name: 'ไข่เจียวตะไคร้', desc: 'พลังชีวิตสูงสุด +20 ความอึดฟื้นเร็วขึ้น' },
+  khaophat: { name: 'ข้าวผัดไข่พริกเพลิง', desc: 'โจมตี +12% ป้องกัน +6' },
   hormok: { name: 'ห่อหมกปลาช่อน', desc: 'โจมตี +15% ความอึดฟื้นเร็วขึ้น' },
   khaotommat: { name: 'ข้าวต้มมัด', desc: 'พลังชีวิตสูงสุด +15 ความอึดฟื้นเร็วขึ้น' },
 } satisfies Record<MealId, { name: string; desc: string }>;
@@ -507,6 +511,9 @@ export const context = {
   kitchen: 'ทำอาหาร',
   plant: 'ปลูก',
   farm: 'แปลงผัก',
+  hatch: 'ฟักไข่',
+  feed: 'ให้อาหาร',
+  pet: 'ลูบหัว',
 };
 
 /** World-space name labels shown near village stations. */
@@ -519,6 +526,8 @@ export const places = {
   paddy: 'นาข้าว',
   pond: 'บ่อปลา',
   bedRipe: (name: string, n: number) => `${name} · พร้อมเก็บ ${n}`,
+  coop: 'คอกไก่',
+  coopEggs: (n: number) => `คอกไก่ · ไข่ ${n}`,
   board: 'ป้ายงานล่า',
   boardReady: 'ป้ายงานล่า · งานเสร็จ',
 };
@@ -590,6 +599,8 @@ export const menu = {
     gatherChance: (what: string, pct: number) => `${what} (${pct}%)`,
     veteran: 'ล่ามอนตัวเก๋า (หลังตีอาวุธขั้นสุดท้าย)',
     request: 'รางวัลงานล่าจากผู้ใหญ่บ้าน',
+    coop: 'ไก่ในคอกไก่ออกไข่ (ใส่อาหารในราง)',
+    coopFeather: 'ไก่ที่รักเรามากในคอกไก่ (นานๆ ที)',
   },
   use: {
     weapon: (w: string) => `ตี${w}`,
@@ -598,6 +609,8 @@ export const menu = {
     masterUpgrade: (from: number, to: number) => `อัปเกรดอาวุธทุกเล่ม +${from} ถึง +${to}`,
     meal: (m: string) => m,
     potion: 'ปรุงยาฟื้นพลัง',
+    hatch: 'ฟักเป็นไก่ในคอกไก่',
+    feed: 'อาหารไก่ในคอกไก่',
     plant: (crop: string) => `ปลูก${crop}`,
     fertilizer: 'ใส่แปลงผักให้โตเร็ว 2 เท่า',
   },
@@ -858,6 +871,23 @@ export const plotPop = {
   fertilize: (n: number) => `ใส่ปุ๋ย โตเร็วขึ้น 2 เท่า (มี ${n})`,
   fertilized: 'ใส่ปุ๋ยแล้ว',
   fertilizedLog: 'ใส่ปุ๋ยแล้ว พืชโตเร็วขึ้น',
+};
+
+/** Chicken coop (core/ranch.ts). */
+export const ranch = {
+  incubate: (left: number) => `วางไข่ไก่ป่าในรัง อีกสักพักจะฟักเป็นลูกไก่ (เหลือไข่ ${left})`,
+  hatched: 'ลูกไก่ฟักออกมาแล้ว!',
+  grown: 'ลูกไก่โตเป็นแม่ไก่แล้ว ใส่อาหารในรางแล้วจะออกไข่',
+  fed: (item: string, n: number, max: number) => `ใส่${item}ในราง (อาหาร ${n}/${max})`,
+  full: 'รางอาหารเต็มแล้ว',
+  noFeed: (items: string) => `ต้องมี${items}ไว้เป็นอาหารไก่`,
+  full_coop: (max: number) => `คอกเต็มแล้ว (ได้สูงสุด ${max} ตัว)`,
+  noEgg: 'ต้องมีไข่ไก่ป่า (ได้จากการล่าไก่ป่า)',
+  collected: (got: string) => `เก็บจากรังไก่: ${got}`,
+  loved: (n: number, max: number) => `ไก่ดีใจ ♥ ${n}/${max}`,
+  happy: 'กุ๊กๆ',
+  hungry: 'รางว่าง ไก่ไม่ออกไข่',
+  firstEgg: 'ได้ไข่ไก่ป่า! เอาไปฟักที่รังในคอกไก่ข้างแปลงผัก',
 };
 
 export const log = {
