@@ -34,7 +34,8 @@ export interface VillageProp {
 }
 
 const sx = (x: number, y: number): number => ISO.x(x * T, y * T);
-const sy = (x: number, y: number): number => ISO.y(x * T, y * T);
+/** flat ground (no bridge lift), so placements never depend on setIsoLift */
+const sy = (x: number, y: number): number => ((x + y) * T) / 2;
 
 /**
  * A sprite standing on a footprint of tiles (x, y, w, h): centred on the footprint's diamond, its
@@ -43,6 +44,21 @@ const sy = (x: number, y: number): number => ISO.y(x * T, y * T);
 function onFootprint(key: VillageSprite, x: number, y: number, w: number, h: number, width: number, extra: Partial<VillageProp> = {}, lift = 0): VillageProp {
   const front = sy(x + w, y + h);
   return { key, x: sx(x + w / 2, y + h / 2), y: front + lift, w: width, shadow: width * 0.75, ...extra };
+}
+
+/** y-sort key that puts a bridge under every character and shadow (ENTITY_DEPTH + this < the shadow layer) */
+const BRIDGE_DEPTH = -94.6;
+
+/**
+ * Screen px a walker is raised on a bridge deck (tiles; matches the sprites above): the stone
+ * bridge arches over the stream, the jetty's planks sit on posts above the pond.
+ */
+export function deckLift(wx: number, wy: number): number {
+  const x = wx / T;
+  const y = wy / T;
+  if (y > 22.8 && y < 25.2 && x > 47.2 && x < 51.8) return 7 * Math.sin((Math.PI * (x - 47.2)) / 4.6);
+  if (y > 30.9 && y < 32.1 && x > 36.2 && x < 39.6) return 4 * Math.min(1, (x - 36.2) / 0.7);
+  return 0;
 }
 
 const PLACED: readonly VillageProp[] = [
@@ -60,8 +76,9 @@ const PLACED: readonly VillageProp[] = [
     key: 'lamp' as const, x: sx(x, y), y: sy(x, y) + 2, w: 14, shadow: 8, flip: x > 32,
   })),
   // the east road crosses the stream on the stone bridge; the pond has a wooden jetty
-  { key: 'stonebridge', x: sx(49.5, 24), y: sy(49.5, 24) + 30, w: 112, flip: true, depth: sy(49.5, 24) - 20, shadow: 0 },
-  { key: 'woodbridge', x: sx(38, 31.5), y: sy(38, 31.5) + 20, w: 72, flip: true, depth: sy(38, 31.5) - 16, shadow: 0 },
+  // bridges lie under everyone (depth below the shadows); walkers on them are lifted by deckLift()
+  { key: 'stonebridge', x: sx(49.5, 24), y: sy(49.5, 24) + 48, w: 112, flip: true, depth: BRIDGE_DEPTH, shadow: 0 },
+  { key: 'woodbridge', x: sx(38, 31.5), y: sy(38, 31.5) + 23, w: 72, flip: true, depth: BRIDGE_DEPTH, shadow: 0 },
 ];
 
 /** Lantern glow of a lamp sprite (screen px from its foot). */

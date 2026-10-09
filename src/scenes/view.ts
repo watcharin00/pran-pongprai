@@ -37,6 +37,15 @@ export const FLAT: View = {
   ry: (r) => r,
 };
 
+/**
+ * Height (screen px) of walkable ground above the map, e.g. a bridge deck. Set by the village
+ * layout (art/villageLayout.ts); the isometric view lifts everything standing there.
+ */
+let isoLift: (wx: number, wy: number) => number = () => 0;
+export function setIsoLift(f: (wx: number, wy: number) => number): void {
+  isoLift = f;
+}
+
 /** Shift so the map's west corner sits at screen x 0. */
 const OX = MH * T;
 
@@ -46,7 +55,7 @@ export const ISO: View = {
   width: (MW + MH) * T,
   height: ((MW + MH) * T) / 2,
   x: (wx, wy) => wx - wy + OX,
-  y: (wx, wy) => (wx + wy) / 2,
+  y: (wx, wy) => (wx + wy) / 2 - isoLift(wx, wy),
   toWorld: (sx, sy) => {
     const u = sx - OX;
     return { x: sy + u / 2, y: sy - u / 2 };

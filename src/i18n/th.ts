@@ -538,7 +538,7 @@ export const areaInfo = {
 export const zones = {
   village: 'หมู่บ้านพราน',
   forest: 'ป่าดงดิบ',
-  bridge: 'สะพานไม้',
+  bridge: 'สะพาน',
   canyon: 'หุบผาแดง',
   bamboo: 'ป่าไผ่',
   swamp: 'บึงจระเข้',

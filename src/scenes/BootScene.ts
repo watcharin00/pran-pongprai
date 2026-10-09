@@ -7,9 +7,9 @@ import { buildGlow, buildHerb, buildOre, buildNpcFrames, buildHenFrames, buildCh
 import { buildLotus, buildRiceSection } from '../art/fields';
 import type { StaticLight } from '../art/buildings';
 import { TEX } from './textures';
-import { LAMP_LIGHT, VILLAGE_SPRITES, villageProps } from '../art/villageLayout';
+import { deckLift, LAMP_LIGHT, VILLAGE_SPRITES, villageProps } from '../art/villageLayout';
 import { T } from '../core/mapgen';
-import { ISO } from './view';
+import { ISO, setIsoLift } from './view';
 
 // the painted village: one pre-painted ground image plus a sprite per house / tree / lamp
 const villageUrls = import.meta.glob<string>('../assets/village/*.webp', { eager: true, import: 'default' });
@@ -47,6 +47,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // walkers on the village bridges stand on the deck, not on the water below
+    setIsoLift(deckLift);
     const map = areaMap('home');
     const t = this.textures;
     t.get(TEX.ground).setFilter(Phaser.Textures.FilterMode.LINEAR);
