@@ -4,7 +4,7 @@ Offline art tool, not part of the npm build. Needs numpy, scipy and pillow:
     python tools/village/build_ground.py            # writes src/assets/village/ground.webp
 
 The grid (src/core/homeLayout.ts) says what each 16px tile is; this turns it into soft,
-hand-painted-looking ground: grass with tufts, dirt roads with ragged edges, a slab plaza,
+hand-painted ground from the owner's textures (tools/village/textures): grass, dirt roads with ragged edges, a slab plaza,
 water with depth and shore foam, rocky plateaus with a cliff lip, tilled soil and a paddy.
 Buildings, trees, fences and bridges are separate sprites placed by the game on top.
 Deterministic: the same grid always gives the same picture.
@@ -93,6 +93,18 @@ def blend(base, layer, m):
     return base * (1 - m[..., None]) + layer * m[..., None]
 
 
+TEX_DIR = os.path.join(os.path.dirname(__file__), 'textures')
+
+
+def tiled(name, size, rot=False):
+    """An owner-made seamless texture (tools/village/textures) repeated over the map, `size` px per repeat."""
+    im = Image.open(os.path.join(TEX_DIR, f'ground-{name}.png')).convert('RGB')
+    if rot:
+        im = im.transpose(Image.Transpose.ROTATE_90)
+    t = np.asarray(im.resize((size, size), Image.LANCZOS)).astype(np.float32)
+    return np.tile(t, (H // size + 1, W // size + 1, 1))[:H, :W]
+
+
 # ------------------------------------------------------------------ masks
 is_water = lambda x, y, c: c in 'WO' or (c == '=' and near(x, y, 'WO'))
 m_water = soft_mask(tile_mask(is_water), wobble=0.18, seed=11, sharp=2)
@@ -112,10 +124,15 @@ m_plaza = ndimage.gaussian_filter(m_plaza, 1.0)
 
 # ------------------------------------------------------------------ textures
 print('textures...', file=sys.stderr)
-grass = colour_field('#4e9a33', '#7fc24c', T * 3, 21, 1.2)
-grass = blend(grass, colour_field('#5fae3c', '#97d35e', T * 0.8, 22), noise(T * 6, 2, 23) * 0.35)
-forest = colour_field('#2f6a26', '#4f8d33', T * 2, 24, 1.1)
-dirt = colour_field('#c9995a', '#ecc98a', T * 1.5, 25, 1.1)
+# grass: the owner's texture, with large soft light/shade patches so the repeat does not show
+grass = tiled('grass', 384)
+grass = grass * (0.86 + 0.24 * noise(T * 5, 3, 21))[..., None]
+forest = grass * np.array([0.62, 0.72, 0.6], np.float32)
+# dirt: the owner's road texture; its wheel ruts run along the road (turned for east-west roads)
+horiz = tile_mask(lambda x, y, c: c == ':' and (ROWS[y][max(0, x - 1)] == ':') + (ROWS[y][min(MW - 1, x + 1)] == ':') > (ROWS[max(0, y - 1)][x] == ':') + (ROWS[min(MH - 1, y + 1)][x] == ':'))
+horiz = ndimage.gaussian_filter(np.asarray(Image.fromarray(horiz, 'F').resize((W, H), Image.BILINEAR)), T * 0.6)
+dirt = blend(tiled('dirt', 448), tiled('dirt', 448, rot=True), np.clip(horiz * 2 - 0.5, 0, 1))
+dirt = dirt * (0.92 + 0.12 * noise(T * 3, 2, 25))[..., None]
 rock = colour_field('#8c6a4a', '#c79a6c', T * 1.2, 26, 1.3)
 rock = blend(rock, colour_field('#7d7a6a', '#a8a290', T * 2, 27), noise(T * 4, 2, 28) * 0.5)
 soil = colour_field('#5a3a22', '#7a5232', T * 0.6, 29)
@@ -124,40 +141,7 @@ paddy = colour_field('#6f9a6a', '#8fb98a', T * 1.0, 30)
 img = forest.copy()
 img = blend(img, grass, 1 - m_forest)
 
-# grass tufts and flowers (drawn on an RGBA layer, then composited)
-layer = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-d = ImageDraw.Draw(layer)
-for _ in range(90000):
-    x, y = int(rng.integers(0, W)), int(rng.integers(0, H))
-    f = m_forest[y, x]
-    dark = (40, 96, 34, 150) if f < 0.5 else (28, 70, 26, 160)
-    lite = (150, 214, 96, 150) if f < 0.5 else (96, 150, 64, 140)
-    h = int(rng.integers(6, 13))
-    for k in (-1, 0, 1):
-        d.line([(x + k * 3, y), (x + k * 5, y - h + abs(k) * 2)], fill=dark, width=2)
-    d.line([(x - 1, y - 1), (x + 1, y - h + 2)], fill=lite, width=1)
-for _ in range(2500):
-    x, y = int(rng.integers(0, W)), int(rng.integers(0, H))
-    if m_forest[y, x] > 0.3:
-        continue
-    col = [(255, 240, 160), (255, 190, 210), (250, 250, 250), (255, 210, 90)][int(rng.integers(0, 4))]
-    for k in range(int(rng.integers(2, 5))):
-        cx, cy = x + int(rng.integers(-10, 10)), y + int(rng.integers(-8, 8))
-        d.ellipse([cx - 3, cy - 3, cx + 3, cy + 3], fill=col + (255,))
-        d.ellipse([cx - 1, cy - 1, cx + 1, cy + 1], fill=(240, 170, 40, 255))
-tuft = np.asarray(layer).astype(np.float32)
-img = blend(img, tuft[..., :3], tuft[..., 3] / 255)
-
 # dirt road: pebbles, dark border on the grass side, grass blades hanging over
-pebbles = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-d = ImageDraw.Draw(pebbles)
-for _ in range(14000):
-    x, y = int(rng.integers(0, W)), int(rng.integers(0, H))
-    r = int(rng.integers(2, 6))
-    d.ellipse([x - r, y - r * 0.7, x + r, y + r * 0.7], fill=(150, 112, 70, 200))
-    d.ellipse([x - r + 1, y - r * 0.7, x + r - 2, y + r * 0.3], fill=(236, 214, 170, 200))
-pb = np.asarray(pebbles).astype(np.float32)
-dirt = blend(dirt, pb[..., :3], pb[..., 3] / 255 * 0.8)
 ring = np.clip(ndimage.maximum_filter(m_dirt, size=7) - m_dirt, 0, 1)
 img = blend(img, dirt, m_dirt)
 img = blend(img, np.broadcast_to(hexc('#3f7a2c'), img.shape), ring * 0.85)
@@ -210,21 +194,8 @@ img = blend(img, rock, m_rock)
 img = blend(img, np.broadcast_to(hexc('#6a4428'), img.shape), face * 0.75)
 img = blend(img, np.broadcast_to(hexc('#3a2414'), img.shape), np.clip(ndimage.maximum_filter(m_rock, 5) - m_rock, 0, 1) * 0.7)
 
-# plaza slabs
-sy, sx = np.mgrid[0:H, 0:W]
-slab_id = (sy // SL) * 1000 + ((sx + (sy // SL % 2) * SL // 2) // SL)
-vals = np.random.default_rng(5).random(slab_id.max() + 1).astype(np.float32)
-v = vals[slab_id]
-plaza = mix(hexc('#c9bfa2')[None, None], hexc('#e6dec6')[None, None], v)
-plaza = plaza * (0.94 + 0.08 * noise(T * 0.5, 2, 31))[..., None]
-lx = (sx + (sy // SL % 2) * SL // 2) % SL
-ly = sy % SL
-grout = ((lx < 2) | (ly < 2)).astype(np.float32)
-hi_ = ((lx >= 2) & (lx < 5) | (ly >= 2) & (ly < 5)).astype(np.float32)
-lo_ = ((lx > SL - 4) | (ly > SL - 4)).astype(np.float32)
-plaza = blend(plaza, np.broadcast_to(hexc('#f4eedc'), plaza.shape), hi_ * 0.5)
-plaza = blend(plaza, np.broadcast_to(hexc('#a89c7c'), plaza.shape), lo_ * 0.5)
-plaza = blend(plaza, np.broadcast_to(hexc('#857a5e'), plaza.shape), grout)
+# plaza: the owner's slab texture (8 slabs per repeat, 3/4 tile each)
+plaza = tiled('plaza', SL * 12)
 img = blend(img, plaza, m_plaza)
 img = blend(img, np.broadcast_to(hexc('#6e664e'), img.shape), np.clip(ndimage.maximum_filter(m_plaza, 5) - m_plaza, 0, 1) * 0.8)
 
