@@ -1,7 +1,7 @@
 {
   "smith":  { "tile": [27, 16], "wander": 10, "role": "forge" },
   "cook":   { "tile": [41, 18], "wander": 10, "role": "kitchen" },
-  "elder":  { "tile": [25, 29], "wander": 6,  "role": "requests" },
+  "elder":  { "tile": [26, 22], "wander": 6,  "role": "requests" },
   "kid":    { "tile": [30, 27], "wander": 36, "role": "tips" },
   "healer": { "tile": [24, 25], "wander": 8,  "role": "herbs" },
   "farmer": { "tile": [42, 22], "wander": 14, "role": "farm" },

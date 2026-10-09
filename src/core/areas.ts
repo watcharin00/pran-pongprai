@@ -52,6 +52,7 @@ const HOME_CHARS: Record<string, number> = {
   H: Tile.HOUSE,
   F: Tile.FENCE,
   K: Tile.FENCE,
+  D: Tile.HOUSE,
   S: Tile.SOIL,
   P: Tile.PADDY,
   O: Tile.POND,

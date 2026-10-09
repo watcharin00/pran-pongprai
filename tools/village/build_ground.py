@@ -109,7 +109,7 @@ def solid(hex_):
 
 
 print('masks...', file=sys.stderr)
-is_water = lambda x, y, c: c in 'WO' or (c == '=' and near(x, y, 'WO'))
+is_water = lambda x, y, c: c in 'WOD' or (c == '=' and near(x, y, 'WO'))
 m_water = sample(soft(tile_mask(is_water), wobble=0.18, sharp=2))
 m_forest = sample(soft(tile_mask(lambda x, y, c: c == 'T'), wobble=0.4, blur=0.9, sharp=10), cval=1.0)
 m_dirt = sample(soft(tile_mask(lambda x, y, c: c == ':' or (c == '=' and not near(x, y, 'WO'))), wobble=0.3, sharp=2.5, seed=3))

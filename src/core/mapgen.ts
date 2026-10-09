@@ -63,7 +63,7 @@ export const VILLAGE = { x0: 14, y0: 10, x1: 47, y1: 40 } as const;
 export const PLAZA = { x: 32, y: 24 } as const;
 /** Smithy (north-west of the plaza) and the inn (north-east); HOUSE footprints. */
 export const SMITH: Rect = { x: 23, y: 14, w: 3, h: 3 };
-export const INN: Rect = { x: 38, y: 13, w: 4, h: 3 };
+export const INN: Rect = { x: 38, y: 13, w: 3, h: 3 };
 /** Fenced vegetable plot west of the plaza: 4x2 soil tiles, one plot each. */
 export const FARM = { x0: 19, y0: 26, x1: 22, y1: 27 } as const;
 
@@ -75,8 +75,8 @@ export const POT = { x: 40 * T, y: 18.6 * T } as const;
 export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
 
-/** Hunt request board by the plaza (one tile); the elder stands beside it. */
-export const BOARD = { x: 24, y: 27 } as const;
+/** Hunt request board beside the elder's house (one tile); the elder stands by it. */
+export const BOARD = { x: 25, y: 21 } as const;
 
 // --- Fields: rice paddy north-east, fish pond south of the plaza ---
 /** The flooded field: 6x4 tiles, split into six 2x2 sections (กระทง), one plot each. */
@@ -87,11 +87,8 @@ export const PADDY_SECTIONS: readonly Rect[] = [0, 1].flatMap((r) => [0, 1, 2].m
 export const POND_AREA = { x0: 36, y0: 28, x1: 44, y1: 34 } as const;
 /** The pond as an ellipse (px), inside the water tiles. */
 export const POND_SHAPE = { cx: 40.2 * T, cy: 31.4 * T, rx: 3.4 * T, ry: 2.7 * T } as const;
-/** Wooden jetty (ท่าน้ำ) from the west bank: walkable. */
-export const JETTY: readonly (readonly [number, number])[] = [
-  [37, 31],
-  [38, 31],
-];
+/** Walkable jetty tiles out over the pond: none now (the waterside sala stands in the water, not walkable). */
+export const JETTY: readonly (readonly [number, number])[] = [];
 
 /** 0 at the pond centre, 1 at the waterline, >1 on the bank. */
 export function pondDepth(px: number, py: number): number {
@@ -100,10 +97,10 @@ export function pondDepth(px: number, py: number): number {
 
 /** Where lotus / fish go: in the water near the bank or the jetty, so they can be reached from dry ground. */
 export const POND_SLOTS: readonly { x: number; y: number }[] = [
-  { x: 39.2 * T, y: 31.2 * T },
+  { x: 37.5 * T, y: 31.5 * T },
   { x: 40.5 * T, y: 29 * T },
-  { x: 38.9 * T, y: 32.9 * T },
-  { x: 43.3 * T, y: 30.8 * T },
+  { x: 39.8 * T, y: 33.4 * T },
+  { x: 38.6 * T, y: 29.7 * T },
 ];
 
 export const PADDY_CENTER = { x: ((PADDY.x0 + PADDY.x1 + 1) * T) / 2, y: ((PADDY.y0 + PADDY.y1 + 1) * T) / 2 } as const;

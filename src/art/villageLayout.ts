@@ -9,9 +9,10 @@ import { MH, MW, T } from '../core/mapgen';
 import { ISO } from '../scenes/view';
 
 export const VILLAGE_SPRITES = [
-  'smithy', 'inn', 'fountain', 'crates', 'firewood', 'campfire', 'board', 'tent', 'bedroll',
+  'smithy', 'shop', 'spire', 'stilt', 'cluster', 'bamboohut', 'thaisala', 'pier',
+  'fountain', 'crates', 'firewood', 'campfire', 'board', 'tent', 'bedroll',
   'rock', 'rockpile', 'tree1', 'tree2', 'pine1', 'pine2', 'bush', 'lamp',
-  'railfence', 'picket', 'wall', 'stonebridge', 'woodbridge', 'floor',
+  'railfence', 'picket', 'wall', 'thaibridge', 'floor',
 ] as const;
 export type VillageSprite = (typeof VILLAGE_SPRITES)[number];
 
@@ -49,36 +50,64 @@ function onFootprint(key: VillageSprite, x: number, y: number, w: number, h: num
 /** y-sort key that puts a bridge under every character and shadow (ENTITY_DEPTH + this < the shadow layer) */
 const BRIDGE_DEPTH = -94.6;
 
+/** The Thai bridge's deck above the east road's centre line: [tile along the road, screen px]. */
+const DECK: readonly (readonly [number, number])[] = [
+  [45.8, 0], [46.3, 0], [46.5, 12], [47, 15], [47.5, 19], [48, 26], [48.5, 31], [49, 32],
+  [49.5, 29], [50, 24], [50.5, 17], [51, 10], [51.5, 5], [52.1, 0],
+];
+
 /**
- * Screen px a walker is raised on a bridge deck (tiles; matches the sprites above): the stone
- * bridge arches over the stream, the jetty's planks sit on posts above the pond.
+ * Screen px a walker is raised on the bridge deck (matches the 'thaibridge' sprite below): onto the
+ * raised landing on the west bank, over the arch, down the steps to the east bank. Looked up by
+ * screen column so the walker stays on the narrow deck; the road's two lanes stay apart a little.
  */
 export function deckLift(wx: number, wy: number): number {
   const x = wx / T;
   const y = wy / T;
-  if (y > 22.8 && y < 25.2 && x > 47.2 && x < 51.8) return 7 * Math.sin((Math.PI * (x - 47.2)) / 4.6);
-  if (y > 30.9 && y < 32.1 && x > 36.2 && x < 39.6) return 4 * Math.min(1, (x - 36.2) / 0.7);
-  return 0;
+  if (y < 22.9 || y > 25.1 || x < 45.8 || x > 52.2) return 0;
+  const t = x - y + 24; // the centre-line tile in the same screen column
+  let h = 0;
+  let prev: readonly [number, number] | null = null;
+  for (const p of DECK) {
+    if (prev && t <= p[0]) {
+      h = prev[1] + (p[1] - prev[1]) * Math.max(0, (t - prev[0]) / (p[0] - prev[0]));
+      break;
+    }
+    prev = p;
+  }
+  return h + 10 * (y - 24) * Math.min(1, h / 8);
 }
 
 const PLACED: readonly VillageProp[] = [
+  // forge (the smithy with its woodpile), the market shop house is the kitchen with its cooking fire
   onFootprint('smithy', 23, 14, 3, 3, 92, { fade: true }, 4),
   onFootprint('firewood', 21, 16, 2, 1, 40, {}, 2),
-  onFootprint('inn', 38, 13, 4, 3, 122, { fade: true }, 4),
+  onFootprint('shop', 38, 13, 3, 3, 100, { fade: true }, 4),
   onFootprint('crates', 42, 15, 1, 1, 40, { fade: true }, 4),
   onFootprint('campfire', 39, 17, 2, 1, 44, {}, 4),
-  onFootprint('board', 24, 27, 1, 1, 36, {}, 2),
+  // Thai houses round the village: the elder's spired house with the notice board, stilt houses,
+  // bamboo huts, a family compound, a sala; a waterside sala with its boat stands in the fish pond
+  onFootprint('spire', 21, 19, 3, 3, 100, { fade: true }, 4),
+  onFootprint('board', 25, 21, 1, 1, 36, {}, 2),
+  onFootprint('cluster', 19, 37, 5, 3, 140, { fade: true }, 4),
+  onFootprint('stilt', 35, 36, 3, 3, 96, { fade: true }, 4),
+  onFootprint('stilt', 41, 37, 3, 3, 96, { fade: true, flip: true }, 4),
+  onFootprint('stilt', 26, 10, 3, 3, 96, { fade: true }, 4),
+  onFootprint('bamboohut', 44, 13, 2, 2, 70, { fade: true }, 4),
+  onFootprint('bamboohut', 14, 27, 2, 2, 70, { fade: true, flip: true }, 4),
+  onFootprint('bamboohut', 26, 36, 2, 2, 70, { fade: true }, 4),
+  onFootprint('thaisala', 40, 25, 2, 2, 70, { fade: true }, 4),
+  onFootprint('pier', 42, 30, 3, 3, 100, { fade: true, shadow: 0 }, 6),
   onFootprint('tent', 12, 18, 2, 2, 70, { fade: true }, 4),
   onFootprint('bedroll', 15, 20, 1, 1, 34, {}, 2),
   onFootprint('fountain', 31, 23, 2, 2, 66, {}, 4),
   // lamps at the plaza corners and by the notice board
-  ...([[27.5, 19.5], [37.5, 19.5], [27.5, 29.5], [37.5, 29.5], [23.6, 26.6]] as const).map(([x, y]) => ({
+  ...([[27.5, 19.5], [37.5, 19.5], [27.5, 29.5], [37.5, 29.5], [26.6, 20.4]] as const).map(([x, y]) => ({
     key: 'lamp' as const, x: sx(x, y), y: sy(x, y) + 2, w: 14, shadow: 8, flip: x > 32,
   })),
-  // the east road crosses the stream on the stone bridge; the pond has a wooden jetty
-  // bridges lie under everyone (depth below the shadows); walkers on them are lifted by deckLift()
-  { key: 'stonebridge', x: sx(49.5, 24), y: sy(49.5, 24) + 48, w: 112, flip: true, depth: BRIDGE_DEPTH, shadow: 0 },
-  { key: 'woodbridge', x: sx(38, 31.5), y: sy(38, 31.5) + 23, w: 72, flip: true, depth: BRIDGE_DEPTH, shadow: 0 },
+  // the east road crosses the stream on the arched Thai bridge: it lies under everyone (depth below
+  // the shadows), walkers on it are lifted by deckLift()
+  { key: 'thaibridge', x: sx(49.5, 24), y: sy(49.5, 24) + 20, w: 100, depth: BRIDGE_DEPTH, shadow: 0 },
 ];
 
 /** Lantern glow of a lamp sprite (screen px from its foot). */
