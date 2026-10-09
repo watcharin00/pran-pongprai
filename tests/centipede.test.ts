@@ -36,6 +36,9 @@ describe('giant centipede burrow attack', () => {
     expect(nearestMonster(s, 200, false)).toBeNull();
     s.player.lockId = m.id;
     expect(chooseTarget(s, 200)).toBeNull();
+    // another monster nearby is still fair game while the lock is underground
+    const other = addMonster(s, 'flyingfox', o.x + 50, o.y + 10);
+    expect(chooseTarget(s, 200)).toBe(other);
     const hp = m.hp;
     hitMonster(s, m, 5);
     expect(m.hp).toBe(hp);

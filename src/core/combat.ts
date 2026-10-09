@@ -60,9 +60,8 @@ export function nearestMonster(s: GameState, maxD: number, preferAggro: boolean)
 export function chooseTarget(s: GameState, maxD: number): MonsterState | null {
   const p = s.player;
   const locked = findMonster(s, p.lockId);
-  // a burrowed lock stays locked but is not a target until it comes back up
-  if (locked?.burrow) return null;
-  if (locked && Math.hypot(locked.x - p.x, locked.y - p.y) < Math.max(maxD, C.lockKeepRange)) return locked;
+  // a burrowed lock is out of reach: hit whatever else is close until it comes back up
+  if (locked && !locked.burrow && Math.hypot(locked.x - p.x, locked.y - p.y) < Math.max(maxD, C.lockKeepRange)) return locked;
   return nearestMonster(s, maxD, true);
 }
 
