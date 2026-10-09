@@ -1,6 +1,6 @@
 // Village structures painted straight into the ground buffer.
 import { hash } from '../core/rng';
-import { ANVIL, LAMPS, MW, PLAZA, POT, QUARTER_LAMPS, T, Tile, type Camp, type Edge, type Rect, type WorldMap } from '../core/mapgen';
+import { ANVIL, FURNACE, LAMPS, MW, PLAZA, POT, QUARTER_LAMPS, T, Tile, type Camp, type Edge, type Rect, type WorldMap } from '../core/mapgen';
 import { ell, line, rect, sp, type PixelBuffer } from './pixelBuffer';
 
 export interface StaticLight {
@@ -463,22 +463,79 @@ export function drawBoard(b: PixelBuffer, tx: number, ty: number): void {
   rect(b, X + 10, Y + 6, 2, 1, '#8a8070');
 }
 
+/**
+ * Village fountain: a round basin of cut stone blocks with a raised lip, clear water with ripples,
+ * a stone pillar in the middle carrying a small upper bowl (the spray is animated in WorldScene).
+ */
 export function drawFountain(b: PixelBuffer): void {
   const fx = PLAZA.x * T;
   const fy = PLAZA.y * T;
-  ell(b, fx + 2, fy + 13, 16, 4, '#000000', 0.18);
-  for (let y = fy - 14; y < fy + 14; y++) {
+  ell(b, fx + 3, fy + 14, 17, 4.5, '#000000', 0.22);
+  // the basin's outer wall (front face) below the rim
+  for (let y = fy + 4; y < fy + 15; y++) {
     for (let x = fx - 17; x < fx + 17; x++) {
-      const q = ((x + 0.5 - fx) / 16) ** 2 + ((y + 0.5 - fy) / 12.5) ** 2;
-      if (q > 1) continue;
-      sp(b, x, y, q > 0.86 ? '#7d7562' : q > 0.64 ? (y < fy ? '#ece6d2' : '#cfc7ab') : q > 0.55 ? '#1f8a84' : (x + y) % 7 === 0 ? '#6ad8c6' : '#2fb7a8');
+      const q = ((x + 0.5 - fx) / 16.5) ** 2 + ((y + 0.5 - fy - 1) / 13) ** 2;
+      if (q > 1 || y < fy + 4) continue;
+      const block = (Math.floor((x - fx + 40) / 6) + (y > fy + 9 ? 1 : 0)) % 2;
+      sp(b, x, y, y === fy + 9 || (x - fx + 40) % 6 === 0 ? '#7a7262' : block ? '#a49c8a' : '#b3ac9a');
     }
   }
-  ell(b, fx, fy - 1, 4.5, 3.2, '#cfc7ab');
-  ell(b, fx, fy - 2, 3, 2, '#ece6d2');
-  rect(b, fx - 1, fy - 9, 3, 7, '#bfb69a');
-  rect(b, fx - 1, fy - 9, 1, 7, '#e1dac2');
-  ell(b, fx, fy - 9, 3.4, 1.6, '#d8d0b6');
+  for (let y = fy - 14; y < fy + 11; y++) {
+    for (let x = fx - 17; x < fx + 17; x++) {
+      const q = ((x + 0.5 - fx) / 16) ** 2 + ((y + 0.5 - fy + 1) / 11.5) ** 2;
+      if (q > 1) continue;
+      let c: string;
+      if (q > 0.9) c = '#6f6858';
+      else if (q > 0.66) {
+        // rim stones, the far side lit
+        const seg = Math.floor(Math.atan2(y - fy + 1, x - fx) * 4) % 2;
+        c = y < fy - 3 ? (seg ? '#e4dece' : '#d6cfbc') : seg ? '#c4bdaa' : '#b7b09d';
+      } else if (q > 0.58) c = '#1d7a76';
+      else if ((x * 3 + y * 7) % 23 === 0) c = '#bff4e8';
+      else c = q < 0.2 ? '#3cc4b4' : (x + y) % 9 === 0 ? '#5ad2c2' : '#2fb3a6';
+      sp(b, x, y, c);
+    }
+  }
+  // ripples around the pillar
+  for (const r of [7, 10]) for (let a = 0; a < Math.PI * 2; a += 0.35) sp(b, Math.round(fx + Math.cos(a) * r), Math.round(fy - 1 + Math.sin(a) * r * 0.6), '#9ae8da');
+  // pillar and upper bowl
+  ell(b, fx, fy, 4, 2.4, '#7a7262');
+  rect(b, fx - 2, fy - 10, 5, 10, '#b3ac9a');
+  rect(b, fx - 2, fy - 10, 1, 10, '#e4dece');
+  rect(b, fx + 2, fy - 10, 1, 10, '#8f8776');
+  ell(b, fx, fy - 10, 6, 2.4, '#8f8776');
+  ell(b, fx, fy - 11, 6, 2, '#d6cfbc');
+  ell(b, fx, fy - 11, 4, 1.2, '#3cc4b4');
+  rect(b, fx, fy - 15, 1, 4, '#c4bdaa');
+}
+
+/** Smith's furnace beside the anvil: a squat stone kiln with a glowing mouth and a short flue. */
+export function drawFurnace(b: PixelBuffer, lights: StaticLight[]): void {
+  const x = FURNACE.x;
+  const y = FURNACE.y;
+  ell(b, x + 2, y + 7, 9, 2.5, '#000000', 0.28);
+  // stone body
+  for (let yy = y - 9; yy < y + 7; yy++) {
+    for (let xx = x - 8; xx < x + 8; xx++) {
+      const top = yy < y - 4;
+      const q = top ? ((xx + 0.5 - x) / 8) ** 2 + ((yy + 0.5 - (y - 4)) / 5) ** 2 : 0;
+      if (q > 1) continue;
+      const course = Math.floor((yy - y + 20) / 3);
+      const joint = (yy - y + 20) % 3 === 0 || (xx + course * 2 + 40) % 5 === 0;
+      sp(b, xx, yy, joint ? '#5a5048' : xx < x - 3 ? '#9a8e7e' : xx > x + 4 ? '#6e6458' : '#857a6c');
+    }
+  }
+  // glowing mouth
+  ell(b, x, y + 3, 4.5, 3.5, '#2a1208');
+  ell(b, x, y + 4, 3.5, 2.4, '#e8501e');
+  ell(b, x, y + 4.5, 2.2, 1.4, '#ffc84a');
+  sp(b, x, y + 5, '#fff2b0');
+  rect(b, x - 6, y + 6, 12, 1, '#4a4038');
+  // flue
+  rect(b, x + 2, y - 15, 4, 7, '#6e6458');
+  rect(b, x + 2, y - 15, 1, 7, '#9a8e7e');
+  rect(b, x + 1, y - 16, 6, 1, '#4a4038');
+  lights.push({ x, y: y + 3, r: 20, c: '255,140,50', ga: 0.3 });
 }
 
 export function drawAnvil(b: PixelBuffer): void {
