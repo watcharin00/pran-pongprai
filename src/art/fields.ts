@@ -36,19 +36,16 @@ export function drawPaddy(b: PixelBuffer): void {
       if (d < -1) continue;
       let c: string;
       if (d <= 1) {
-        // raised grassy bund, lit from the top-left
+        // grassy ridge, lit from the top-left
         const n = hash(px, py);
-        c = d < 0 ? (n < 0.5 ? '#5ba03b' : '#68ad43') : n < 0.25 ? '#9ad460' : n < 0.6 ? '#86c25a' : '#76b94c';
-        if (d === 1 && (v % 32 > 16 || u % 32 > 16)) c = '#4a8a2c';
-      } else if (d === 2) c = '#5a4a2c'; // the bund's earthen side dropping into the water
-      else if (d === 3) c = '#3e6a6a'; // its shadow on the water
+        c = d < 0 ? (n < 0.5 ? '#6aae42' : '#78bb4b') : n < 0.25 ? '#9ad460' : n < 0.6 ? '#86c754' : '#78bb4b';
+        if (d === 1 && (v % 32 > 16 || u % 32 > 16)) c = '#4e8a2e';
+      } else if (d === 2) c = '#6a5a38'; // muddy lip where the bund meets the water
+      else if (d === 3) c = '#5a7a62';
       else {
-        // clear paddy water reflecting the sky
         const n = vnoise(px, py, 9) * 0.8 + hash(px, py) * 0.25;
-        c = Math.sin(px * 0.45 - py * 0.9 + vnoise(px, py, 7) * 4) > 0.88 ? '#cdeef0' : pick(['#4e98a4', '#5aa6b0', '#68b2ba', '#78bec4'], n);
-        if (hash(px * 3, py * 5) < 0.02) c = '#6a7a50';
-        // last season's stubble in faint rows, so even an empty field reads as a rice paddy
-        else if (u % 5 === 2 && v % 6 === 3 && hash(u, v * 3) < 0.7) c = '#8aa868';
+        c = Math.sin(px * 0.45 - py * 0.9 + vnoise(px, py, 7) * 4) > 0.9 ? '#b8e0d4' : pick(['#5e9486', '#6aa294', '#78b0a0', '#86baa8'], n);
+        if (hash(px * 3, py * 5) < 0.02) c = '#7a6a40';
       }
       sp(b, px, py, c);
     }

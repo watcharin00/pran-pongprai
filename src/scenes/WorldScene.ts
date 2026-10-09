@@ -8,7 +8,7 @@ import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPi
 import { findMonster } from '../core/combat';
 import { harvest, isRipe, plant, plotAt, plotProgress } from '../core/farm';
 import { PlotPopup } from '../ui/plotPopup';
-import { ANVIL, BOARD, COOP, FURNACE, COOP_CENTER, FARM, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { ANVIL, BOARD, COOP, COOP_CENTER, FARM, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { areaBoss, nextBoss, npcActive, npcLine, npcNear } from '../core/npc';
 import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
 import { claimRequest, requestReady } from '../core/requests';
@@ -1093,12 +1093,6 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const hg = Math.max(1, Math.round((3 - Math.abs(ox)) * 1.3 + Math.sin(time * 13 + i * 1.7)));
       for (let k = 0; k < hg; k++) px(POT.x + ox, POT.y + 5 - k, k / hg < 0.5 ? 0xffd35c : 0xff6a2a);
     }
-    // the smith's furnace mouth breathes
-    for (let i = 0; i < 4; i++) {
-      const hg = Math.max(1, Math.round(2 + Math.sin(time * 15 + i * 2.1) * 1.4));
-      for (let k = 0; k < hg; k++) px(FURNACE.x - 2 + i, FURNACE.y + 5 - k, k / hg < 0.5 ? 0xffd35c : 0xff6a2a);
-    }
-    if (Math.floor(time * 5) % 4 === 0) px(FURNACE.x + 3 + Math.round(Math.sin(time * 2)), FURNACE.y - 18 - Math.round((time * 8) % 4), 0x9a9088, 2, 2, 0.7);
     this.drawCoopLive(px, time);
     // crops
     this.s.plots.forEach((pl, i) => {

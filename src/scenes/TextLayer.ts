@@ -62,22 +62,15 @@ export class TextLayer {
       this.labels.push(l);
     }
     this.labelsUsed++;
-    const p = m.toScreen(wx, wy);
-    let x = p.x;
-    const y = p.y;
+    const { x, y } = m.toScreen(wx, wy);
     const dpr = m.dpr;
     // Text style changes re-render the texture, so only touch them when they differ.
     if (l.text.text !== txt) l.text.setText(txt);
     if (l.text.getData('dpr') !== dpr) l.text.setFontSize(12 * dpr).setData('dpr', dpr);
     if (l.text.style.color !== color) l.text.setColor(color);
+    l.text.setPosition(x, y + dpr).setVisible(true);
     const w = l.text.width + 14 * dpr;
     const h = 19 * dpr;
-    // keep clear of the HUD's button column, like the speech bubbles
-    for (const r of this.avoid) {
-      if (y - h / 2 > r.y1 || y + h / 2 < r.y0) continue;
-      if (x + w / 2 > r.x0 - 4 * dpr && x - w / 2 < r.x1) x = r.x0 - 4 * dpr - w / 2;
-    }
-    l.text.setPosition(x, y + dpr).setVisible(true);
     l.bg.clear().fillStyle(0x141a2a, 0.8).fillRoundedRect(x - w / 2, y - h / 2, w, h, h / 2).setVisible(true);
   }
 

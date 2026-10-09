@@ -3,7 +3,7 @@
 import { hash, vnoise } from '../core/rng';
 import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
 import { signposts } from '../core/signs';
-import { drawFurnace, drawAnvil, drawBoard, drawCamp, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
+import { drawAnvil, drawBoard, drawCamp, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
 import { drawCoop, drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
@@ -23,10 +23,9 @@ interface GroundPalette {
 /** Ground colours per biome; every area stays bright (no dark/night areas). */
 const PALETTES: Record<Biome, GroundPalette> = {
   home: {
-    // a deeper, lusher green than the first prototype (owner's village reference images)
-    grass: ['#4f9234', '#5ba03b', '#68ad43', '#76b94c'],
-    dark: ['#3a752b', '#428030', '#4b8a35'],
-    sand: ['#d4ab68', '#ddb876', '#e5c383', '#ecce90'],
+    grass: ['#5c9f39', '#6aae42', '#78bb4b', '#86c754'],
+    dark: ['#3f7d2e', '#478933', '#509439'],
+    sand: ['#dcb46e', '#e4c07c', '#ebcb89', '#f1d696'],
     water: ['#1f9a92', '#25a69c', '#2db2a6'],
   },
   bamboo: {
@@ -96,7 +95,7 @@ let SAND = PALETTES.home.sand;
 let WATER = PALETTES.home.water;
 let TUFT: readonly [string, string, string, string] = ['#4e8a2e', '#356a26', '#a8dc6a', '#9ad460'];
 const CANYON = ['#d6a35e', '#dfb06c', '#e7bd7a', '#eec98a'];
-const PLAZA_STONE = ['#bdb6a2', '#c7c0ac', '#d1cab6', '#d9d2bf'];
+const PLAZA_STONE = ['#cfc7ab', '#d8d0b6', '#e1dac2'];
 let EDGE_LINE = '#3f7a2c';
 const SEA_ACCENT = ['#3fc3b2', '#6ad8c6', '#e8fff8', '#8fe6d4'] as const;
 let WATER_ACCENT: readonly [string, string, string, string] = SEA_ACCENT;
@@ -146,7 +145,6 @@ export function buildTerrain(map: WorldMap): TerrainArt {
   drawSala(mb, SALA);
   drawCoop(mb);
   drawFountain(mb);
-  drawFurnace(mb, lights);
   drawAnvil(mb);
   drawPot(mb);
   drawLamps(mb, map, lights);
@@ -293,7 +291,11 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
         }
         if (!c) {
           if (pal === null) {
-            c = flagstone(px, py);
+            // offset stone slabs
+            const X = px + ((py >> 3) % 2) * 4;
+            const gx = X % 8;
+            const gy = py % 8;
+            c = gx === 0 || gy === 0 ? '#a39a80' : gx === 1 || gy === 1 ? '#ebe5d0' : gx === 7 || gy === 7 ? '#bdb498' : pick(PLAZA_STONE, hash(X >> 3, py >> 3));
           } else c = pick(pal, n);
         }
       }
@@ -305,34 +307,6 @@ function paintGround(map: WorldMap, mb: PixelBuffer): void {
       d[i + 3] = 255;
     }
   }
-}
-
-/**
- * Plaza flagstones: rows of 9px-tall slabs of uneven width with dark mortar, each slab lit from
- * the top-left (bright top/left lip, darker bottom/right edge), a few cracks and moss in the joints.
- */
-function flagstone(px: number, py: number): string {
-  const row = Math.floor(py / 9);
-  const gy = py - row * 9;
-  // slab edges along the row: every ~11 px, jittered per slab and shifted per row
-  const shift = Math.floor(hash(row, 77) * 11);
-  const X = px + shift;
-  let cell = Math.floor(X / 11);
-  let start = cell * 11 + Math.floor(hash(cell, row) * 4) - 2;
-  if (X < start) {
-    cell--;
-    start = cell * 11 + Math.floor(hash(cell, row) * 4) - 2;
-  }
-  const end = (cell + 1) * 11 + Math.floor(hash(cell + 1, row) * 4) - 2;
-  const gx = X - start;
-  const w = end - start;
-  if (gy === 0 || gx === 0) return hash(px, py * 3) < 0.12 ? '#6f8a44' : '#776f60';
-  if (gy === 1 || gx === 1) return '#e4dece';
-  if (gy === 8 || gx === w - 1) return '#9d9584';
-  const base = pick(PLAZA_STONE, hash(cell * 3, row * 7));
-  // a hairline crack across some slabs
-  if (hash(cell, row * 5) < 0.05 && gy > 2 && gy < 7 && Math.abs(gx - 3 - gy * 0.7) < 0.5) return '#a39b89';
-  return hash(px, py) < 0.07 ? '#b2ab98' : base;
 }
 
 function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): void {
@@ -355,24 +329,6 @@ function paintDetails(map: WorldMap, mb: PixelBuffer, lights: StaticLight[]): vo
         if (t === Tile.GRASS && h2 < 0.5) {
           sp(mb, X + Math.floor(h * 15), Y + (Math.floor(h2 * 30) % 16), TUFT[2]);
           sp(mb, X + Math.floor(h2 * 15), Y + Math.floor(h * 16), TUFT[3]);
-        }
-        if (t === Tile.GRASS && map.biome === 'home') {
-          // blade strokes for texture, and leaves fallen from the forest
-          for (let i = 0; i < 3; i++) {
-            const x = X + Math.floor(hash(tx * 11 + i, ty * 5 + 1) * 15);
-            const y = Y + 1 + Math.floor(hash(tx * 5 + 2, ty * 13 + i) * 14);
-            sp(mb, x, y, '#3f7d2c');
-            sp(mb, x, y + 1, '#468a30');
-            sp(mb, x + 1, y - 1, '#86c25a');
-          }
-          if (hash(tx * 17 + 3, ty * 19 + 5) < 0.3) {
-            const x = X + 2 + Math.floor(h2 * 11);
-            const y = Y + 3 + Math.floor(hash(tx, ty * 7 + 1) * 10);
-            const lc = hash(tx + 3, ty) < 0.5 ? ['#d8843c', '#a85a26'] : ['#d8b04a', '#9a7a2a'];
-            sp(mb, x, y, lc[0] ?? '#d8843c');
-            sp(mb, x + 1, y, lc[0] ?? '#d8843c');
-            sp(mb, x + 1, y + 1, lc[1] ?? '#a85a26');
-          }
         }
         // cave: sunlight falling through holes in the roof (additive glow, never darkens the screen)
         if (t === Tile.GRASS && map.biome === 'cave' && hash(tx * 13 + 5, ty * 7 + 3) > 0.985 && map.reach[ty * MW + tx]) {

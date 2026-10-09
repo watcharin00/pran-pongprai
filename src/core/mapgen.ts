@@ -71,8 +71,6 @@ export const LAMPS: readonly (readonly [number, number])[] = [
 
 // --- Points of interest (pixel coordinates) ---
 export const ANVIL = { x: 11 * T + 7, y: 21 * T + 9 } as const;
-/** the smith's furnace, right of the anvil (decoration; its fire flickers in WorldScene) */
-export const FURNACE = { x: 13 * T + 4, y: 21 * T + 5 } as const;
 export const POT = { x: 18 * T + 7, y: 21 * T + 9 } as const;
 export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
