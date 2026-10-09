@@ -69,13 +69,13 @@ export const FARM = { x0: 18, y0: 15, x1: 21, y1: 16 } as const;
 
 // --- Points of interest (pixel coordinates) ---
 /** Anvil beside the smithy's forge. */
-export const ANVIL = { x: 28 * T + 2, y: 18 * T + 8 } as const;
+export const ANVIL = { x: 432, y: 292 } as const;
 /** Cooking spot at the inn's front door. */
-export const POT = { x: 39 * T, y: 18 * T + 10 } as const;
+export const POT = { x: 601, y: 296 } as const;
 export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
 /** The smithy's forge chimney (smoke puffs). */
-export const CHIMNEY = { x: 25 * T + 10, y: 16 * T } as const;
+export const CHIMNEY = { x: 421, y: 226 } as const;
 
 /** Village elder's house (gives hunt requests), south-west of the plaza. */
 export const ELDER_HOUSE: Rect = { x: 18, y: 20, w: 6, h: 4 };

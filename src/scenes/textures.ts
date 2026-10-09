@@ -15,6 +15,7 @@ export const TEX = {
   lotus: (stage: number) => `lotus:${stage}`,
   hen: (frame: number) => `hen:${frame}`,
   chick: (frame: number) => `chick:${frame}`,
+  village: (key: string) => `village:${key}`,
 } as const;
 
 export const PLAYER_FRAMES = 3;

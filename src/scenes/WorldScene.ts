@@ -35,6 +35,7 @@ import { basketCount, feedTrough, FEED_ITEMS, hatchEgg, petHen, canLove } from '
 import { lineText, requestText } from '../ui/talk';
 import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
+import { VillageView } from './VillageView';
 import { TEX } from './textures';
 import { buildNorthFill, buildSouthFill, buildTerrain, EDGE_FILL_ROWS } from '../art/terrain';
 import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
@@ -122,6 +123,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private signs: Signpost[] = [];
   private npcViews = new Map<NpcId, NpcView>();
   private henViews = new Map<number, HenView>();
+  private village!: VillageView;
   /** which line each villager is on (advances when the kid is tapped) */
   private talkN: Partial<Record<NpcId, number>> = {};
   private nodeImgs = new Map<number, Phaser.GameObjects.Image>();
@@ -216,6 +218,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       v.setVisible(npcActive(this.s, n.id));
       this.npcViews.set(n.id, v);
     }
+    this.village = new VillageView(this, w, D.shadow - 0.5);
     this.canopyImg = w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
     this.northCanopy = w(this.add.image(0, -EDGE_FILL, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
     this.southCanopy = w(this.add.image(0, (MH - 1) * T, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
@@ -1026,6 +1029,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     if (home) this.groundImg.setDisplaySize(MW * T, MH * T);
     else this.groundImg.setScale(1);
     this.canopyImg.setVisible(!home);
+    this.village.setVisible(home);
   }
 
   /** Darkens both strips away from the map so they read as deep forest beyond the area, not open ground. */
@@ -1318,6 +1322,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.monsterViews.delete(id);
     }
     this.updateHens(sh);
+    if (s.area === 'home') this.village.update(s.player.x, s.player.y, time, Math.min(0.05, this.game.loop.delta / 1000), this.cameras.main.worldView);
     {
       for (const n of s.npcs) {
         if (!npcActive(s, n.id)) continue;

@@ -7,10 +7,25 @@ import { buildGlow, buildHerb, buildOre, buildNpcFrames, buildHenFrames, buildCh
 import { buildLotus, buildRiceSection } from '../art/fields';
 import type { StaticLight } from '../art/buildings';
 import { TEX } from './textures';
-import homePainting from '../assets/maps/home.webp';
+import { setHomeThumb } from '../art/mapThumb';
+import { LAMP_LIGHT, VILLAGE_SPRITES, villageProps } from '../art/villageLayout';
+import { MH, MW, T } from '../core/mapgen';
 
-/** Warm glow over the smithy's forge on the painted home map. */
-const HOME_LIGHTS: StaticLight[] = [{ x: 26.6 * 16, y: 18.6 * 16, r: 20, c: '255,150,60', ga: 0.22 }];
+// the painted village: one pre-painted ground image plus a sprite per house / tree / lamp
+const villageUrls = import.meta.glob<string>('../assets/village/*.webp', { eager: true, import: 'default' });
+const villageUrl = (name: string): string => {
+  const url = villageUrls[`../assets/village/${name}.webp`];
+  if (!url) throw new Error(`missing village art ${name}`);
+  return url;
+};
+
+/** Warm glows on the painted home map: the smithy's forge and the lamp lanterns. */
+const HOME_LIGHTS: StaticLight[] = [
+  { x: 431, y: 252, r: 22, c: '255,150,60', ga: 0.26 },
+  ...villageProps()
+    .filter((p) => p.key === 'lamp')
+    .map((p) => ({ x: p.x + (p.flip ? -LAMP_LIGHT.dx : LAMP_LIGHT.dx), y: p.y + LAMP_LIGHT.dy, r: 12, c: '255,214,140', ga: 0.2 })),
+];
 
 const FONTS = ["600 16px 'Mitr'", "400 16px 'IBM Plex Sans Thai'", "700 16px 'Pixelify Sans'"];
 const FONT_TIMEOUT_MS = 2500;
@@ -22,15 +37,40 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // the home map is a painting (src/core/homeLayout.ts traces its collision); wild areas are still painted in code
-    this.load.image(TEX.ground, homePainting);
+    // the home map is painted art (src/core/homeLayout.ts is its collision); wild areas are still painted in code
+    this.load.image(TEX.ground, villageUrl('ground'));
+    for (const k of VILLAGE_SPRITES) this.load.image(TEX.village(k), villageUrl(k));
+  }
+
+  /** The home map as one small picture (ground + sprites) for the minimap and the map tab. */
+  private homeThumb(): string {
+    const c = document.createElement('canvas');
+    c.width = MW * T;
+    c.height = MH * T;
+    const g = c.getContext('2d');
+    if (!g) return '';
+    const img = (key: string): HTMLImageElement => this.textures.get(key).getSourceImage() as HTMLImageElement;
+    g.drawImage(img(TEX.ground), 0, 0, c.width, c.height);
+    for (const p of [...villageProps()].sort((a, b) => a.y - b.y)) {
+      if (p.y < 0 || p.y > c.height + 40) continue;
+      const im = img(TEX.village(p.key));
+      const h = (im.height * p.w) / im.width;
+      g.save();
+      g.translate(p.x, p.y);
+      if (p.flip) g.scale(-1, 1);
+      g.drawImage(im, -p.w / 2, -h, p.w, h);
+      g.restore();
+    }
+    return c.toDataURL('image/jpeg', 0.85);
   }
 
   create(): void {
     const map = areaMap('home');
     const t = this.textures;
     t.get(TEX.ground).setFilter(Phaser.Textures.FilterMode.LINEAR);
-    // home has no separate canopy layer: trees are part of the painting
+    for (const k of VILLAGE_SPRITES) t.get(TEX.village(k)).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    setHomeThumb(this.homeThumb());
+    // home has no separate canopy layer: tree crowns are y-sorted sprites (VillageView)
     const noCanopy = document.createElement('canvas');
     noCanopy.width = noCanopy.height = 1;
     t.addCanvas(TEX.canopy, noCanopy);

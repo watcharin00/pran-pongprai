@@ -3,8 +3,6 @@
 // stand out. 4 px per tile, cached per area.
 import type { AreaId } from '../data/types';
 import { MH, MW, Tile, tileAt, inCanyon, type Biome, type WorldMap } from '../core/mapgen';
-// home is a painting: its thumbnail is the painting itself
-import homePainting from '../assets/maps/home-thumb.webp';
 
 const PX = 4;
 
@@ -54,8 +52,15 @@ function tileColour(map: WorldMap, x: number, y: number, p: ThumbPalette): strin
 
 const cache = new Map<AreaId, string>();
 
+let homeThumb = '';
+
+/** The home map is painted art: BootScene composes its thumbnail once the images are loaded. */
+export function setHomeThumb(url: string): void {
+  homeThumb = url;
+}
+
 export function areaThumbUrl(map: WorldMap): string {
-  if (map.area === 'home') return homePainting;
+  if (map.area === 'home' && homeThumb) return homeThumb;
   let url = cache.get(map.area);
   if (url) return url;
   const c = document.createElement('canvas');

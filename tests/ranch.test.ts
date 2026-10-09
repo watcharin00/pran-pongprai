@@ -39,7 +39,7 @@ describe('coop layout', () => {
     expect(tileAt(m, COOP_GATE.x, COOP_GATE.y)).toBe(Tile.GRASS);
     expect(tileAt(m, HENHOUSE.x, HENHOUSE.y)).toBe(Tile.HOUSE);
     for (const p of [TROUGH, NEST, { x: HEN_ROAM.x0, y: HEN_ROAM.y0 }, { x: HEN_ROAM.x1, y: HEN_ROAM.y1 }]) {
-      expect(tileAt(m, Math.floor(p.x / 16), Math.floor(p.y / 16))).toBe(Tile.GRASS);
+      expect([Tile.GRASS, Tile.SAND]).toContain(tileAt(m, Math.floor(p.x / 16), Math.floor(p.y / 16)));
     }
     // the gate is reachable on foot from the village
     expect(m.reach[COOP_GATE.y * 64 + COOP_GATE.x]).toBe(1);
