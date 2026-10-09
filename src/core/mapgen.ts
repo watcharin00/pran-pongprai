@@ -56,7 +56,7 @@ const GEN_SMITH: Rect = { x: 6, y: 18, w: 5, h: 4 };
 const GEN_INN: Rect = { x: 19, y: 18, w: 5, h: 4 };
 const GEN_FARM = { x0: 6, y0: 30, x1: 9, y1: 31 } as const;
 
-// --- Painted village (tile coordinates, matching src/assets/maps/home.jpg) ---
+// --- Painted village (tile coordinates, matching src/assets/maps/home.webp) ---
 /** Village bounds for gameplay (HP regen, menus, monster leash). */
 export const VILLAGE = { x0: 13, y0: 12, x1: 45, y1: 38 } as const;
 /** Plaza / fountain centre (a tile corner); the fountain covers the 2x2 tiles up-left of it. */

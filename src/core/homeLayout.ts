@@ -1,4 +1,4 @@
-// The home map's collision grid, traced tile by tile over the painted village (src/assets/maps/home.jpg).
+// The home map's collision grid, traced tile by tile over the painted village (src/assets/maps/home.webp).
 // One character per 16px tile, 64 columns x 48 rows. Edit this together with the painting:
 //   .  grass        :  sand / dirt road   #  stone plaza      T  trees          B  bush
 //   R  rock / cliff W  river            =  bridge / stairs  H  building       F  fence

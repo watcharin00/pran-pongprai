@@ -299,7 +299,7 @@ export function updatePlayer(s: GameState, intent: Intent, dt: number): void {
   }
   if (p.moving) p.walkT += dt * 9;
   // walking into a map-edge opening leads to the next area
-  const exit = exitAt(s.map, Math.floor(p.x / T), Math.floor(p.y / T));
+  const exit = s.villageOnly ? null : exitAt(s.map, Math.floor(p.x / T), Math.floor(p.y / T));
   if (exit) changeArea(s, exit.to);
 }
 

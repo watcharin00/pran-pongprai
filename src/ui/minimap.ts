@@ -67,7 +67,7 @@ export class Minimap {
     }
     // exits: gold triangles where the map opens
     g.fillStyle = '#ffd166';
-    for (const e of s.map.exits) {
+    for (const e of s.villageOnly ? [] : s.map.exits) {
       const mid = (e.at + e.width / 2) * T;
       const ex = e.edge === 'n' || e.edge === 's' ? mid : e.edge === 'w' ? T : MW * T - T;
       const ey = e.edge === 'e' || e.edge === 'w' ? mid : e.edge === 'n' ? T : MH * T - T;

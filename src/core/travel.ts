@@ -52,7 +52,7 @@ export function fastTravelCamp(s: GameState, to: AreaId): TravelResult {
   if (s.player.dead) return { ok: false, reason: 'dead' };
   if (inFight(s)) return { ok: false, reason: 'inFight' };
   const camp = areaMap(to).camp;
-  if (!camp || !s.visited.has(to)) return { ok: false, reason: 'noCamp' };
+  if (!camp || !s.visited.has(to) || s.villageOnly) return { ok: false, reason: 'noCamp' };
   if (s.area === to) {
     Object.assign(s.player, { x: camp.rest.x, y: camp.rest.y, path: [], lockId: null });
     return { ok: true };

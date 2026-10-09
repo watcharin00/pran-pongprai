@@ -7,7 +7,7 @@ import { buildGlow, buildHerb, buildOre, buildNpcFrames, buildHenFrames, buildCh
 import { buildLotus, buildRiceSection } from '../art/fields';
 import type { StaticLight } from '../art/buildings';
 import { TEX } from './textures';
-import homePainting from '../assets/maps/home.jpg';
+import homePainting from '../assets/maps/home.webp';
 
 /** Warm glow over the smithy's forge on the painted home map. */
 const HOME_LIGHTS: StaticLight[] = [{ x: 26.6 * 16, y: 18.6 * 16, r: 20, c: '255,150,60', ga: 0.22 }];

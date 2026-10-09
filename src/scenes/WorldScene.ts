@@ -180,7 +180,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
   create(data: SceneData): void {
     const save = loadFromStorage(readKey, TUNING.save.key, TUNING.save.legacyKey);
-    this.s = createGame({ rngSeed: (Date.now() ^ 0x5f3759df) >>> 0 || 1, now: Date.now(), save, map: data.map });
+    this.s = createGame({ rngSeed: (Date.now() ^ 0x5f3759df) >>> 0 || 1, now: Date.now(), save, map: data.map, villageOnly: TUNING.world.villageOnly });
     // dev only: lets browser smoke tests drive the live game (stripped from production builds)
     if (import.meta.env.DEV) {
       const w = window as unknown as { __pranGame?: GameState; __pranToClient?: (x: number, y: number) => { x: number; y: number } };
@@ -203,7 +203,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.northGround = w(this.add.image(0, -EDGE_FILL, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
     this.southGround = w(this.add.image(0, (MH - 1) * T, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
     this.areaLights.set('home', data.lights);
-    this.signs = signposts(this.s.map);
+    this.signs = this.s.villageOnly ? [] : signposts(this.s.map);
     this.gGround = w(this.add.graphics().setDepth(D.groundFx));
     this.makeNodeImages();
     this.gNodeFx = w(this.add.graphics().setDepth(D.nodeFx));

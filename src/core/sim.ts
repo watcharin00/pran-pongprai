@@ -26,6 +26,8 @@ export interface CreateOptions {
   map?: WorldMap;
   /** skip initial monster spawns (tests) */
   noMonsters?: boolean;
+  /** village only: no monsters and no travel to other areas */
+  villageOnly?: boolean;
 }
 
 export function createPlayer(): PlayerState {
@@ -74,6 +76,7 @@ export function createGame(o: CreateOptions): GameState {
     requests: createRequests(),
     medals: {},
     ranch: createRanch(),
+    villageOnly: !!o.villageOnly,
   };
   trackRequests(s);
   trackMedals(s);
@@ -89,7 +92,7 @@ export function createGame(o: CreateOptions): GameState {
     seed(1, 'herb', 41000, 40000);
     seed(5, 'herb', 15000, 40000);
   }
-  if (!o.noMonsters) populateArea(s);
+  if (!o.noMonsters && !o.villageOnly) populateArea(s);
   return s;
 }
 

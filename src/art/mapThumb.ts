@@ -4,7 +4,7 @@
 import type { AreaId } from '../data/types';
 import { MH, MW, Tile, tileAt, inCanyon, type Biome, type WorldMap } from '../core/mapgen';
 // home is a painting: its thumbnail is the painting itself
-import homePainting from '../assets/maps/home.jpg';
+import homePainting from '../assets/maps/home-thumb.webp';
 
 const PX = 4;
 

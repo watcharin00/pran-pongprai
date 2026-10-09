@@ -331,4 +331,6 @@ export interface GameState {
   /** bestiary medals earned per monster kind */
   medals: Partial<Record<MonsterId, MedalId[]>>;
   ranch: RanchState;
+  /** village-only build (see tuning world.villageOnly): no monsters, no travel to other areas */
+  villageOnly: boolean;
 }

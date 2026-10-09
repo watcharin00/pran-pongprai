@@ -525,7 +525,8 @@ export interface Tuning {
     swiftHuntLeft: number;
   };
   save: { key: string; legacyKey: string; intervalSeconds: number };
-  world: { seed: number; tile: number; width: number; height: number };
+  /** villageOnly: the village is being reworked on its own (painted style): no monsters, the exits lead nowhere */
+  world: { seed: number; tile: number; width: number; height: number; villageOnly: boolean };
 }
 
 /** What an NPC does when the player talks to them. */
