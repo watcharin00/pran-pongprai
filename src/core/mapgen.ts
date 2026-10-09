@@ -46,165 +46,101 @@ export interface Rect {
   h: number;
 }
 
-// --- Village layout (tile coordinates) ---
-/**
- * Village bounds the prototype generator uses (tree density, cleared ground). Never change these:
- * generateMap() must stay identical to reference/prototype.html.
- */
+// --- Prototype generator layout (tile coordinates) ---
+// generateMap() must stay identical to reference/prototype.html, so it keeps the prototype's own
+// village. The home area the game plays on is the painted map instead (homeLayout.ts, areas.ts).
 const GEN_VILLAGE = { x0: 4, y0: 15, x1: 25, y1: 35 } as const;
 const inGenVillage = (x: number, y: number): boolean => x >= GEN_VILLAGE.x0 && x <= GEN_VILLAGE.x1 && y >= GEN_VILLAGE.y0 && y <= GEN_VILLAGE.y1;
-/** Village bounds for gameplay (HP regen, menus, monster leash): the prototype village plus the south quarter. */
-export const VILLAGE = { x0: 4, y0: 15, x1: 31, y1: 41 } as const;
-/** Plaza / fountain centre (a tile corner). */
-export const PLAZA = { x: 15, y: 27 } as const;
-export const SMITH: Rect = { x: 6, y: 18, w: 5, h: 4 };
-export const INN: Rect = { x: 19, y: 18, w: 5, h: 4 };
-export const FARM = { x0: 6, y0: 30, x1: 9, y1: 31 } as const;
-/** Lamp posts around the plaza (tile coordinates). */
-export const LAMPS: readonly (readonly [number, number])[] = [
-  [PLAZA.x - 6, PLAZA.y - 3],
-  [PLAZA.x + 5, PLAZA.y - 3],
-  [PLAZA.x - 6, PLAZA.y + 3],
-  // the prototype had this one a row lower; the chicken coop's fence runs there now
-  [PLAZA.x + 5, PLAZA.y + 2],
-];
+const GEN_PLAZA = { x: 15, y: 27 } as const;
+const GEN_SMITH: Rect = { x: 6, y: 18, w: 5, h: 4 };
+const GEN_INN: Rect = { x: 19, y: 18, w: 5, h: 4 };
+const GEN_FARM = { x0: 6, y0: 30, x1: 9, y1: 31 } as const;
+
+// --- Painted village (tile coordinates, matching src/assets/maps/home.jpg) ---
+/** Village bounds for gameplay (HP regen, menus, monster leash). */
+export const VILLAGE = { x0: 13, y0: 12, x1: 45, y1: 38 } as const;
+/** Plaza / fountain centre (a tile corner); the fountain covers the 2x2 tiles up-left of it. */
+export const PLAZA = { x: 32, y: 24 } as const;
+/** Smithy (north-west house, forge on its south wall) and the inn / kitchen (north-east house). */
+export const SMITH: Rect = { x: 23, y: 13, w: 5, h: 5 };
+export const INN: Rect = { x: 36, y: 13, w: 5, h: 5 };
+/** Fenced vegetable plot west of the smithy: 4x2 soil tiles, one plot each. */
+export const FARM = { x0: 18, y0: 15, x1: 21, y1: 16 } as const;
 
 // --- Points of interest (pixel coordinates) ---
-export const ANVIL = { x: 11 * T + 7, y: 21 * T + 9 } as const;
-export const POT = { x: 18 * T + 7, y: 21 * T + 9 } as const;
+/** Anvil beside the smithy's forge. */
+export const ANVIL = { x: 28 * T + 2, y: 18 * T + 8 } as const;
+/** Cooking spot at the inn's front door. */
+export const POT = { x: 39 * T, y: 18 * T + 10 } as const;
 export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
-export const CHIMNEY = { x: SMITH.x * T + SMITH.w * T - 13, y: SMITH.y * T - 12 } as const;
+/** The smithy's forge chimney (smoke puffs). */
+export const CHIMNEY = { x: 25 * T + 10, y: 16 * T } as const;
 
-// --- South quarter: the village expansion, stamped onto the home map in areas.ts ---
-export const QUARTER = { x0: 4, y0: 36, x1: 25, y1: 41 } as const;
-/** Village elder's house (gives hunt requests); the request board stands by its door. */
-export const ELDER_HOUSE: Rect = { x: 5, y: 36, w: 6, h: 4 };
+/** Village elder's house (gives hunt requests), south-west of the plaza. */
+export const ELDER_HOUSE: Rect = { x: 18, y: 20, w: 6, h: 4 };
+/** Two thatched huts at the south end of the village. */
 export const HUTS: readonly Rect[] = [
-  { x: 17, y: 36, w: 4, h: 3 },
-  { x: 22, y: 36, w: 4, h: 3 },
+  { x: 15, y: 34, w: 5, h: 4 },
+  { x: 21, y: 34, w: 5, h: 4 },
 ];
-/** Rice granary on stilts. */
-export const GRANARY: Rect = { x: 19, y: 40, w: 3, h: 2 };
-/** Hunt request board (one tile). */
-export const BOARD = { x: 12, y: 39 } as const;
-/** Fence row closing the quarter to the south; the road keeps its gap. */
-export const QUARTER_FENCE_Y = 42;
-export const QUARTER_LAMPS: readonly (readonly [number, number])[] = [
-  [13, 37],
-  [16, 37],
-];
-const QUARTER_FLOWERS: readonly (readonly [number, number])[] = [[5, 41], [9, 41], [11, 41], [17, 41], [23, 40], [24, 41]];
+/** Granary: the little house on the cliff ledge west of the village. */
+export const GRANARY: Rect = { x: 8, y: 18, w: 4, h: 4 };
+/** Hunt request board: the lamp post by the elder's house (one tile). */
+export const BOARD = { x: 26, y: 20 } as const;
 
-// --- East fields: rice paddy and fish pond between the village and the river ---
-/** Ground cleared around the paddy, its bunds and the field hut. */
-export const PADDY_AREA = { x0: 25, y0: 14, x1: 33, y1: 19 } as const;
+// --- Fields: rice paddy east of the south road, fish pond south of the plaza ---
 /** The flooded field: 6x4 tiles, split by bunds into six 2x2 sections (กระทง), one plot each. */
-export const PADDY = { x0: 26, y0: 15, x1: 31, y1: 18 } as const;
+export const PADDY = { x0: 36, y0: 28, x1: 41, y1: 31 } as const;
 export const PADDY_SECTIONS: readonly Rect[] = [0, 1].flatMap((r) => [0, 1, 2].map((c) => ({ x: PADDY.x0 + c * 2, y: PADDY.y0 + r * 2, w: 2, h: 2 })));
-/** Scarecrow on the west bund (painted, not solid). */
-export const SCARECROW = { x: 25, y: 16 } as const;
 /** Field hut on stilts (ห้างนา) at the paddy's east edge. */
-export const FIELD_HUT: Rect = { x: 32, y: 15, w: 2, h: 2 };
+export const FIELD_HUT: Rect = { x: 42, y: 28, w: 2, h: 3 };
 
-/** Cleared bank around the pond. */
-export const POND_AREA = { x0: 24, y0: 28, x1: 30, y1: 34 } as const;
-/** Open ground south of the sala so tree canopies do not hide it. */
-export const SALA_AREA = { x0: 26, y0: 35, x1: 31, y1: 37 } as const;
-/** The pond is a soft-edged ellipse (px); tiles whose centre is in the water are solid. */
-export const POND_SHAPE = { cx: 27.4 * T, cy: 31 * T, rx: 2.75 * T, ry: 2.25 * T } as const;
+/** Tiles around the pond, bank included. */
+export const POND_AREA = { x0: 23, y0: 26, x1: 30, y1: 32 } as const;
+/** The pond as an ellipse (px), drawn inside the painted water. */
+export const POND_SHAPE = { cx: 27 * T, cy: 29.2 * T, rx: 2.9 * T, ry: 2.3 * T } as const;
 /** Small open pavilion (ศาลา) on the pond's south-east bank. */
-export const SALA: Rect = { x: 29, y: 33, w: 2, h: 2 };
-/** Wooden jetty (ท่าน้ำ) from the sala's side out over the water: walkable. */
+export const SALA: Rect = { x: 27, y: 31, w: 3, h: 2 };
+/** Wooden jetty (ท่าน้ำ) out over the water from the sala: walkable. */
 export const JETTY: readonly (readonly [number, number])[] = [
-  [29, 32],
-  [28, 32],
+  [27, 30],
+  [28, 30],
 ];
 
-/**
- * 0 at the pond centre, 1 at the waterline, >1 on the bank. The outline wobbles a little
- * (deterministic noise) so the pond never reads as a perfect oval.
- */
+/** 0 at the pond centre, 1 at the waterline, >1 on the bank. */
 export function pondDepth(px: number, py: number): number {
-  const dx = (px - POND_SHAPE.cx) / POND_SHAPE.rx;
-  const dy = (py - POND_SHAPE.cy) / POND_SHAPE.ry;
-  const a = Math.atan2(dy, dx);
-  const wobble = 1 + Math.sin(a * 3 + 0.7) * 0.06 + Math.sin(a * 5 + 2.1) * 0.035;
-  return Math.hypot(dx, dy) / wobble;
+  return Math.hypot((px - POND_SHAPE.cx) / POND_SHAPE.rx, (py - POND_SHAPE.cy) / POND_SHAPE.ry);
 }
 
-/** Where lotus / fish go: inside the water near the rim or the jetty, so they can be reached from dry ground. */
+/** Where lotus / fish go: in the water near the bank or the jetty, so they can be reached from dry ground. */
 export const POND_SLOTS: readonly { x: number; y: number }[] = [
-  { x: POND_SHAPE.cx - 6, y: POND_SHAPE.cy - POND_SHAPE.ry * 0.62 },
-  { x: POND_SHAPE.cx - POND_SHAPE.rx * 0.66, y: POND_SHAPE.cy - 2 },
-  { x: POND_SHAPE.cx - 12, y: POND_SHAPE.cy + POND_SHAPE.ry * 0.62 },
-  { x: POND_SHAPE.cx + POND_SHAPE.rx * 0.5, y: POND_SHAPE.cy - 6 },
+  { x: 25.3 * T, y: 27.6 * T },
+  { x: 29.3 * T, y: 28.2 * T },
+  { x: 26.3 * T, y: 31.2 * T },
+  { x: 27.6 * T, y: 29.6 * T },
 ];
 
 export const PADDY_CENTER = { x: ((PADDY.x0 + PADDY.x1 + 1) * T) / 2, y: ((PADDY.y0 + PADDY.y1 + 1) * T) / 2 } as const;
 export const POND_CENTER = { x: POND_SHAPE.cx, y: POND_SHAPE.cy } as const;
 
-// --- Chicken coop (east of the vegetable plot, between the plaza and the pond) ---
+// --- Chicken coop (west of the pond) ---
 /** fenced pen, fence included */
-export const COOP: Rect = { x: 18, y: 30, w: 6, h: 5 };
+export const COOP: Rect = { x: 16, y: 28, w: 7, h: 5 };
 /** henhouse on stilts in the pen's north-east corner (HOUSE tiles) */
-export const HENHOUSE: Rect = { x: 22, y: 30, w: 2, h: 2 };
-/** gap in the south fence the player walks in through */
-export const COOP_GATE = { x: 20, y: 34 } as const;
+export const HENHOUSE: Rect = { x: 21, y: 28, w: 2, h: 2 };
+/** gap in the south fence the player walks in through (this tile and the one east of it) */
+export const COOP_GATE = { x: 18, y: 32 } as const;
 /** feed trough by the west fence (px) */
-export const TROUGH = { x: 19 * T + 10, y: 33 * T + 8 } as const;
+export const TROUGH = { x: 17 * T + 10, y: 31 * T + 8 } as const;
 /** nest basket in front of the henhouse door: eggs and hatching go here (px) */
-export const NEST = { x: 22 * T + 8, y: 32 * T + 10 } as const;
+export const NEST = { x: 21 * T + 8, y: 30 * T + 8 } as const;
 /** where hens stroll (px), clear of the henhouse and the nest */
-export const HEN_ROAM = { x0: 19 * T + 4, y0: 31 * T + 8, x1: 22 * T - 3, y1: 34 * T - 5 } as const;
+export const HEN_ROAM = { x0: 17 * T + 4, y0: 29 * T + 8, x1: 21 * T - 3, y1: 32 * T - 5 } as const;
 export const COOP_CENTER = { x: (COOP.x + COOP.w / 2) * T, y: (COOP.y + COOP.h / 2) * T } as const;
 
-/** Stamps the chicken coop onto a home-map tile array (after generation). */
-export function stampCoop(tiles: Uint8Array): void {
-  const set = (x: number, y: number, t: number): void => {
-    tiles[y * MW + x] = t;
-  };
-  for (let y = COOP.y; y < COOP.y + COOP.h; y++) {
-    for (let x = COOP.x; x < COOP.x + COOP.w; x++) {
-      const edge = x === COOP.x || x === COOP.x + COOP.w - 1 || y === COOP.y || y === COOP.y + COOP.h - 1;
-      set(x, y, edge && !(x === COOP_GATE.x && y === COOP_GATE.y) ? Tile.FENCE : Tile.GRASS);
-    }
-  }
-  for (let y = HENHOUSE.y; y < HENHOUSE.y + HENHOUSE.h; y++) for (let x = HENHOUSE.x; x < HENHOUSE.x + HENHOUSE.w; x++) set(x, y, Tile.HOUSE);
-}
-
-/** Stamps the paddy and the pond onto a home-map tile array (after generation). */
-export function stampEastFields(tiles: Uint8Array): void {
-  const set = (x: number, y: number, t: number): void => {
-    tiles[y * MW + x] = t;
-  };
-  const isWater = (x: number, y: number): boolean => tiles[y * MW + x] === Tile.WATER || tiles[y * MW + x] === Tile.BRIDGE;
-  for (const A of [PADDY_AREA, POND_AREA, SALA_AREA]) {
-    for (let y: number = A.y0; y <= A.y1; y++) for (let x: number = A.x0; x <= A.x1; x++) if (!isWater(x, y) && tiles[y * MW + x] !== Tile.SAND) set(x, y, Tile.GRASS);
-  }
-  for (let y: number = PADDY.y0; y <= PADDY.y1; y++) for (let x: number = PADDY.x0; x <= PADDY.x1; x++) set(x, y, Tile.PADDY);
-  for (let y: number = POND_AREA.y0; y <= POND_AREA.y1; y++) {
-    for (let x: number = POND_AREA.x0; x <= POND_AREA.x1; x++) if (pondDepth(x * T + 8, y * T + 8) < 1) set(x, y, Tile.POND);
-  }
-  for (const [x, y] of JETTY) set(x, y, Tile.BRIDGE);
-  for (const H of [SALA, FIELD_HUT]) for (let y = H.y; y < H.y + H.h; y++) for (let x = H.x; x < H.x + H.w; x++) set(x, y, Tile.HOUSE);
-}
-
-/** Stamps the south quarter onto a home-map tile array (after generation, so the prototype parity holds). */
-export function stampVillageQuarter(tiles: Uint8Array): void {
-  const set = (x: number, y: number, t: number): void => {
-    tiles[y * MW + x] = t;
-  };
-  for (let y: number = QUARTER.y0; y <= QUARTER.y1; y++) {
-    for (let x: number = QUARTER.x0; x <= QUARTER.x1; x++) set(x, y, x === 14 || x === 15 ? Tile.SAND : Tile.GRASS);
-  }
-  for (const H of [ELDER_HOUSE, ...HUTS, GRANARY]) for (let y = H.y; y < H.y + H.h; y++) for (let x = H.x; x < H.x + H.w; x++) set(x, y, Tile.HOUSE);
-  set(BOARD.x, BOARD.y, Tile.HOUSE);
-  // a short sand path from the elder's door to the road
-  for (let x = ELDER_HOUSE.x + 2; x <= 13; x++) set(x, ELDER_HOUSE.y + ELDER_HOUSE.h, Tile.SAND);
-  for (const [x, y] of QUARTER_FLOWERS) set(x, y, Tile.FLOWER);
-  for (let x: number = QUARTER.x0; x <= QUARTER.x1; x++) if (x < 13 || x > 16) set(x, QUARTER_FENCE_Y, Tile.FENCE);
-}
+/** Red canyon on the home map: the sandy river flats south-east of the village (gaur, canyon ore). */
+export const HOME_CANYON = { x0: 44, y0: 33, x1: 63, y1: 47 } as const;
 
 export type Edge = 'n' | 's' | 'e' | 'w';
 /** Ground palette / decoration set used by the terrain painter. */
@@ -238,6 +174,8 @@ export interface WorldMap {
   readonly canyonCells: readonly (readonly [number, number])[];
   /** hunter camp in a wild area (safe ground, campfire, tent) */
   readonly camp?: Camp;
+  /** the painted home map's canyon (tiles); without it the prototype rule applies (sand east of the river) */
+  readonly canyon?: { x0: number; y0: number; x1: number; y1: number };
 }
 
 export interface Camp {
@@ -287,6 +225,8 @@ export function walkablePx(map: WorldMap, px: number, py: number): boolean {
 
 export function inCanyon(map: WorldMap, x: number, y: number): boolean {
   if (map.area !== 'home') return false;
+  const c = map.canyon;
+  if (c) return x >= c.x0 && x <= c.x1 && y >= c.y0 && y <= c.y1;
   const rx = map.riverX[y];
   return y >= 20 && rx !== undefined && x > rx + 1;
 }
@@ -347,10 +287,10 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
   for (let y = 21; y < MH - 3; y++) for (let x = rx(y) + 3; x < MW - 3; x++) if (get(x, y) === Tile.SAND && rnd() < 0.065) set(x, y, Tile.ROCK);
   // village ground + oval stone plaza
   for (let y = GEN_VILLAGE.y0; y <= GEN_VILLAGE.y1; y++) for (let x = GEN_VILLAGE.x0; x <= GEN_VILLAGE.x1; x++) set(x, y, Tile.GRASS);
-  for (let y = PLAZA.y - 4; y <= PLAZA.y + 4; y++) {
-    for (let x = PLAZA.x - 6; x <= PLAZA.x + 6; x++) {
-      const dx = (x + 0.5 - PLAZA.x) / 5.4;
-      const dy = (y + 0.5 - PLAZA.y) / 3.9;
+  for (let y = GEN_PLAZA.y - 4; y <= GEN_PLAZA.y + 4; y++) {
+    for (let x = GEN_PLAZA.x - 6; x <= GEN_PLAZA.x + 6; x++) {
+      const dx = (x + 0.5 - GEN_PLAZA.x) / 5.4;
+      const dy = (y + 0.5 - GEN_PLAZA.y) / 3.9;
       if (dx * dx + dy * dy <= 1) set(x, y, Tile.STONE);
     }
   }
@@ -363,17 +303,17 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
   }
   for (let y = 31; y < MH - 3; y++) for (let x = 14; x <= 15; x++) if (get(x, y) !== Tile.STONE) set(x, y, Tile.SAND);
   // buildings and fountain
-  for (const H of [SMITH, INN]) for (let y = H.y; y < H.y + H.h; y++) for (let x = H.x; x < H.x + H.w; x++) set(x, y, Tile.HOUSE);
-  for (let y = PLAZA.y - 1; y <= PLAZA.y; y++) for (let x = PLAZA.x - 1; x <= PLAZA.x; x++) set(x, y, Tile.FOUNTAIN);
+  for (const H of [GEN_SMITH, GEN_INN]) for (let y = H.y; y < H.y + H.h; y++) for (let x = H.x; x < H.x + H.w; x++) set(x, y, Tile.HOUSE);
+  for (let y = GEN_PLAZA.y - 1; y <= GEN_PLAZA.y; y++) for (let x = GEN_PLAZA.x - 1; x <= GEN_PLAZA.x; x++) set(x, y, Tile.FOUNTAIN);
   // fenced farm with a gap on the east side
-  for (let y = FARM.y0 - 1; y <= FARM.y1 + 1; y++) {
-    for (let x = FARM.x0 - 1; x <= FARM.x1 + 1; x++) {
-      const edge = y === FARM.y0 - 1 || y === FARM.y1 + 1 || x === FARM.x0 - 1 || x === FARM.x1 + 1;
-      if (edge && !(x === FARM.x1 + 1 && y >= FARM.y0 && y <= FARM.y1)) set(x, y, Tile.FENCE);
+  for (let y = GEN_FARM.y0 - 1; y <= GEN_FARM.y1 + 1; y++) {
+    for (let x = GEN_FARM.x0 - 1; x <= GEN_FARM.x1 + 1; x++) {
+      const edge = y === GEN_FARM.y0 - 1 || y === GEN_FARM.y1 + 1 || x === GEN_FARM.x0 - 1 || x === GEN_FARM.x1 + 1;
+      if (edge && !(x === GEN_FARM.x1 + 1 && y >= GEN_FARM.y0 && y <= GEN_FARM.y1)) set(x, y, Tile.FENCE);
       else if (!edge) set(x, y, Tile.SOIL);
     }
   }
-  for (let x = FARM.x1 + 1; x <= 12; x++) for (let y = FARM.y0; y <= FARM.y1; y++) if (get(x, y) !== Tile.STONE) set(x, y, Tile.SAND);
+  for (let x = GEN_FARM.x1 + 1; x <= 12; x++) for (let y = GEN_FARM.y0; y <= GEN_FARM.y1; y++) if (get(x, y) !== Tile.STONE) set(x, y, Tile.SAND);
   // village decor
   for (const [x, y] of [[5, 22], [25, 22], [11, 18], [18, 18], [9, 25], [21, 25], [21, 29], [5, 26], [24, 32]] as const) set(x, y, Tile.BUSH);
   for (const [x, y] of [[12, 19], [12, 20], [17, 19], [17, 20], [11, 25], [19, 25], [6, 25], [7, 26], [22, 31], [23, 30], [18, 33], [11, 33]] as const) {
@@ -382,7 +322,7 @@ export function generateMap(seed: number = TUNING.world.seed): WorldMap {
   for (const [x, y] of [[5, 34], [24, 34], [24, 16], [5, 16]] as const) set(x, y, Tile.TREE);
 
   const partial: Omit<WorldMap, 'reach' | 'forestCells' | 'canyonCells'> = { area: 'home', zone: 'forest', biome: 'home', exits: [], tiles, riverX: RX, bridgeEast: BE, bridgeNorth: BN };
-  const reach = floodReach(partial as WorldMap, PLAZA.x, 29);
+  const reach = floodReach(partial as WorldMap, GEN_PLAZA.x, 29);
   const map: WorldMap = { ...partial, reach, forestCells: [], canyonCells: [] };
 
   const forestCells: [number, number][] = [];

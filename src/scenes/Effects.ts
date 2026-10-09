@@ -2,7 +2,7 @@
 // Uses Math.random freely: nothing here affects the simulation.
 import Phaser from 'phaser';
 import type { Vec2 } from '../core/events';
-import { CHIMNEY, PLAZA, POT, T } from '../core/mapgen';
+import { CHIMNEY, PLAZA, T } from '../core/mapgen';
 
 export type ParticleKind = 'spark' | 'dust' | 'chunk' | 'glow' | 'fly' | 'leaf' | 'ember' | 'smoke';
 
@@ -121,9 +121,6 @@ export class Effects {
     const fy = PLAZA.y * T;
     if (Math.hypot(fx - player.x, fy - player.y) < 220 && Math.random() < dt * 14) {
       this.push({ x: fx + rr(-3, 3), y: fy - 11, vx: rr(-8, 8), vy: rr(-20, -10), t: 0.5, max: 0.5, col: 0xd8fff4, kind: 'chunk', grav: 60 });
-    }
-    if (Math.hypot(POT.x - player.x, POT.y - player.y) < 260 && Math.random() < dt * 1.5) {
-      this.push({ x: POT.x + rr(-2, 2), y: POT.y - 5, vx: rr(-2, 3), vy: rr(-12, -6), t: 1.8, max: 1.8, col: 0xf4f4f8, kind: 'smoke' });
     }
     if (Math.hypot(CHIMNEY.x - player.x, CHIMNEY.y - player.y) < 260 && Math.random() < dt * 1.6) {
       this.push({ x: CHIMNEY.x + rr(-1, 1), y: CHIMNEY.y, vx: rr(3, 8), vy: rr(-14, -8), t: 2.2, max: 2.2, col: 0xd8d8de, kind: 'smoke' });

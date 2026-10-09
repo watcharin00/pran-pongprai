@@ -7,8 +7,6 @@ import { MH, MW, T } from '../core/mapgen';
 import type { GameState } from '../core/state';
 import { areaThumbUrl } from '../art/mapThumb';
 
-/** Thumbnail pixels per tile (see art/mapThumb.ts). */
-const THUMB_PX = 4;
 /** Tiles visible from the centre to the rim. */
 const RADIUS_TILES = 14;
 
@@ -59,10 +57,11 @@ export class Minimap {
     g.fillRect(0, 0, px, px);
     const img = this.ensureThumb(s);
     if (img) {
-      // the thumbnail is THUMB_PX per tile; take the square around the player
-      const sx = (p.x / T - RADIUS_TILES) * THUMB_PX;
-      const sy = (p.y / T - RADIUS_TILES) * THUMB_PX;
-      const sw = RADIUS_TILES * 2 * THUMB_PX;
+      // take the square around the player (the home thumbnail is the full painting, others 4px per tile)
+      const tp = img.naturalWidth / MW;
+      const sx = (p.x / T - RADIUS_TILES) * tp;
+      const sy = (p.y / T - RADIUS_TILES) * tp;
+      const sw = RADIUS_TILES * 2 * tp;
       g.imageSmoothingEnabled = true;
       g.drawImage(img, sx, sy, sw, sw, 0, 0, px, px);
     }

@@ -11,7 +11,7 @@ export interface Signpost {
 }
 
 /** Crossroads post in the village, at the north-east corner of the plaza where the east road starts. */
-export const VILLAGE_SIGN = { tx: 20, ty: 25 } as const;
+export const VILLAGE_SIGN = { tx: 37, ty: 21 } as const;
 
 /** How close (px) the player must be before a sign's destination label shows. */
 export const SIGN_READ_RADIUS = 96;

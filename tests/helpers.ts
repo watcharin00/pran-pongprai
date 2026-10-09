@@ -1,4 +1,4 @@
-import { generateMap, T } from '../src/core/mapgen';
+import { generateMap, T, VILLAGE } from '../src/core/mapgen';
 import { createMonster } from '../src/core/monsterAI';
 import { createGame, step } from '../src/core/sim';
 import { emptyIntent, type GameState, type Intent, type MonsterState } from '../src/core/state';
@@ -11,16 +11,21 @@ export function game(): GameState {
   return createGame({ rngSeed: 42, now: NOW, map: MAP, noMonsters: true });
 }
 
-/** An open forest tile far from the village, where nothing blocks movement. */
+/** An open tile well clear of the village, where nothing blocks movement (forest first, then any open ground). */
 export function openSpot(s: GameState): { x: number; y: number } {
-  for (const [tx, ty] of s.map.forestCells) {
-    let open = true;
-    for (let dy = -3; dy <= 3 && open; dy++) for (let dx = -4; dx <= 4 && open; dx++) {
-      const t = s.map.tiles[(ty + dy) * 64 + tx + dx];
-      if (t !== 0 && t !== 12) open = false;
+  const OPEN = new Set([0, 5, 12]); // grass, sand, flowers
+  const clear = (tx: number, ty: number): boolean => {
+    if (tx >= VILLAGE.x0 - 4 && tx <= VILLAGE.x1 + 4 && ty >= VILLAGE.y0 - 4 && ty <= VILLAGE.y1 + 4) return false;
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
+      const x = tx + dx;
+      const y = ty + dy;
+      if (x < 0 || y < 0 || x >= 64 || y >= 48 || !OPEN.has(s.map.tiles[y * 64 + x] ?? 1)) return false;
     }
-    if (open) return { x: tx * T + 8, y: ty * T + 8 };
-  }
+    return true;
+  };
+  const all: [number, number][] = [];
+  for (let y = 0; y < 48; y++) for (let x = 0; x < 64; x++) all.push([x, y]);
+  for (const [tx, ty] of [...s.map.forestCells, ...all]) if (clear(tx, ty)) return { x: tx * T + 8, y: ty * T + 8 };
   throw new Error('no open spot');
 }
 

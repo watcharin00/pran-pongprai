@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateMap, MH, MW, PLAZA, SPAWN, T, Tile, tileAt, walkable, zoneAtPx } from '../src/core/mapgen';
+import { generateMap, inVillageTile, MH, MW, SPAWN, T, Tile, tileAt, walkable, zoneAtPx } from '../src/core/mapgen';
 import { findPath } from '../src/core/pathfinding';
 import html from '../reference/prototype.html?raw';
 
@@ -44,15 +44,18 @@ describe('mapgen', () => {
 
   it('classifies zones', () => {
     expect(zoneAtPx(map, SPAWN.x, SPAWN.y)).toBe('village');
-    const [cx, cy] = map.canyonCells[0] ?? [0, 0];
+    // the gameplay village is the painted one now: pick cells outside it
+    const [cx, cy] = map.canyonCells.find(([x, y]) => !inVillageTile(x, y)) ?? [0, 0];
     expect(zoneAtPx(map, cx * T + 8, cy * T + 8)).toBe('canyon');
-    const [fx, fy] = map.forestCells[0] ?? [0, 0];
+    const [fx, fy] = map.forestCells.find(([x, y]) => !inVillageTile(x, y)) ?? [0, 0];
     expect(zoneAtPx(map, fx * T + 8, fy * T + 8)).toBe('forest');
   });
 });
 
 describe('pathfinding', () => {
   const map = generateMap();
+  // the prototype plaza
+  const PLAZA = { x: 15, y: 27 };
   const from: [number, number] = [PLAZA.x, PLAZA.y + 2];
 
   it('reaches every zone from the village', () => {

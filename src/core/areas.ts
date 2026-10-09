@@ -1,9 +1,10 @@
 // The world is a set of areas (all MW×MH tiles) joined by exits at the map edges.
-// The home area is the prototype map plus carved exits; every other area is
-// generated from its own seed. Pure and deterministic: no Math.random.
+// The home area is the painted village (collision traced in homeLayout.ts); every other
+// area is generated from its own seed. Pure and deterministic: no Math.random.
 import type { AreaId, ZoneId } from '../data/types';
 import { TUNING } from '../data';
-import { floodReach, generateMap, inVillageTile, MH, MW, PLAZA, stampEastFields, stampCoop, stampVillageQuarter, T, Tile, VILLAGE, walkable, type AreaExit, type Biome, type Camp, type Edge, type WorldMap } from './mapgen';
+import { floodReach, HOME_CANYON, inCanyon, inVillageTile, MH, MW, PLAZA, T, Tile, VILLAGE, type AreaExit, type Biome, type Camp, type Edge, type WorldMap } from './mapgen';
+import { HOME_ROWS } from './homeLayout';
 import { parkMiller, vnoise } from './rng';
 import { exitSignTile } from './signs';
 import { openTrails } from './trails';
@@ -32,12 +33,29 @@ const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   cave: { seed: 7505, biome: 'cave', zone: 'cave', camp: true, exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
 };
 
-/** Home exits line up with the existing village roads / canyon floor. */
+/** Home exits follow the painted roads: north road, the south-west road and the south-east road past the canyon. */
 const HOME_EXITS: readonly { edge: Edge; at: number; width: number; to: AreaId }[] = [
-  { edge: 'n', at: 14, width: 2, to: 'bamboo' },
-  { edge: 's', at: 14, width: 2, to: 'swamp' },
-  { edge: 'e', at: 34, width: 2, to: 'limestone' },
+  { edge: 'n', at: 31, width: 2, to: 'bamboo' },
+  { edge: 's', at: 1, width: 4, to: 'swamp' },
+  { edge: 's', at: 55, width: 2, to: 'limestone' },
 ];
+
+const HOME_CHARS: Record<string, number> = {
+  '.': Tile.GRASS,
+  ':': Tile.SAND,
+  '#': Tile.STONE,
+  T: Tile.TREE,
+  B: Tile.BUSH,
+  R: Tile.ROCK,
+  W: Tile.WATER,
+  '=': Tile.BRIDGE,
+  H: Tile.HOUSE,
+  F: Tile.FENCE,
+  S: Tile.SOIL,
+  P: Tile.PADDY,
+  O: Tile.POND,
+  U: Tile.FOUNTAIN,
+};
 
 /** Tiles of an exit opening, from the map edge inward `depth` tiles. */
 function exitTiles(e: { edge: Edge; at: number; width: number }, depth: number): [number, number][] {
@@ -100,37 +118,40 @@ function carvePath(tiles: Uint8Array, from: [number, number], to: [number, numbe
   set(x, y);
 }
 
+/** The home map: the painted village, its collision traced in homeLayout.ts. */
 function homeArea(): WorldMap {
-  const base = generateMap();
-  const tiles = new Uint8Array(base.tiles);
-  for (const e of HOME_EXITS) {
-    // open the border wall and run a sand road to the nearest open ground
-    for (const [x, y] of exitTiles(e, 4)) tiles[y * MW + x] = Tile.SAND;
+  const tiles = new Uint8Array(MW * MH);
+  HOME_ROWS.forEach((row, y) => {
+    for (let x = 0; x < MW; x++) tiles[y * MW + x] = HOME_CHARS[row[x] ?? 'T'] ?? Tile.TREE;
+  });
+  // river column per row: the west bank of the main river (east of the waterfall stream)
+  const riverX = new Int16Array(MH);
+  let last = 44;
+  for (let y = 0; y < MH; y++) {
+    let x = 34;
+    while (x < MW && tiles[y * MW + x] !== Tile.WATER && tiles[y * MW + x] !== Tile.BRIDGE) x++;
+    if (x < MW) last = x + 1;
+    riverX[y] = last;
   }
-  // deer trails through the forest; the village and everything that isn't a tree or bush stay as generated
-  openTrails(tiles, TUNING.world.seed, { clearable: new Set([Tile.TREE, Tile.BUSH]), keep: (x, y) => inVillageTile(x, y) });
-  // north road continues from the north bridge row up to the edge
-  for (let y = 0; y < base.bridgeNorth; y++) for (let x = 14; x <= 15; x++) tiles[y * MW + x] = Tile.SAND;
-  // east exit: clear a lane across the canyon floor to the edge
-  for (let x = (base.riverX[34] ?? 40) + 2; x < MW; x++) {
-    for (let y = 34; y <= 35; y++) {
+  const canyon = HOME_CANYON;
+  const partial = { area: 'home' as const, tiles, riverX, canyon };
+  const reach = floodReach(partial, PLAZA.x, PLAZA.y + 2);
+  const map: WorldMap = { ...partial, zone: 'forest', biome: 'home', exits: HOME_EXITS.map(toExit), reach, bridgeEast: 23, bridgeNorth: 5, forestCells: [], canyonCells: [] };
+  // monsters spawn 3+ tiles outside the village, on reachable open ground
+  const nearVillage = (x: number, y: number): boolean => x >= VILLAGE.x0 - 3 && x <= VILLAGE.x1 + 3 && y >= VILLAGE.y0 - 3 && y <= VILLAGE.y1 + 3;
+  const forestCells: [number, number][] = [];
+  const canyonCells: [number, number][] = [];
+  for (let y = 0; y < MH; y++) {
+    for (let x = 0; x < MW; x++) {
+      if (!reach[y * MW + x] || nearVillage(x, y) || inVillageTile(x, y)) continue;
       const t = tiles[y * MW + x];
-      if (t === Tile.ROCK || t === Tile.WALL || t === Tile.SAND || t === Tile.CLIFF) tiles[y * MW + x] = Tile.SAND;
+      const nearExit = map.exits.some((e) => Math.hypot(e.arrive.x / T - x, e.arrive.y / T - y) < 4);
+      if (inCanyon(map, x, y)) {
+        if (t === Tile.SAND || t === Tile.GRASS) canyonCells.push([x, y]);
+      } else if ((t === Tile.GRASS || t === Tile.FLOWER) && !nearExit) forestCells.push([x, y]);
     }
   }
-  // the village's south quarter (elder, huts, granary) sits where the prototype had forest edge
-  stampVillageQuarter(tiles);
-  // rice paddy and fish pond on the river side of the village
-  stampEastFields(tiles);
-  // chicken coop beside the vegetable plot
-  stampCoop(tiles);
-  const partial = { ...base, tiles };
-  const reach = floodReach(partial, PLAZA.x, 29);
-  // monsters keep spawning 3+ tiles outside the (now larger) village, only on reachable open ground
-  const forestCells = base.forestCells.filter(
-    ([x, y]) => reach[y * MW + x] && walkable(partial, x, y) && !(x >= VILLAGE.x0 - 3 && x <= VILLAGE.x1 + 3 && y >= VILLAGE.y0 - 3 && y <= VILLAGE.y1 + 3),
-  );
-  return { ...partial, reach, forestCells, area: 'home', zone: 'forest', biome: 'home', exits: HOME_EXITS.map(toExit) };
+  return { ...map, forestCells, canyonCells };
 }
 
 /** Generic wild area: border wall, biome-specific obstacles, roads joining every exit at the centre. */

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { areaMap } from '../src/core/areas';
 import { hitMonster, hurtPlayer, killMonster } from '../src/core/combat';
-import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inVillageTile, MW, QUARTER, T, Tile, tileAt, walkable, zoneAtPx } from '../src/core/mapgen';
+import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inVillageTile, MW, PLAZA, SPAWN, T, Tile, tileAt, VILLAGE, walkable, zoneAtPx } from '../src/core/mapgen';
 import { createNpcs, npcLine, npcNear, updateNpcs } from '../src/core/npc';
 import { findPath } from '../src/core/pathfinding';
 import { claimRequest, currentRequest, requestReady } from '../src/core/requests';
@@ -15,29 +15,30 @@ import { addMonster, NOW } from './helpers';
 const HOME = areaMap('home');
 const homeGame = () => createGame({ rngSeed: 5, now: NOW, map: HOME, noMonsters: true });
 
-describe('south quarter', () => {
+describe('painted village', () => {
   it('stands inside the gameplay village, with the buildings solid', () => {
-    expect(inVillageTile(QUARTER.x0, QUARTER.y1)).toBe(true);
-    expect(zoneAtPx(HOME, 10 * T, 40 * T)).toBe('village');
+    for (const r of [ELDER_HOUSE, ...HUTS]) expect(inVillageTile(r.x, r.y)).toBe(true);
+    expect(zoneAtPx(HOME, SPAWN.x, SPAWN.y)).toBe('village');
     for (const r of [ELDER_HOUSE, GRANARY, ...HUTS]) expect(tileAt(HOME, r.x, r.y)).toBe(Tile.HOUSE);
     expect(tileAt(HOME, BOARD.x, BOARD.y)).toBe(Tile.HOUSE);
   });
 
-  it('keeps the road south open through the fence', () => {
-    for (let y = 30; y < 47; y++) expect(walkable(HOME, 14, y), `row ${y}`).toBe(true);
+  it('every road out of the village is open from the plaza', () => {
+    for (const e of HOME.exits) expect(findPath(HOME, PLAZA.x, PLAZA.y + 2, Math.floor(e.arrive.x / T), Math.floor(e.arrive.y / T)), e.to).not.toBeNull();
   });
 
   it('every villager stands on reachable ground', () => {
     for (const id of Object.keys(NPCS) as (keyof typeof NPCS)[]) {
+      if (NPCS[id].area === 'wild') continue;
       const [x, y] = NPCS[id].tile;
       expect(walkable(HOME, x, y), id).toBe(true);
       expect(HOME.reach[y * MW + x], id).toBe(1);
-      expect(findPath(HOME, 15, 29, x, y), id).not.toBeNull();
+      expect(findPath(HOME, PLAZA.x, PLAZA.y + 2, x, y), id).not.toBeNull();
     }
   });
 
-  it('spawns no monsters in or right next to the bigger village', () => {
-    for (const [x, y] of HOME.forestCells) expect(inVillageTile(x, y) || (x <= 28 && y >= 12 && y <= 44 && x >= 1)).toBe(false);
+  it('spawns no monsters in or right next to the village', () => {
+    for (const [x, y] of HOME.forestCells) expect(x >= VILLAGE.x0 - 3 && x <= VILLAGE.x1 + 3 && y >= VILLAGE.y0 - 3 && y <= VILLAGE.y1 + 3, `${x},${y}`).toBe(false);
   });
 });
 

@@ -1,10 +1,9 @@
 // Paints the whole world once: ground (incl. buildings) and a separate canopy
 // layer that is drawn above entities so characters can walk "under" trees.
 import { hash, vnoise } from '../core/rng';
-import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inCanyon, SALA, SCARECROW, INN, MH, MW, SMITH, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
+import { inCanyon, MH, MW, T, Tile, tileAt, type Biome, type WorldMap } from '../core/mapgen';
 import { signposts } from '../core/signs';
-import { drawAnvil, drawBoard, drawCamp, drawSignpost, drawFountain, drawGranary, drawHouse, drawLamps, drawPot, drawSala, drawScarecrow, type StaticLight } from './buildings';
-import { drawCoop, drawFieldHut, drawJetty, drawPaddy, drawPond } from './fields';
+import { drawCamp, drawSignpost, type StaticLight } from './buildings';
 import { createBuffer, ell, rect, rgb, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
 
 interface GroundPalette {
@@ -129,26 +128,6 @@ function paintBase(map: WorldMap, rows = MH): { mb: PixelBuffer; cb: PixelBuffer
 
 export function buildTerrain(map: WorldMap): TerrainArt {
   const { mb, cb, lights } = paintBase(map);
-  if (map.area !== 'home') return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
-  drawHouse(mb, SMITH, 'smith');
-  drawHouse(mb, INN, 'inn');
-  drawHouse(mb, ELDER_HOUSE, 'elder');
-  for (const h of HUTS) drawHouse(mb, h, 'hut');
-  drawGranary(mb, GRANARY);
-  drawBoard(mb, BOARD.x, BOARD.y);
-  // east fields: soft-edged pond and paddy painted over the tile ground, then what stands on them
-  drawPaddy(mb);
-  drawPond(mb);
-  drawJetty(mb);
-  drawFieldHut(mb);
-  drawScarecrow(mb, SCARECROW.x, SCARECROW.y);
-  drawSala(mb, SALA);
-  drawCoop(mb);
-  drawFountain(mb);
-  drawAnvil(mb);
-  drawPot(mb);
-  drawLamps(mb, map, lights);
-  lights.push({ x: SMITH.x * T + 16, y: (SMITH.y + 3) * T + 7, r: 18, c: '255,150,60', ga: 0.2 });
   return { ground: toCanvas(mb), canopy: toCanvas(cb), lights };
 }
 

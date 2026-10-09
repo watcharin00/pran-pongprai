@@ -8,7 +8,7 @@ import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPi
 import { findMonster } from '../core/combat';
 import { harvest, isRipe, plant, plotAt, plotProgress } from '../core/farm';
 import { PlotPopup } from '../ui/plotPopup';
-import { ANVIL, BOARD, COOP, COOP_CENTER, FARM, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, PLAZA, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { ANVIL, BOARD, COOP, COOP_CENTER, FARM, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { areaBoss, nextBoss, npcActive, npcLine, npcNear } from '../core/npc';
 import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
 import { claimRequest, requestReady } from '../core/requests';
@@ -211,10 +211,15 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.gShadow = w(this.add.graphics().setDepth(D.shadow));
     this.gShadowAdd = w(this.add.graphics().setDepth(D.shadow + 0.1).setBlendMode(Phaser.BlendModes.ADD));
     this.playerView = new PlayerView(this, w);
-    for (const n of this.s.npcs) this.npcViews.set(n.id, new NpcView(this, w, n));
+    for (const n of this.s.npcs) {
+      const v = new NpcView(this, w, n);
+      v.setVisible(npcActive(this.s, n.id));
+      this.npcViews.set(n.id, v);
+    }
     this.canopyImg = w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
     this.northCanopy = w(this.add.image(0, -EDGE_FILL, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
     this.southCanopy = w(this.add.image(0, (MH - 1) * T, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
+    this.fitGround();
     this.gEdgeShade = w(this.add.graphics().setDepth(D.canopy + 0.5));
     this.shadeEdgeFills();
     this.gBars = w(this.add.graphics().setDepth(D.bars));
@@ -262,8 +267,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private makeGlows(lights: readonly StaticLight[]): void {
     for (const g of this.glows) g.img.destroy();
     this.glows = [];
-    const extra: StaticLight[] = this.s.area === 'home' ? [{ x: POT.x, y: POT.y + 4, r: 16, c: '255,150,60', ga: 0.18 }] : [];
-    for (const l of lights.concat(extra)) this.glows.push({ l, img: this.makeGlow(l.c) });
+    for (const l of lights) this.glows.push({ l, img: this.makeGlow(l.c) });
   }
 
   /** Swaps terrain, nodes, glows and entity views after core/travel.ts changed the area. */
@@ -281,6 +285,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     }
     this.groundImg.setTexture(gKey);
     this.canopyImg.setTexture(cKey);
+    this.fitGround();
     this.signs = signposts(s.map);
     this.makeNodeImages();
     this.makeGlows(this.areaLights.get(area) ?? []);
@@ -987,6 +992,19 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.edgeArea = area;
     const key = `${TEX.ground}:north:${area}`;
     const south = `${TEX.ground}:south:${area}`;
+    if (area === 'home') {
+      // the painted map mirrored past its top and bottom edges, so trees and roads carry on
+      if (!this.textures.exists(key)) {
+        this.textures.addCanvas(key, mirroredStrip(this.textures.get(TEX.ground).getSourceImage() as HTMLImageElement, 'top'));
+        this.textures.addCanvas(south, mirroredStrip(this.textures.get(TEX.ground).getSourceImage() as HTMLImageElement, 'bottom'));
+        for (const k of [key, south]) this.textures.get(k).setFilter(Phaser.Textures.FilterMode.LINEAR);
+      }
+      this.northGround.setTexture(key).setDisplaySize(MW * T, EDGE_FILL).setVisible(true);
+      this.southGround.setTexture(south).setCrop().setY(MH * T).setDisplaySize(MW * T, EDGE_FILL).setVisible(true);
+      this.northCanopy.setVisible(false);
+      this.southCanopy.setVisible(false);
+      return;
+    }
     if (!this.textures.exists(key)) {
       const art = buildNorthFill(this.s.map);
       this.textures.addCanvas(key, art.ground);
@@ -995,11 +1013,19 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.textures.addCanvas(south, sa.ground);
       this.textures.addCanvas(`${south}:canopy`, sa.canopy);
     }
-    this.northGround.setTexture(key).setVisible(true);
+    this.northGround.setTexture(key).setScale(1).setVisible(true);
     this.northCanopy.setTexture(`${key}:canopy`).setVisible(true);
     // south strip row 0 overlaps the map's last row: ground from row 1, canopy (crowns poking up) from row 0
-    this.southGround.setTexture(south).setCrop(0, T, MW * T, EDGE_FILL).setVisible(true);
+    this.southGround.setTexture(south).setScale(1).setY((MH - 1) * T).setCrop(0, T, MW * T, EDGE_FILL).setVisible(true);
     this.southCanopy.setTexture(`${south}:canopy`).setVisible(true);
+  }
+
+  /** The home ground is the painted map stretched over the tile grid; other areas are 1:1 pixel art with a canopy layer. */
+  private fitGround(): void {
+    const home = this.s.area === 'home';
+    if (home) this.groundImg.setDisplaySize(MW * T, MH * T);
+    else this.groundImg.setScale(1);
+    this.canopyImg.setVisible(!home);
   }
 
   /** Darkens both strips away from the map so they read as deep forest beyond the area, not open ground. */
@@ -1084,15 +1110,6 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       for (const img of this.cropImgs.values()) img.setVisible(false);
       return;
     }
-    // fountain spray + pot fire
-    const fx = PLAZA.x * T;
-    const fy = PLAZA.y * T;
-    px(fx - 1, fy - 12 - Math.round(Math.sin(time * 8)), 0xd8fff4, 2, 3);
-    for (let i = 0; i < 5; i++) {
-      const ox = i - 2;
-      const hg = Math.max(1, Math.round((3 - Math.abs(ox)) * 1.3 + Math.sin(time * 13 + i * 1.7)));
-      for (let k = 0; k < hg; k++) px(POT.x + ox, POT.y + 5 - k, k / hg < 0.5 ? 0xffd35c : 0xff6a2a);
-    }
     this.drawCoopLive(px, time);
     // crops
     this.s.plots.forEach((pl, i) => {
@@ -1131,6 +1148,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const r = this.s.ranch;
     const R = TUNING.ranch;
     const fill = Math.min(1, r.trough / R.troughMax);
+    // the painted map has no trough or nest: a plank trough and a straw nest
+    px(TROUGH.x - 7, TROUGH.y - 3, 0x7a4a26, 14, 5);
+    px(TROUGH.x - 6, TROUGH.y - 2, 0x4a2c16, 12, 2);
+    px(NEST.x - 6, NEST.y - 2, 0xb08a48, 12, 4);
+    px(NEST.x - 5, NEST.y - 3, 0xd8b868, 10, 2);
     if (fill > 0) {
       const w = Math.max(2, Math.round(12 * fill));
       px(TROUGH.x - 6, TROUGH.y - 2, 0xe8d890, w, 2);
@@ -1500,5 +1522,17 @@ function drawPlant(px: Px, x: number, y: number, kind: string, st: number): void
   }
 }
 
-
-
+/** A strip of the painted map's top or bottom edge, flipped, to show beyond that edge (EDGE_FILL tall in world px). */
+function mirroredStrip(img: HTMLImageElement, edge: 'top' | 'bottom'): HTMLCanvasElement {
+  const w = img.width;
+  const h = Math.round((EDGE_FILL * img.height) / (MH * T));
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+  if (!g) return c;
+  g.translate(0, h);
+  g.scale(1, -1);
+  g.drawImage(img, 0, edge === 'top' ? 0 : img.height - h, w, h, 0, 0, w, h);
+  return c;
+}

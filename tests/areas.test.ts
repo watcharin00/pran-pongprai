@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AREA_IDS, areaMap, areaSeed, buildAreaMap, exitAt } from '../src/core/areas';
 import { trailWaypoints } from '../src/core/trails';
-import { TUNING } from '../src/data';
-import { COOP, generateMap, inVillageTile, MH, MW, PADDY_AREA, POND_AREA, SALA_AREA, QUARTER, QUARTER_FENCE_Y, SPAWN, T, Tile, walkable, zoneAtPx } from '../src/core/mapgen';
+import { COOP, COOP_GATE, ELDER_HOUSE, FARM, HENHOUSE, HUTS, INN, MH, MW, PLAZA, SMITH, SPAWN, T, Tile, tileAt, walkable, zoneAtPx } from '../src/core/mapgen';
 import { findPath } from '../src/core/pathfinding';
 import { createGame, step } from '../src/core/sim';
 import { hurtPlayer } from '../src/core/combat';
@@ -33,34 +32,21 @@ describe('area maps', () => {
     expect(monsterWhere('dhole')).toBe(th.zones.forest);
   });
 
-  it('home keeps the prototype world: only exits, trails and the stamped village additions differ', () => {
-    const base = generateMap();
+  it('home is the painted village: its traced layout, with the village buildings solid', async () => {
+    const { HOME_ROWS } = await import('../src/core/homeLayout');
     const home = areaMap('home');
-    let exits = 0;
-    let trails = 0;
-    for (let i = 0; i < base.tiles.length; i++) {
-      const was = base.tiles[i];
-      const now = home.tiles[i];
-      if (was === now) continue;
-      const x = i % MW;
-      const y = Math.floor(i / MW);
-      // the village expansion (rows QUARTER.y0..fence) is stamped on top of the prototype
-      if (x >= QUARTER.x0 && x <= QUARTER.x1 && y >= QUARTER.y0 && y <= QUARTER_FENCE_Y) continue;
-      // ...and so are the rice paddy and the fish pond east of it
-      if ([PADDY_AREA, POND_AREA, SALA_AREA].some((A) => x >= A.x0 && x <= A.x1 && y >= A.y0 && y <= A.y1)) continue;
-      // ...and the chicken coop beside the vegetable plot
-      if (x >= COOP.x && x < COOP.x + COOP.w && y >= COOP.y && y < COOP.y + COOP.h) continue;
-      if (now === Tile.SAND) exits++;
-      else {
-        expect(now, `tile ${i}`).toBe(Tile.GRASS);
-        expect([Tile.TREE, Tile.BUSH], `tile ${i}`).toContain(was);
-        expect(inVillageTile(i % MW, Math.floor(i / MW)), `tile ${i}`).toBe(false);
-        trails++;
-      }
+    expect(HOME_ROWS).toHaveLength(MH);
+    for (const row of HOME_ROWS) expect(row).toHaveLength(MW);
+    for (const r of [SMITH, INN, ELDER_HOUSE, ...HUTS, HENHOUSE]) {
+      for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) expect(tileAt(home, x, y), `${x},${y}`).toBe(Tile.HOUSE);
     }
-    expect(exits).toBeGreaterThan(0);
-    expect(exits).toBeLessThan(120);
-    expect(trails).toBeGreaterThan(0);
+    expect(tileAt(home, PLAZA.x - 1, PLAZA.y - 1)).toBe(Tile.FOUNTAIN);
+    for (let y = FARM.y0; y <= FARM.y1; y++) for (let x = FARM.x0; x <= FARM.x1; x++) expect(tileAt(home, x, y)).toBe(Tile.SOIL);
+    // the coop is fenced all round except its gate
+    for (let x = COOP.x; x < COOP.x + COOP.w; x++) {
+      const gate = x === COOP_GATE.x || x === COOP_GATE.x + 1;
+      expect(walkable(home, x, COOP.y + COOP.h - 1), `gate row ${x}`).toBe(gate);
+    }
   });
 
   it('every area has 2-tile-wide trails linking its open trail waypoints', () => {
@@ -68,7 +54,8 @@ describe('area maps', () => {
       const a = areaMap(id);
       const open2 = (x: number, y: number): boolean => walkable(a, x, y) && walkable(a, x + 1, y) && walkable(a, x, y + 1) && walkable(a, x + 1, y + 1);
       // flood over cells where a 2x2 block is clear, from the first waypoint that has one
-      const points = trailWaypoints(id === 'home' ? TUNING.world.seed : areaSeed(id)).flat().filter(([x, y]) => open2(x, y));
+      if (id === 'home') continue; // the painted village has its own paths
+      const points = trailWaypoints(areaSeed(id)).flat().filter(([x, y]) => open2(x, y));
       const start = points[0];
       expect(start, id).toBeDefined();
       if (!start) continue;
@@ -86,10 +73,10 @@ describe('area maps', () => {
         }
       }
       // water and cliffs may cut a trail, but most waypoints must still join up through wide lanes
-      // (the water maps — home's river, the swamp, the mangrove channels — are allowed more cuts;
+      // (the water maps — the swamp, the mangrove channels — are allowed more cuts;
       // reaching every exit and monster is still checked below)
       const joined = points.filter(([x, y]) => seen[y * MW + x]).length;
-      expect(joined / points.length, id).toBeGreaterThanOrEqual(id === 'home' || id === 'swamp' || id === 'mangrove' ? 0.5 : 0.9);
+      expect(joined / points.length, id).toBeGreaterThanOrEqual(id === 'swamp' || id === 'mangrove' ? 0.5 : 0.9);
     }
   });
 
