@@ -1,10 +1,10 @@
 {
-  "smith":  { "tile": [29, 19], "wander": 10, "role": "forge" },
-  "cook":   { "tile": [38, 19], "wander": 10, "role": "kitchen" },
-  "elder":  { "tile": [21, 24], "wander": 6,  "role": "requests" },
-  "kid":    { "tile": [30, 26], "wander": 36, "role": "tips" },
-  "healer": { "tile": [19, 18], "wander": 8,  "role": "herbs" },
-  "farmer": { "tile": [34, 30], "wander": 14, "role": "farm" },
-  "hunter": { "tile": [37, 22], "wander": 0,  "role": "hunter" },
+  "smith":  { "tile": [27, 16], "wander": 10, "role": "forge" },
+  "cook":   { "tile": [41, 18], "wander": 10, "role": "kitchen" },
+  "elder":  { "tile": [25, 29], "wander": 6,  "role": "requests" },
+  "kid":    { "tile": [30, 27], "wander": 36, "role": "tips" },
+  "healer": { "tile": [24, 25], "wander": 8,  "role": "herbs" },
+  "farmer": { "tile": [42, 22], "wander": 14, "role": "farm" },
+  "hunter": { "tile": [16, 22], "wander": 0,  "role": "hunter" },
   "ranger": { "tile": [31, 23], "wander": 10, "role": "ranger", "area": "wild" }
 }

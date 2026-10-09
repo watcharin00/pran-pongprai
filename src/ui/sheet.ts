@@ -5,7 +5,7 @@ import { ARMOR_SLOTS, MEDALS, type CropBed, type MealEffect, type AreaId, type A
 import { freePlotsFor, plantAll, plantOne, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS, areaMap } from '../core/areas';
-import { ELDER_HOUSE, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
+import { BOARD, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
 import { allRequestsDone, currentRequest } from '../core/requests';
 import { hasMedal, medalCount } from '../core/medals';
 import { requestText, rewardText } from './talk';
@@ -962,7 +962,7 @@ export class Sheet {
             [{ x: (SMITH.x + SMITH.w / 2) * T, y: (SMITH.y + 1) * T }, M.forge],
             [{ x: (INN.x + INN.w / 2) * T, y: (INN.y + 1) * T }, M.kitchen],
             [FARM_CENTER, M.farm],
-            [{ x: (ELDER_HOUSE.x + ELDER_HOUSE.w / 2) * T, y: (ELDER_HOUSE.y + 1) * T }, M.elder],
+            [{ x: (BOARD.x + 1) * T, y: (BOARD.y + 1) * T }, M.elder],
             [PADDY_CENTER, M.paddy],
             [POND_CENTER, M.pond],
           ]

@@ -29,12 +29,12 @@ export class VillageView {
     for (const p of villageProps()) {
       const img = add(scene.add.image(p.x, p.y, TEX.village(p.key)).setOrigin(0.5, 1));
       const s = p.w / img.width;
-      img.setScale(p.flip ? -s : s, s).setDepth(ENTITY_DEPTH + p.y);
+      img.setScale(p.flip ? -s : s, s).setDepth(ENTITY_DEPTH + (p.depth ?? p.y));
       const h = img.height * s;
       this.items.push({ p, img, x0: p.x - p.w / 2, x1: p.x + p.w / 2, top: p.y - h, alpha: 1, phase: (p.x * 0.013 + p.y * 0.021) % 6.28 });
-      // soft contact shadow under everything that stands on the ground
-      const sw = p.key.startsWith('tree') ? p.w * 0.5 : p.key === 'lamp' ? 8 : p.w * 0.8;
-      this.shadows.fillStyle(0x0e2410, 0.22).fillEllipse(p.x + 2, p.y - 1, sw, Math.max(3, sw * 0.28));
+      // soft contact shadow, an isometric ellipse under the foot
+      const sw = p.shadow ?? 0;
+      if (sw > 0) this.shadows.fillStyle(0x0e2410, 0.26).fillEllipse(p.x + 2, p.y - 3, sw, sw / 2);
     }
   }
 
@@ -55,7 +55,7 @@ export class VillageView {
       img.setVisible(onScreen);
       if (!onScreen) continue;
       if (p.fade) {
-        const behind = py < p.y - 3 && py > it.top + 4 && px > it.x0 + p.w * 0.08 && px < it.x1 - p.w * 0.08;
+        const behind = py < (p.depth ?? p.y) - 3 && py > it.top + 4 && px > it.x0 + p.w * 0.12 && px < it.x1 - p.w * 0.12;
         const want = behind ? SEE_THROUGH : 1;
         if (Math.abs(it.alpha - want) > 0.005) {
           it.alpha += (want - it.alpha) * k;

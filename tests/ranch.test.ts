@@ -3,7 +3,7 @@ import { TUNING } from '../src/data';
 import { createGame, step } from '../src/core/sim';
 import { basketCount, canLove, feedTrough, FEED_ITEMS, hatchEgg, isGrown, petHen, updateRanch } from '../src/core/ranch';
 import { contextAction } from '../src/core/village';
-import { HEN_ROAM, NEST, TROUGH, tileAt, Tile, COOP, COOP_GATE, HENHOUSE } from '../src/core/mapgen';
+import { HEN_ROAM, NEST, TROUGH, tileAt, Tile, COOP, COOP_GATE, walkable } from '../src/core/mapgen';
 import { parseSave, serialize } from '../src/core/save';
 import { MATERIALS } from '../src/data';
 import { emptyIntent, type GameState, type Intent } from '../src/core/state';
@@ -36,8 +36,7 @@ describe('coop layout', () => {
     const s = game();
     const m = s.map;
     expect(tileAt(m, COOP.x, COOP.y + 2)).toBe(Tile.FENCE);
-    expect(tileAt(m, COOP_GATE.x, COOP_GATE.y)).toBe(Tile.GRASS);
-    expect(tileAt(m, HENHOUSE.x, HENHOUSE.y)).toBe(Tile.HOUSE);
+    expect(walkable(m, COOP_GATE.x, COOP_GATE.y)).toBe(true);
     for (const p of [TROUGH, NEST, { x: HEN_ROAM.x0, y: HEN_ROAM.y0 }, { x: HEN_ROAM.x1, y: HEN_ROAM.y1 }]) {
       expect([Tile.GRASS, Tile.SAND]).toContain(tileAt(m, Math.floor(p.x / 16), Math.floor(p.y / 16)));
     }

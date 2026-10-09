@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { areaMap } from '../src/core/areas';
 import { hitMonster, hurtPlayer, killMonster } from '../src/core/combat';
-import { BOARD, ELDER_HOUSE, GRANARY, HUTS, inVillageTile, MW, PLAZA, SPAWN, T, Tile, tileAt, VILLAGE, walkable, zoneAtPx } from '../src/core/mapgen';
+import { BOARD, INN, inVillageTile, SMITH, MW, PLAZA, SPAWN, T, Tile, tileAt, VILLAGE, walkable, zoneAtPx } from '../src/core/mapgen';
 import { createNpcs, npcLine, npcNear, updateNpcs } from '../src/core/npc';
 import { findPath } from '../src/core/pathfinding';
 import { claimRequest, currentRequest, requestReady } from '../src/core/requests';
@@ -17,9 +17,9 @@ const homeGame = () => createGame({ rngSeed: 5, now: NOW, map: HOME, noMonsters:
 
 describe('painted village', () => {
   it('stands inside the gameplay village, with the buildings solid', () => {
-    for (const r of [ELDER_HOUSE, ...HUTS]) expect(inVillageTile(r.x, r.y)).toBe(true);
+    for (const r of [SMITH, INN]) expect(inVillageTile(r.x, r.y)).toBe(true);
     expect(zoneAtPx(HOME, SPAWN.x, SPAWN.y)).toBe('village');
-    for (const r of [ELDER_HOUSE, GRANARY, ...HUTS]) expect(tileAt(HOME, r.x, r.y)).toBe(Tile.HOUSE);
+    for (const r of [SMITH, INN]) expect(tileAt(HOME, r.x, r.y)).toBe(Tile.HOUSE);
     expect(tileAt(HOME, BOARD.x, BOARD.y)).toBe(Tile.HOUSE);
   });
 

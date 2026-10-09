@@ -2,7 +2,8 @@
 // Uses Math.random freely: nothing here affects the simulation.
 import Phaser from 'phaser';
 import type { Vec2 } from '../core/events';
-import { CHIMNEY, PLAZA, T } from '../core/mapgen';
+import { PLAZA, T } from '../core/mapgen';
+import { FLAT, type View } from './view';
 
 export type ParticleKind = 'spark' | 'dust' | 'chunk' | 'glow' | 'fly' | 'leaf' | 'ember' | 'smoke';
 
@@ -40,7 +41,12 @@ const rr = (a: number, b: number): number => a + Math.random() * (b - a);
 const ri = (a: number, b: number): number => a + Math.floor(Math.random() * (b - a + 1));
 const col = (hex: string): number => parseInt(hex.slice(1), 16);
 
+/**
+ * Callers pass world positions; the effects live in screen space (the drawing layer), so they are
+ * projected on the way in through `view` (the isometric village, or flat for the wild areas).
+ */
 export class Effects {
+  view: View = FLAT;
   private parts: Particle[] = [];
   private fx: Fx[] = [];
   private readonly gNormal: Phaser.GameObjects.Graphics;
@@ -63,8 +69,10 @@ export class Effects {
     this.parts.push({ grav: 0, ph: 0, ...p });
   }
 
-  burst(x: number, y: number, color: string, n: number, spd = 70, kind: ParticleKind = 'spark'): void {
+  burst(wx: number, wy: number, color: string, n: number, spd = 70, kind: ParticleKind = 'spark'): void {
     const c = col(color);
+    const x = this.view.x(wx, wy);
+    const y = this.view.y(wx, wy);
     for (let i = 0; i < n; i++) {
       const a = rr(0, Math.PI * 2);
       const s = rr(spd * 0.3, spd);
@@ -73,11 +81,11 @@ export class Effects {
   }
 
   ring(x: number, y: number, r: number): void {
-    this.fx.push({ kind: 'ring', x, y, r, t: 0.3 });
+    this.fx.push({ kind: 'ring', x: this.view.x(x, y), y: this.view.y(x, y), r, t: 0.3 });
   }
 
   shock(x: number, y: number, r: number): void {
-    this.fx.push({ kind: 'shock', x, y, r, t: 0.35 });
+    this.fx.push({ kind: 'shock', x: this.view.x(x, y), y: this.view.y(x, y), r, t: 0.35 });
   }
 
   whirl(): void {
@@ -86,18 +94,30 @@ export class Effects {
 
   /** Straight strike (thrust, cleave) from (x, y) along (ux, uy). */
   slash(x: number, y: number, ux: number, uy: number, len: number, wd: number): void {
-    this.fx.push({ kind: 'slash', x, y, ux, uy, len, wd, t: SLASH_TIME });
+    const v = this.view;
+    const sx = v.x(x, y);
+    const sy = v.y(x, y);
+    const ex = v.x(x + ux * len, y + uy * len) - sx;
+    const ey = v.y(x + ux * len, y + uy * len) - sy;
+    const l = Math.hypot(ex, ey) || 1;
+    this.fx.push({ kind: 'slash', x: sx, y: sy, ux: ex / l, uy: ey / l, len: l, wd, t: SLASH_TIME });
   }
 
-  healGlow(x: number, y: number): void {
+  healGlow(wx: number, wy: number): void {
+    const x = this.view.x(wx, wy);
+    const y = this.view.y(wx, wy);
     for (let i = 0; i < 10; i++) this.push({ x: x + rr(-5, 5), y: y + rr(-2, 6), vx: 0, vy: rr(-30, -15), t: rr(0.5, 0.8), max: 0.8, col: 0xb4ff9a, kind: 'glow' });
   }
 
-  walkDust(x: number, y: number): void {
+  walkDust(wx: number, wy: number): void {
+    const x = this.view.x(wx, wy);
+    const y = this.view.y(wx, wy);
     this.push({ x: x + rr(-2, 2), y: y + 7, vx: rr(-8, 8), vy: rr(-8, -2), t: 0.35, max: 0.35, col: 0xe8d8b0, kind: 'dust' });
   }
 
-  dashDust(x: number, y: number, color: string): void {
+  dashDust(wx: number, wy: number, color: string): void {
+    const x = this.view.x(wx, wy);
+    const y = this.view.y(wx, wy);
     this.push({ x: x + rr(-4, 4), y, vx: rr(-15, 15), vy: rr(-25, -5), t: 0.4, max: 0.4, col: col(color), kind: 'dust' });
   }
 
@@ -117,13 +137,10 @@ export class Effects {
       this.push({ x: cx + rr(0, VW), y: cy + VH + 2, vx: rr(-4, 4), vy: rr(-26, -12), t: rr(2, 4), max: 4, col: Math.random() < 0.6 ? 0xff8a3d : 0xffd35c, kind: 'ember' });
     }
     // fountain mist
-    const fx = PLAZA.x * T;
-    const fy = PLAZA.y * T;
-    if (Math.hypot(fx - player.x, fy - player.y) < 220 && Math.random() < dt * 14) {
-      this.push({ x: fx + rr(-3, 3), y: fy - 11, vx: rr(-8, 8), vy: rr(-20, -10), t: 0.5, max: 0.5, col: 0xd8fff4, kind: 'chunk', grav: 60 });
-    }
-    if (Math.hypot(CHIMNEY.x - player.x, CHIMNEY.y - player.y) < 260 && Math.random() < dt * 1.6) {
-      this.push({ x: CHIMNEY.x + rr(-1, 1), y: CHIMNEY.y, vx: rr(3, 8), vy: rr(-14, -8), t: 2.2, max: 2.2, col: 0xd8d8de, kind: 'smoke' });
+    if (Math.hypot(PLAZA.x * T - player.x, PLAZA.y * T - player.y) < 220 && Math.random() < dt * 14) {
+      const fx = this.view.x(PLAZA.x * T, PLAZA.y * T);
+      const fy = this.view.y(PLAZA.x * T, PLAZA.y * T) - (this.view.iso ? 22 : 11);
+      this.push({ x: fx + rr(-3, 3), y: fy, vx: rr(-8, 8), vy: rr(-20, -10), t: 0.5, max: 0.5, col: 0xd8fff4, kind: 'chunk', grav: 60 });
     }
   }
 
@@ -170,13 +187,15 @@ export class Effects {
     ga.clear();
     for (const f of this.fx) {
       if (f.kind === 'ring') {
+        const r = f.r * (1 + (0.3 - f.t));
         g.lineStyle(2, 0xffe6b4, Math.min(1, f.t * 3));
-        g.strokeCircle(f.x, f.y, f.r * (1 + (0.3 - f.t)));
+        g.strokeEllipse(f.x, f.y, this.view.rx(r) * 2, this.view.ry(r) * 2);
       } else if (f.kind === 'shock') {
         const k = 1 - f.t / 0.35;
-        const rx = f.r * k + 4;
+        const r = f.r * k + 4;
         g.lineStyle(3, 0xfff0c8, Math.min(1, f.t * 2.5));
-        g.strokeEllipse(f.x, f.y, rx * 2, rx * 0.55 * 2);
+        if (this.view.iso) g.strokeEllipse(f.x, f.y, this.view.rx(r) * 2, this.view.ry(r) * 2);
+        else g.strokeEllipse(f.x, f.y, r * 2, r * 0.55 * 2);
       } else if (f.kind === 'slash') {
         const k = 1 - f.t / SLASH_TIME;
         const reach = f.len * Math.min(1, k * 2.2);
@@ -187,7 +206,7 @@ export class Effects {
         const k = 1 - f.t / 0.3;
         ga.lineStyle(3, 0xc8f0ff, Math.min(1, f.t * 2.5));
         ga.beginPath();
-        ga.arc(player.x, player.y, 14 + k * 22, time * 20, time * 20 + 4.5);
+        ga.arc(this.view.x(player.x, player.y), this.view.y(player.x, player.y), 14 + k * 22, time * 20, time * 20 + 4.5);
         ga.strokePath();
       }
     }
@@ -198,11 +217,14 @@ export class Effects {
     a.clear();
     for (const sh of shots) {
       // shaft, fletching and a bright tip
-      const x = Math.round(sh.x);
-      const y = Math.round(sh.y) - 4;
-      n.lineStyle(1, 0x8a6a3a, 1).lineBetween(x - sh.dx * 8, y - sh.dy * 8, x, y);
-      n.fillStyle(0xf4eed4, 1).fillRect(Math.round(x - sh.dx * 8), Math.round(y - sh.dy * 8), 1, 1);
-      n.fillStyle(0xdfe6ee, 1).fillRect(Math.round(x + sh.dx), Math.round(y + sh.dy), 2, 1);
+      const x = Math.round(this.view.x(sh.x, sh.y));
+      const y = Math.round(this.view.y(sh.x, sh.y)) - 4;
+      const a0 = this.view.angle(Math.atan2(sh.dy, sh.dx));
+      const dx = Math.cos(a0);
+      const dy = Math.sin(a0);
+      n.lineStyle(1, 0x8a6a3a, 1).lineBetween(x - dx * 8, y - dy * 8, x, y);
+      n.fillStyle(0xf4eed4, 1).fillRect(Math.round(x - dx * 8), Math.round(y - dy * 8), 1, 1);
+      n.fillStyle(0xdfe6ee, 1).fillRect(Math.round(x + dx), Math.round(y + dy), 2, 1);
     }
     for (const q of this.parts) {
       const alpha = Math.min(1, (q.t / (q.max || 0.5)) * 1.5);

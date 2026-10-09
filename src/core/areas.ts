@@ -33,11 +33,11 @@ const SPECS: Record<Exclude<AreaId, 'home'>, AreaSpec> = {
   cave: { seed: 7505, biome: 'cave', zone: 'cave', camp: true, exits: [{ edge: 's', at: 30, width: 3, to: 'limestone' }] },
 };
 
-/** Home exits follow the painted roads: north road, the south-west road and the south-east road past the canyon. */
+/** Home exits at the ends of the village roads: north, south and east (over the stone bridge). */
 const HOME_EXITS: readonly { edge: Edge; at: number; width: number; to: AreaId }[] = [
   { edge: 'n', at: 31, width: 2, to: 'bamboo' },
-  { edge: 's', at: 1, width: 4, to: 'swamp' },
-  { edge: 's', at: 55, width: 2, to: 'limestone' },
+  { edge: 's', at: 31, width: 2, to: 'swamp' },
+  { edge: 'e', at: 23, width: 2, to: 'limestone' },
 ];
 
 const HOME_CHARS: Record<string, number> = {
@@ -51,6 +51,7 @@ const HOME_CHARS: Record<string, number> = {
   '=': Tile.BRIDGE,
   H: Tile.HOUSE,
   F: Tile.FENCE,
+  K: Tile.FENCE,
   S: Tile.SOIL,
   P: Tile.PADDY,
   O: Tile.POND,
@@ -128,7 +129,7 @@ function homeArea(): WorldMap {
   const riverX = new Int16Array(MH);
   let last = 44;
   for (let y = 0; y < MH; y++) {
-    let x = 34;
+    let x = 44;
     while (x < MW && tiles[y * MW + x] !== Tile.WATER && tiles[y * MW + x] !== Tile.BRIDGE) x++;
     if (x < MW) last = x + 1;
     riverX[y] = last;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AREA_IDS, areaMap, areaSeed, buildAreaMap, exitAt } from '../src/core/areas';
 import { trailWaypoints } from '../src/core/trails';
-import { COOP, COOP_GATE, ELDER_HOUSE, FARM, HENHOUSE, HUTS, INN, MH, MW, PLAZA, SMITH, SPAWN, T, Tile, tileAt, walkable, zoneAtPx } from '../src/core/mapgen';
+import { COOP, COOP_GATE, FARM, INN, MH, MW, PLAZA, SMITH, SPAWN, T, Tile, tileAt, walkable, zoneAtPx } from '../src/core/mapgen';
 import { findPath } from '../src/core/pathfinding';
 import { createGame, step } from '../src/core/sim';
 import { hurtPlayer } from '../src/core/combat';
@@ -32,12 +32,12 @@ describe('area maps', () => {
     expect(monsterWhere('dhole')).toBe(th.zones.forest);
   });
 
-  it('home is the painted village: its traced layout, with the village buildings solid', async () => {
+  it('home is the isometric village: its generated layout, with the village buildings solid', async () => {
     const { HOME_ROWS } = await import('../src/core/homeLayout');
     const home = areaMap('home');
     expect(HOME_ROWS).toHaveLength(MH);
     for (const row of HOME_ROWS) expect(row).toHaveLength(MW);
-    for (const r of [SMITH, INN, ELDER_HOUSE, ...HUTS, HENHOUSE]) {
+    for (const r of [SMITH, INN]) {
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) expect(tileAt(home, x, y), `${x},${y}`).toBe(Tile.HOUSE);
     }
     expect(tileAt(home, PLAZA.x - 1, PLAZA.y - 1)).toBe(Tile.FOUNTAIN);
@@ -45,7 +45,7 @@ describe('area maps', () => {
     // the coop is fenced all round except its gate
     for (let x = COOP.x; x < COOP.x + COOP.w; x++) {
       const gate = x === COOP_GATE.x || x === COOP_GATE.x + 1;
-      expect(walkable(home, x, COOP.y + COOP.h - 1), `gate row ${x}`).toBe(gate);
+      expect(walkable(home, x, COOP.y), `gate row ${x}`).toBe(gate);
     }
   });
 

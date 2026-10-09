@@ -15,7 +15,7 @@ export function game(): GameState {
 export function openSpot(s: GameState): { x: number; y: number } {
   const OPEN = new Set([0, 5, 12]); // grass, sand, flowers
   const clear = (tx: number, ty: number): boolean => {
-    if (tx >= VILLAGE.x0 - 4 && tx <= VILLAGE.x1 + 4 && ty >= VILLAGE.y0 - 4 && ty <= VILLAGE.y1 + 4) return false;
+    if (tx >= VILLAGE.x0 - 2 && tx <= VILLAGE.x1 + 2 && ty >= VILLAGE.y0 - 2 && ty <= VILLAGE.y1 + 2) return false;
     for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
       const x = tx + dx;
       const y = ty + dy;

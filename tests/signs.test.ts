@@ -24,7 +24,7 @@ describe('signposts', () => {
     const map = areaMap('home');
     const post = signposts(map).find((s) => s.arms.length > 1);
     expect(post).toBeDefined();
-    expect(post?.arms.map((a) => a.edge)).toEqual(['n', 's', 's']);
+    expect(post?.arms.map((a) => a.edge)).toEqual(['n', 'e', 's']);
     expect(new Set(post?.arms.map((a) => a.to))).toEqual(new Set(map.exits.map((e) => e.to)));
     expect([Tile.GRASS, Tile.FLOWER]).toContain(tileAt(map, VILLAGE_SIGN.tx, VILLAGE_SIGN.ty));
   });

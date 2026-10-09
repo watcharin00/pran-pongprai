@@ -6,6 +6,11 @@ import type { AreaId } from '../data/types';
 import { MH, MW, T } from '../core/mapgen';
 import type { GameState } from '../core/state';
 import { areaThumbUrl } from '../art/mapThumb';
+import { FLAT, ISO } from '../scenes/view';
+import homeGround from '../assets/village/ground.webp';
+
+/** image px per screen px in the isometric home ground (tools/village/build_ground.py R) */
+const HOME_GROUND_SCALE = 2.25;
 
 /** Tiles visible from the centre to the rim. */
 const RADIUS_TILES = 14;
@@ -24,7 +29,7 @@ export class Minimap {
     if (this.thumbArea !== s.area) {
       this.thumbArea = s.area;
       const img = new Image();
-      img.src = areaThumbUrl(s.map);
+      img.src = s.area === 'home' ? homeGround : areaThumbUrl(s.map);
       this.thumb = img;
     }
     return this.thumb && this.thumb.complete ? this.thumb : null;
@@ -45,9 +50,13 @@ export class Minimap {
     const hunted = s.monsters.some((m) => m.aggro);
     this.canvas.classList.toggle('dim', hunted);
 
-    const scale = px / (RADIUS_TILES * 2 * T); // canvas px per world px
-    const toX = (wx: number): number => px / 2 + (wx - p.x) * scale;
-    const toY = (wy: number): number => px / 2 + (wy - p.y) * scale;
+    // the home village is drawn isometric: the minimap turns with it, like the screen
+    const v = s.area === 'home' ? ISO : FLAT;
+    const scale = px / (RADIUS_TILES * 2 * T); // canvas px per screen px
+    const cx = v.x(p.x, p.y);
+    const cy = v.y(p.x, p.y);
+    const toX = (wx: number, wy: number): number => px / 2 + (v.x(wx, wy) - cx) * scale;
+    const toY = (wx: number, wy: number): number => px / 2 + (v.y(wx, wy) - cy) * scale;
     g.clearRect(0, 0, px, px);
     g.save();
     g.beginPath();
@@ -57,13 +66,11 @@ export class Minimap {
     g.fillRect(0, 0, px, px);
     const img = this.ensureThumb(s);
     if (img) {
-      // take the square around the player (the home thumbnail is the full painting, others 4px per tile)
-      const tp = img.naturalWidth / MW;
-      const sx = (p.x / T - RADIUS_TILES) * tp;
-      const sy = (p.y / T - RADIUS_TILES) * tp;
-      const sw = RADIUS_TILES * 2 * tp;
+      // take the square around the player (home: the isometric ground image; others: 4px per tile)
+      const tp = v.iso ? HOME_GROUND_SCALE : img.naturalWidth / (MW * T);
+      const sw = RADIUS_TILES * 2 * T * tp;
       g.imageSmoothingEnabled = true;
-      g.drawImage(img, sx, sy, sw, sw, 0, 0, px, px);
+      g.drawImage(img, cx * tp - sw / 2, cy * tp - sw / 2, sw, sw, 0, 0, px, px);
     }
     // exits: gold triangles where the map opens
     g.fillStyle = '#ffd166';
@@ -71,15 +78,15 @@ export class Minimap {
       const mid = (e.at + e.width / 2) * T;
       const ex = e.edge === 'n' || e.edge === 's' ? mid : e.edge === 'w' ? T : MW * T - T;
       const ey = e.edge === 'e' || e.edge === 'w' ? mid : e.edge === 'n' ? T : MH * T - T;
-      const x = Math.max(6 * dpr, Math.min(px - 6 * dpr, toX(ex)));
-      const y = Math.max(6 * dpr, Math.min(px - 6 * dpr, toY(ey)));
+      const x = Math.max(6 * dpr, Math.min(px - 6 * dpr, toX(ex, ey)));
+      const y = Math.max(6 * dpr, Math.min(px - 6 * dpr, toY(ex, ey)));
       g.beginPath();
       g.arc(x, y, 3.2 * dpr, 0, Math.PI * 2);
       g.fill();
     }
     for (const m of s.monsters) {
-      const x = toX(m.x);
-      const y = toY(m.y);
+      const x = toX(m.x, m.y);
+      const y = toY(m.x, m.y);
       if (x < 0 || y < 0 || x > px || y > px) continue;
       const boss = MONSTERS[m.kind].rage !== null;
       g.fillStyle = boss ? '#c9a0ff' : '#ef5b4c';
@@ -93,7 +100,7 @@ export class Minimap {
     }
     g.restore();
     // player arrow, pointing where the hunter last walked
-    const a = Math.atan2(p.fy || 0, p.fx || p.face);
+    const a = v.angle(Math.atan2(p.fy || 0, p.fx || p.face));
     g.save();
     g.translate(px / 2, px / 2);
     g.rotate(a);

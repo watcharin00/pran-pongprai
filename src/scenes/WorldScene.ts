@@ -8,7 +8,7 @@ import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPi
 import { findMonster } from '../core/combat';
 import { harvest, isRipe, plant, plotAt, plotProgress } from '../core/farm';
 import { PlotPopup } from '../ui/plotPopup';
-import { ANVIL, BOARD, COOP, COOP_CENTER, FARM, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { ANVIL, BOARD, COOP_CENTER, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { areaBoss, nextBoss, npcActive, npcLine, npcNear } from '../core/npc';
 import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
 import { claimRequest, requestReady } from '../core/requests';
@@ -37,6 +37,7 @@ import { Effects } from './Effects';
 import { TextLayer, type ScreenMapper } from './TextLayer';
 import { VillageView } from './VillageView';
 import { TEX } from './textures';
+import { FLAT, ISO, type View } from './view';
 import { buildNorthFill, buildSouthFill, buildTerrain, EDGE_FILL_ROWS } from '../art/terrain';
 import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
 import { Music, nextMood } from '../audio/music';
@@ -124,6 +125,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private npcViews = new Map<NpcId, NpcView>();
   private henViews = new Map<number, HenView>();
   private village!: VillageView;
+  /** how the current area is drawn: the home village is isometric, the wild areas flat */
+  private v: View = FLAT;
+  /** forest floor under the isometric village (fills the corners outside the map's diamond) */
+  private floor!: Phaser.GameObjects.TileSprite;
   /** which line each villager is on (advances when the kid is tapped) */
   private talkN: Partial<Record<NpcId, number>> = {};
   private nodeImgs = new Map<number, Phaser.GameObjects.Image>();
@@ -188,8 +193,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const w = window as unknown as { __pranGame?: GameState; __pranToClient?: (x: number, y: number) => { x: number; y: number } };
       w.__pranGame = this.s;
       // smoke tests tap things in the world: world px → CSS px on screen
-      w.__pranToClient = (x, y) => ({ x: ((x - this.camX) * this.S) / this.dpr, y: ((y - this.camY) * this.S) / this.dpr });
+      w.__pranToClient = (x, y) => ({ x: ((this.v.x(x, y) - this.camX) * this.S) / this.dpr, y: ((this.v.y(x, y) - this.camY) * this.S) / this.dpr });
     }
+    this.v = this.s.area === 'home' ? ISO : FLAT;
     this.input.enabled = false;
 
     this.worldLayer = this.add.layer();
@@ -200,6 +206,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.cameras.main.setBackgroundColor('#15202b');
 
     const w = this.inWorld;
+    this.floor = w(this.add.tileSprite(-400, -400, ISO.width + 800, ISO.height + 800, TEX.village('floor')).setOrigin(0).setDepth(D.ground - 1).setTileScale(0.25));
     this.groundImg = w(this.add.image(0, 0, TEX.ground).setOrigin(0).setDepth(D.ground));
     // hidden until syncEdgeFills() paints the strips (the placeholder texture is the whole map)
     this.northGround = w(this.add.image(0, -EDGE_FILL, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
@@ -222,11 +229,12 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.canopyImg = w(this.add.image(0, 0, TEX.canopy).setOrigin(0).setDepth(D.canopy));
     this.northCanopy = w(this.add.image(0, -EDGE_FILL, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
     this.southCanopy = w(this.add.image(0, (MH - 1) * T, TEX.canopy).setOrigin(0).setDepth(D.canopy).setVisible(false));
-    this.fitGround();
     this.gEdgeShade = w(this.add.graphics().setDepth(D.canopy + 0.5));
+    this.fitGround();
     this.shadeEdgeFills();
     this.gBars = w(this.add.graphics().setDepth(D.bars));
     this.effects = new Effects(this, w, { fx: D.fx, particles: D.particles });
+    this.effects.view = this.v;
     this.gClouds = w(this.add.graphics().setDepth(D.clouds));
     this.makeGlows(data.lights);
     this.clouds = Array.from({ length: 5 }, () => ({ x: Math.random() * MW * T, y: Math.random() * MH * T, rx: 60 + Math.random() * 50, ry: 28 + Math.random() * 17, v: 5 + Math.random() * 4 }));
@@ -252,19 +260,17 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.keyboard.destroy();
     });
 
-    const p = this.s.player;
-    this.camFX = Phaser.Math.Clamp(p.x - this.VW / 2, 0, Math.max(0, MW * T - this.VW));
-    this.camFY = this.clampCamY(p.y - this.VH / 2);
+    this.snapCamera();
     if (save) this.hud.toast(th.log.loaded, 'gold');
     else this.hud.toast(th.log.welcome);
-    this.hud.showZone(th.zones[p.zone ?? 'village']);
+    this.hud.showZone(th.zones[this.s.player.zone ?? 'village']);
     this.hud.update(this.s);
   }
 
   private makeNodeImages(): void {
     for (const img of this.nodeImgs.values()) img.destroy();
     this.nodeImgs.clear();
-    for (const n of this.s.nodes) this.nodeImgs.set(n.id, this.inWorld(this.add.image(n.x, n.y, n.kind === 'ore' ? TEX.ore : TEX.herb).setDepth(D.nodes)));
+    for (const n of this.s.nodes) this.nodeImgs.set(n.id, this.inWorld(this.add.image(this.v.x(n.x, n.y), this.v.y(n.x, n.y), n.kind === 'ore' ? TEX.ore : TEX.herb).setDepth(D.nodes)));
   }
 
   private makeGlows(lights: readonly StaticLight[]): void {
@@ -277,6 +283,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private enterArea(): void {
     const s = this.s;
     const area = s.area;
+    this.v = area === 'home' ? ISO : FLAT;
+    this.effects.view = this.v;
     const gKey = area === 'home' ? TEX.ground : `${TEX.ground}:${area}`;
     const cKey = area === 'home' ? TEX.canopy : `${TEX.canopy}:${area}`;
     if (!this.textures.exists(gKey)) {
@@ -289,7 +297,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.groundImg.setTexture(gKey);
     this.canopyImg.setTexture(cKey);
     this.fitGround();
-    this.signs = signposts(s.map);
+    this.signs = s.villageOnly && area === 'home' ? [] : signposts(s.map);
     this.makeNodeImages();
     this.makeGlows(this.areaLights.get(area) ?? []);
     for (const v of this.monsterViews.values()) v.destroy();
@@ -300,9 +308,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.corpses = [];
     this.auto = createAutoPilot();
     for (const n of s.npcs) this.npcViews.get(n.id)?.setVisible(npcActive(s, n.id));
-    const p = s.player;
-    this.camFX = Phaser.Math.Clamp(p.x - this.VW / 2, 0, Math.max(0, MW * T - this.VW));
-    this.camFY = this.clampCamY(p.y - this.VH / 2);
+    this.snapCamera();
     this.cameras.main.fadeIn(260, 21, 32, 43);
     this.save();
   }
@@ -366,7 +372,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       },
       closed: () => surface.focus({ preventScroll: true }),
       crafted: () => {
-        this.effects.burst(ANVIL.x, ANVIL.y - 3, '#ffd35c', 16, 90);
+        this.effects.burst(ANVIL.x, ANVIL.y, '#ffd35c', 16, 90);
         this.sfx.play('craft');
       },
       sound: {
@@ -530,8 +536,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       }
       v.setVisible(home);
       if (!home) continue;
-      v.update(h, s.now);
-      sh.fillStyle(0x142814, 0.25).fillEllipse(h.x, h.y + 3, 9, 3);
+      v.update(h, s.now, this.v);
+      sh.fillStyle(0x142814, 0.25).fillEllipse(this.v.x(h.x, h.y), this.v.y(h.x, h.y) + 3, 9, 3);
     }
     for (const [id, v] of this.henViews) {
       if (live.has(id)) continue;
@@ -544,7 +550,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private tapPlot(clientX: number, clientY: number): void {
     const s = this.s;
     if (this.sheet.isOpen || s.area !== 'home' || !s.player.inVillage || s.player.dead) return;
-    const i = plotAt(s, (clientX * this.dpr) / this.S + this.camX, (clientY * this.dpr) / this.S + this.camY);
+    const w = this.v.toWorld((clientX * this.dpr) / this.S + this.camX, (clientY * this.dpr) / this.S + this.camY);
+    const i = plotAt(s, w.x, w.y);
     const plot = s.plots[i];
     if (!plot) return;
     if (isRipe(plot, s.now)) {
@@ -556,8 +563,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
   /** Tapping directly on a monster locks onto it. */
   private tapWorld(clientX: number, clientY: number): boolean {
-    const wx = (clientX * this.dpr) / this.S + this.camX;
-    const wy = (clientY * this.dpr) / this.S + this.camY;
+    const { x: wx, y: wy } = this.v.toWorld((clientX * this.dpr) / this.S + this.camX, (clientY * this.dpr) / this.S + this.camY);
     let hit: MonsterState | null = null;
     let bd = Infinity;
     for (const m of this.s.monsters) {
@@ -605,7 +611,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const ev = this.s.events;
     const fx = this.effects;
     const hud = this.hud;
-    const float = (x: number, y: number, t: string | number, c?: string, big?: boolean): void => this.text.float(x, y, t, c, big, this.dpr);
+    // a floating number/word over a world point, nudged in screen px (dx, dy)
+    const float = (at: { x: number; y: number }, dx: number, dy: number, t: string | number, c?: string, big?: boolean): void =>
+      this.text.float(this.v.x(at.x, at.y) + dx, this.v.y(at.x, at.y) + dy, t, c, big, this.dpr);
     const bump = (hitstop: number, shake: number): void => {
       this.hitstop = Math.max(this.hitstop, hitstop);
       this.shake = Math.max(this.shake, shake);
@@ -638,13 +646,13 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     ev.on('monster:hit', (e) => {
       if (this.s.player.dash) bump(0.05, 0);
       snd(e.big || e.gold ? 'hitHeavy' : 'hit', e.at);
-      if (e.tip && e.part !== 'body') float(e.at.x, e.at.y - 18, partName(e.kind, e.part), '#ffe08a');
-      float(e.at.x + (Math.random() * 6 - 3), e.at.y - 8, e.damage, e.gold ? '#ffd35c' : '#ffffff', e.big);
+      if (e.tip && e.part !== 'body') float(e.at, 0, -18, partName(e.kind, e.part), '#ffe08a');
+      float(e.at, Math.random() * 6 - 3, -8, e.damage, e.gold ? '#ffd35c' : '#ffffff', e.big);
       fx.burst(e.at.x, e.at.y, '#ffffff', 4, 90);
       fx.burst(e.at.x, e.at.y, e.color, 4, 60);
     });
     ev.on('part:broken', (e) => {
-      float(e.at.x, e.at.y - 18, th.floats.broken, '#ffd35c', true);
+      float(e.at, 0, -18, th.floats.broken, '#ffd35c', true);
       fx.burst(e.at.x, e.at.y, '#ffd35c', 14, 100);
       fx.burst(e.at.x, e.at.y, e.part === 'head' ? '#ece2c6' : '#ff9a40', 8, 80, 'chunk');
       bump(TUNING.combat.partBreakHitstop, 0.22);
@@ -652,12 +660,12 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       hud.toast(th.log.partBroken(partName(e.kind, e.part), monName(e.kind), fmtItems(e.drops)), 'gold');
     });
     ev.on('monster:stunned', (e) => {
-      float(e.at.x, e.at.y - MONSTERS[e.kind].size - 10, th.floats.stunned, '#ffd35c', true);
+      float(e.at, 0, -MONSTERS[e.kind].size - 10, th.floats.stunned, '#ffd35c', true);
       hud.toast(th.log.stunned(monName(e.kind)), 'gold');
       snd('stun', e.at);
     });
     ev.on('monster:enraged', (e) => {
-      float(e.at.x, e.at.y - MONSTERS[e.kind].size - 12, th.floats.enraged, '#ff6b5e', true);
+      float(e.at, 0, -MONSTERS[e.kind].size - 12, th.floats.enraged, '#ff6b5e', true);
       hud.toast(th.log.enraged(monName(e.kind)), 'bad');
       snd('enrage', e.at);
       bump(0, 0.3);
@@ -683,31 +691,31 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     };
     ev.on('monster:guarded', (e) => {
       fx.burst(e.at.x, e.at.y, '#e8f0ff', 5, 50, 'spark');
-      if (once(e.id)) float(e.at.x, e.at.y - 12, th.monsterFx.guarded, '#c8d4e8');
+      if (once(e.id)) float(e.at, 0, -12, th.monsterFx.guarded, '#c8d4e8');
       snd('strike');
     });
     ev.on('monster:airborne', (e) => {
-      if (once(e.id)) float(e.at.x, e.at.y - 26, th.monsterFx.airborne, '#c8d4e8');
+      if (once(e.id)) float(e.at, 0, -26, th.monsterFx.airborne, '#c8d4e8');
     });
     ev.on('monster:howl', (e) => {
-      float(e.at.x, e.at.y - 16, th.monsterFx.howl(e.joined), '#ffb070', true);
+      float(e.at, 0, -16, th.monsterFx.howl(e.joined), '#ffb070', true);
       snd('enrage');
     });
     ev.on('monster:stole', (e) => {
-      float(e.at.x, e.at.y - 16, th.monsterFx.stole, '#ff8fb0', true);
+      float(e.at, 0, -16, th.monsterFx.stole, '#ff8fb0', true);
       hud.toast(th.monsterFx.stoleLog(th.monsters[e.kind].name, e.potions), 'bad');
       snd('pickup');
     });
     ev.on('monster:returned', (e) => {
-      float(e.at.x, e.at.y - 26, th.monsterFx.returned(e.potions), '#ff8fb0', true);
+      float(e.at, 0, -26, th.monsterFx.returned(e.potions), '#ff8fb0', true);
       hud.toast(th.monsterFx.returned(e.potions), 'gold');
     });
     ev.on('player:grabbed', (e) => {
-      float(e.at.x, e.at.y - 22, th.monsterFx.grabbed, '#ff6b5e', true);
+      float(e.at, 0, -22, th.monsterFx.grabbed, '#ff6b5e', true);
       vibrate(60);
     });
     ev.on('player:escaped', (e) => {
-      float(e.at.x, e.at.y - 18, th.monsterFx.escaped, '#9fe07a', true);
+      float(e.at, 0, -18, th.monsterFx.escaped, '#9fe07a', true);
       fx.burst(e.at.x, e.at.y, '#8a7a4a', 10, 60, 'dust');
     });
     ev.on('monster:burrow', (e) => {
@@ -722,10 +730,12 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       if (MONSTERS[e.kind].size >= 12) bump(0, 0.14);
     });
     ev.on('monster:killed', (e) => {
-      float(e.at.x, e.at.y - MONSTERS[e.kind].size - 14, th.floats.hunted, '#ffd166', true);
+      float(e.at, 0, -MONSTERS[e.kind].size - 14, th.floats.hunted, '#ffd166', true);
       fx.burst(e.at.x, e.at.y, '#ffd166', 20, 110);
-      const img = this.inWorld(this.add.image(e.at.x, e.at.y, TEX.monster(e.kind, e.corpse.frame, e.corpse.headBroken, e.corpse.tailBroken)).setDepth(D.corpse));
-      this.corpses.push({ img, x: e.at.x, y: e.at.y, t: 1 });
+      const cx = this.v.x(e.at.x, e.at.y);
+      const cy = this.v.y(e.at.x, e.at.y);
+      const img = this.inWorld(this.add.image(cx, cy, TEX.monster(e.kind, e.corpse.frame, e.corpse.headBroken, e.corpse.tailBroken)).setDepth(D.corpse));
+      this.corpses.push({ img, x: cx, y: cy, t: 1 });
       bump(TUNING.combat.killHitstop, 0.22);
       snd('kill');
       hud.toast(th.log.hunted(monName(e.kind), fmtItems(e.drops)));
@@ -743,7 +753,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     let lastHatch = -1;
     ev.on('ranch:hatched', (e) => {
       // several eggs can hatch in the same frame (e.g. after reopening the game): one message
-      if (this.s.time !== lastHatch) float(e.at.x, e.at.y - 10, th.ranch.hatched, '#ffe08a', true);
+      if (this.s.time !== lastHatch) float(e.at, 0, -10, th.ranch.hatched, '#ffe08a', true);
       lastHatch = this.s.time;
       fx.burst(e.at.x, e.at.y, '#ffd84a', 12, 60, 'chunk');
       snd('harvest');
@@ -760,7 +770,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.sheet.markDirty();
     });
     ev.on('ranch:petted', (e) => {
-      float(e.at.x, e.at.y - 14, e.loved ? `♥ ${e.love}/${TUNING.ranch.maxLove}` : th.ranch.happy, e.loved ? '#ff8fb0' : '#fff3c4', e.loved);
+      float(e.at, 0, -14, e.loved ? `♥ ${e.love}/${TUNING.ranch.maxLove}` : th.ranch.happy, e.loved ? '#ff8fb0' : '#fff3c4', e.loved);
       if (e.loved) fx.burst(e.at.x, e.at.y - 6, '#ff8fb0', 6, 30, 'dust');
       snd(e.loved ? 'pickup' : 'ui');
     });
@@ -768,7 +778,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       if (this.s.area === 'home') fx.burst(e.at.x, e.at.y, '#f6ead0', 4, 25, 'dust');
     });
     ev.on('ranch:collected', (e) => {
-      float(e.at.x, e.at.y - 12, fmtItems(e.items), '#ffd166', true);
+      float(e.at, 0, -12, fmtItems(e.items), '#ffd166', true);
       fx.burst(e.at.x, e.at.y, '#f6ead0', 10, 60, 'chunk');
       snd('harvest');
       hud.toast(th.ranch.collected(fmtItems(e.items)), 'gold');
@@ -780,14 +790,14 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       hud.toast(th.log.huntTimeout(monName(e.kind)), 'bad');
     });
     ev.on('player:hurt', (e) => {
-      float(e.at.x, e.at.y - 16, `-${e.damage}`, '#ff6b5e', true);
+      float(e.at, 0, -16, `-${e.damage}`, '#ff6b5e', true);
       fx.burst(e.at.x, e.at.y, '#ff6b5e', 8);
       bump(0.06, e.heavy ? 0.25 : 0.14);
       vibrate(40);
       snd('hurt');
     });
     ev.on('player:dodged', (e) => {
-      float(e.at.x, e.at.y - 18, th.floats.dodged, '#ffd35c', true);
+      float(e.at, 0, -18, th.floats.dodged, '#ffd35c', true);
       fx.burst(e.at.x, e.at.y, '#fff3c4', 6, 60);
       snd('dodge');
     });
@@ -795,9 +805,9 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       fx.burst(e.at.x, e.at.y + 6, '#e8d8b0', 6, 40, 'dust');
       snd('roll');
     });
-    ev.on('player:tired', (e) => float(e.at.x, e.at.y - 16, th.floats.tired, '#c8c2b0'));
+    ev.on('player:tired', (e) => float(e.at, 0, -16, th.floats.tired, '#c8c2b0'));
     ev.on('player:drink', (e) => {
-      float(e.at.x, e.at.y - 16, `+${e.heal}`, '#8ff08a', true);
+      float(e.at, 0, -16, `+${e.heal}`, '#8ff08a', true);
       fx.healGlow(e.at.x, e.at.y);
       snd('drink');
       if (e.auto) hud.toast(th.log.autoDrank(this.s.player.potions));
@@ -809,8 +819,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     ev.on('player:knockedOut', () => hud.toast(this.s.map.camp ? th.log.knockedOutCamp : th.log.knockedOut, 'bad'));
     ev.on('area:changed', () => this.enterArea());
     ev.on('player:revived', (e) => {
-      this.camFX = e.at.x - this.VW / 2;
-      this.camFY = e.at.y - this.VH / 2;
+      this.camFX = this.v.x(e.at.x, e.at.y) - this.VW / 2;
+      this.camFY = this.v.y(e.at.x, e.at.y) - this.VH / 2;
       if (e.camp) hud.toast(th.log.revivedCamp, 'gold');
     });
     ev.on('skill:cast', (e) => {
@@ -836,14 +846,14 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     ev.on('shot:blocked', (e) => fx.burst(e.at.x, e.at.y - 4, '#e8d8b0', 4, 40, 'dust'));
     ev.on('crop:planted', (e) => {
-      float(e.at.x, e.at.y - 10, th.floats.planted(th.crops[e.crop].name), CROPS[e.crop].color);
+      float(e.at, 0, -10, th.floats.planted(th.crops[e.crop].name), CROPS[e.crop].color);
       fx.burst(e.at.x, e.at.y + 3, '#a8754a', 6, 40, 'dust');
       snd('plant');
       this.sheet.markDirty();
       this.save();
     });
     ev.on('crop:harvested', (e) => {
-      float(e.at.x, e.at.y - 12, th.floats.harvested, '#ffd166', true);
+      float(e.at, 0, -12, th.floats.harvested, '#ffd166', true);
       fx.burst(e.at.x, e.at.y, CROPS[e.crop].color, 12, 70, 'chunk');
       snd('harvest');
       hud.toast(th.log.harvested(th.crops[e.crop].name, fmtItems(e.drops)), 'gold');
@@ -856,7 +866,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     ev.on('item:gathered', (e) => {
       const c = MATERIALS[e.item as MaterialId].color;
-      float(e.at.x, e.at.y - 10, `+${e.amount}`, c, true);
+      float(e.at, 0, -10, `+${e.amount}`, c, true);
       fx.burst(e.at.x, e.at.y, c, 8, 50);
       snd('pickup');
       hud.toast(th.log.gathered(fmtItems({ [e.item]: e.amount })));
@@ -872,7 +882,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     });
     ev.on('request:ready', () => {
       const p = this.s.player;
-      float(p.x, p.y - 22, th.request.done, '#ffd166', true);
+      float(p, 0, -22, th.request.done, '#ffd166', true);
       hud.toast(th.request.readyLog, 'gold');
       snd('craft');
     });
@@ -881,7 +891,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const at = this.s.player;
       const got = [fmtItems(e.items), e.potions ? th.request.potions(e.potions) : ''].filter(Boolean).join(', ');
       hud.toast(th.request.claimedLog(got), 'gold');
-      float(at.x, at.y + 4, th.request.done, '#ffd166', true);
+      float(at, 0, 4, th.request.done, '#ffd166', true);
       fx.burst(at.x, at.y, '#ffd35c', 18, 90);
       snd('craft');
       this.sheet.markDirty();
@@ -907,16 +917,17 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const intent = this.mixer.mix(this.collectHuman(), s.autoOn ? () => autoIntent(s, this.auto, dt) : null, dt);
       step(s, intent, dt, Date.now());
       if (dt > 0) {
-        if (s.player.dash) this.playerView.addGhost(s.player.x, s.player.y, s.player.face);
+        if (s.player.dash) this.playerView.addGhost(this.v.x(s.player.x, s.player.y), this.v.y(s.player.x, s.player.y), this.v.iso ? this.v.face(s.player.fx, s.player.fy, s.player.face) : s.player.face);
         if (s.player.moving && Math.random() < dt * 4) this.effects.walkDust(s.player.x, s.player.y);
         for (const m of s.monsters) if (m.mode === 'dash' && Math.random() < 0.7) this.effects.dashDust(m.x, m.y + MONSTERS[m.kind].size * 0.6, MONSTERS[m.kind].size >= 12 ? '#c8905a' : '#c8b890');
-        this.effects.ambient(dt, this.viewRect(), zoneAtPx(s.map, this.camX + this.VW / 2, this.camY + this.VH / 2), s.player);
+        const mid = this.v.toWorld(this.camX + this.VW / 2, this.camY + this.VH / 2);
+        this.effects.ambient(dt, this.viewRect(), zoneAtPx(s.map, mid.x, mid.y), s.player);
         this.effects.update(dt, this.clock);
         for (const c of this.clouds) {
           c.x += c.v * dt;
-          if (c.x - c.rx > MW * T) {
+          if (c.x - c.rx > this.v.width) {
             c.x = -c.rx;
-            c.y = Math.random() * MH * T;
+            c.y = Math.random() * this.v.height;
           }
         }
         for (const c of this.corpses) c.t -= dt * 1.1;
@@ -929,7 +940,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.text.update(this, raw);
     this.hud.minimap.draw(s);
     if (this.sheet.isOpen) this.plotPop.close();
-    this.plotPop.update((wx, wy) => ({ x: ((wx - this.camX) * this.S) / this.dpr, y: ((wy - this.camY) * this.S) / this.dpr }));
+    this.plotPop.update((wx, wy) => ({ x: ((this.v.x(wx, wy) - this.camX) * this.S) / this.dpr, y: ((this.v.y(wx, wy) - this.camY) * this.S) / this.dpr }));
 
     this.uiT -= raw;
     if (this.uiT <= 0) {
@@ -966,6 +977,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const jm = normaliseMove(this.joystick.vx, this.joystick.vy, TUNING.input.joystickDeadzone);
       if (jm) move = jm;
     }
+    // the stick points on screen; on the isometric map that is a diagonal in the world
+    if (move && this.v.iso) move = this.v.dirToWorld(move.x, move.y);
     return { ...h, move, attackHeld: this.padAttackHeld || (this.keyboard.attackHeld && !this.ctx) };
   }
 
@@ -975,15 +988,16 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
   /** How far (px) the camera may scroll above the map's north edge: portrait screens only. */
   private topOverscroll(): number {
-    return this.VH > this.VW ? Math.min(EDGE_FILL, Math.round(this.VH * PORTRAIT_TOP_OVERSCROLL)) : 0;
+    return this.VH > this.VW && !this.v.iso ? Math.min(EDGE_FILL, Math.round(this.VH * PORTRAIT_TOP_OVERSCROLL)) : 0;
   }
 
   /** How far (px) the camera may scroll below the map's south edge: portrait screens only. */
   private bottomOverscroll(): number {
-    return this.VH > this.VW ? Math.min(EDGE_FILL, Math.round(this.VH * PORTRAIT_BOTTOM_OVERSCROLL)) : 0;
+    return this.VH > this.VW && !this.v.iso ? Math.min(EDGE_FILL, Math.round(this.VH * PORTRAIT_BOTTOM_OVERSCROLL)) : 0;
   }
 
   private clampCamY(v: number): number {
+    if (this.v.iso) return Phaser.Math.Clamp(v, -this.VH * 0.25, this.v.height - this.VH * 0.75);
     const maxY = MH * T - this.VH;
     return maxY < 0 ? maxY / 2 : Phaser.Math.Clamp(v, -this.topOverscroll(), maxY + this.bottomOverscroll());
   }
@@ -1026,10 +1040,14 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   /** The home ground is the painted map stretched over the tile grid; other areas are 1:1 pixel art with a canopy layer. */
   private fitGround(): void {
     const home = this.s.area === 'home';
-    if (home) this.groundImg.setDisplaySize(MW * T, MH * T);
+    if (home) this.groundImg.setDisplaySize(this.v.width, this.v.height);
     else this.groundImg.setScale(1);
     this.canopyImg.setVisible(!home);
+    this.floor.setVisible(home);
     this.village.setVisible(home);
+    for (const img of [this.northGround, this.southGround, this.northCanopy, this.southCanopy]) if (home) img.setVisible(false);
+    this.gEdgeShade?.setVisible(!home);
+    if (!home) this.edgeArea = null;
   }
 
   /** Darkens both strips away from the map so they read as deep forest beyond the area, not open ground. */
@@ -1047,12 +1065,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private updateCamera(rdt: number): void {
     const p = this.s.player;
     if (this.topOverscroll() > 0) this.syncEdgeFills();
-    const maxX = MW * T - this.VW;
-    const clampX = (v: number): number => (maxX < 0 ? maxX / 2 : Phaser.Math.Clamp(v, 0, maxX));
+    const clampX = (v: number): number => this.clampCamX(v);
     const clampY = (v: number): number => this.clampCamY(v);
     const k = Math.min(1, rdt * 7);
-    this.camFX += (clampX(p.x - this.VW / 2) - this.camFX) * k;
-    this.camFY += (clampY(p.y - this.VH / 2) - this.camFY) * k;
+    this.camFX += (clampX(this.v.x(p.x, p.y) - this.VW / 2) - this.camFX) * k;
+    this.camFY += (clampY(this.v.y(p.x, p.y) - this.VH / 2) - this.camFY) * k;
     let sx = 0;
     let sy = 0;
     if (this.shake > 0 && !reduceMotion) {
@@ -1062,6 +1079,20 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.camX = clampX(Math.round(this.camFX + sx));
     this.camY = clampY(Math.round(this.camFY + sy));
     this.cameras.main.centerOn(this.camX + this.VW / 2, this.camY + this.VH / 2);
+  }
+
+  private clampCamX(v: number): number {
+    // the isometric map is a diamond: let the view slide a little past its corners
+    if (this.v.iso) return Phaser.Math.Clamp(v, -this.VW * 0.25, this.v.width - this.VW * 0.75);
+    const maxX = MW * T - this.VW;
+    return maxX < 0 ? maxX / 2 : Phaser.Math.Clamp(v, 0, maxX);
+  }
+
+  /** Puts the camera straight on the player (load, area change). */
+  private snapCamera(): void {
+    const p = this.s.player;
+    this.camFX = this.clampCamX(this.v.x(p.x, p.y) - this.VW / 2);
+    this.camFY = this.clampCamY(this.v.y(p.x, p.y) - this.VH / 2);
   }
 
   // ---------------------------------------------------------------- drawing
@@ -1080,34 +1111,46 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     this.drawText(time);
   }
 
+  /** Is screen point (x, y) on screen (with a margin)? */
   private inView(x: number, y: number, pad: number): boolean {
     return x > this.camX - pad && y > this.camY - pad && x < this.camX + this.VW + pad && y < this.camY + this.VH + pad;
   }
 
+  /** Screen position of a world point. */
+  private sp(x: number, y: number): { x: number; y: number } {
+    return { x: this.v.x(x, y), y: this.v.y(x, y) };
+  }
+
   private drawGround(time: number): void {
     const g = this.gGround.clear();
+    // px draws in screen space; anchors come from sp()
     const px = (x: number, y: number, c: number, w = 1, h = 1, a = 1): void => {
       g.fillStyle(c, a).fillRect(x, y, w, h);
     };
-    // water sparkle
-    const x0 = Math.floor(this.camX / T);
-    const y0 = Math.floor(this.camY / T);
-    for (let yy = y0; yy <= y0 + this.VH / T + 1; yy++) {
-      for (let xx = x0; xx <= x0 + this.VW / T + 1; xx++) {
-        if (xx < 0 || yy < 0 || xx >= MW || yy >= MH || tileAt(this.s.map, xx, yy) !== Tile.WATER) continue;
-        const o = (xx * 7 + yy * 13) % 16;
-        if (Math.sin(time * 2 + o) > 0.3) px(xx * T + 3 + ((o + Math.floor(time * 4)) % 9), yy * T + 7 + ((o * 5) % 6), this.s.map.biome === 'peat' ? 0xfff0c8 : 0xc8fff0, 2, 1);
+    // water sparkle (the flat wild maps; the village stream has its own painted ripples)
+    if (!this.v.iso) {
+      const x0 = Math.floor(this.camX / T);
+      const y0 = Math.floor(this.camY / T);
+      for (let yy = y0; yy <= y0 + this.VH / T + 1; yy++) {
+        for (let xx = x0; xx <= x0 + this.VW / T + 1; xx++) {
+          if (xx < 0 || yy < 0 || xx >= MW || yy >= MH || tileAt(this.s.map, xx, yy) !== Tile.WATER) continue;
+          const o = (xx * 7 + yy * 13) % 16;
+          if (Math.sin(time * 2 + o) > 0.3) px(xx * T + 3 + ((o + Math.floor(time * 4)) % 9), yy * T + 7 + ((o * 5) % 6), this.s.map.biome === 'peat' ? 0xfff0c8 : 0xc8fff0, 2, 1);
+        }
       }
     }
     const camp = this.s.map.camp;
-    if (camp && this.inView(camp.fire.x, camp.fire.y, 40)) {
-      // campfire flames, same flicker as the kitchen pot
-      for (let i = 0; i < 5; i++) {
-        const ox = i - 2;
-        const hg = Math.max(1, Math.round((4 - Math.abs(ox)) * 1.4 + Math.sin(time * 11 + i * 1.9)));
-        for (let k = 0; k < hg; k++) px(camp.fire.x + ox, camp.fire.y + 1 - k, k / hg < 0.45 ? 0xffd35c : 0xff6a2a);
+    if (camp) {
+      const f = this.sp(camp.fire.x, camp.fire.y);
+      if (this.inView(f.x, f.y, 40)) {
+        // campfire flames
+        for (let i = 0; i < 5; i++) {
+          const ox = i - 2;
+          const hg = Math.max(1, Math.round((4 - Math.abs(ox)) * 1.4 + Math.sin(time * 11 + i * 1.9)));
+          for (let k = 0; k < hg; k++) px(f.x + ox, f.y + 1 - k, k / hg < 0.45 ? 0xffd35c : 0xff6a2a);
+        }
+        if (Math.floor(time * 6) % 3 === 0) px(f.x + Math.round(Math.sin(time * 3) * 2), f.y - 7, 0xffe08a, 1, 1);
       }
-      if (Math.floor(time * 6) % 3 === 0) px(camp.fire.x + Math.round(Math.sin(time * 3) * 2), camp.fire.y - 7, 0xffe08a, 1, 1);
     }
     if (this.s.area !== 'home') {
       // field crop images live in world space: hide them or they show up on every other map
@@ -1124,66 +1167,64 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       }
       const pr = plotProgress(pl, this.s.now);
       const stage = pr < 0.25 ? 0 : pr < 0.6 ? 1 : pr < 1 ? 2 : 3;
+      const at = this.sp(pl.x, pl.y);
       if (pl.bed !== 'soil') {
-        this.drawFieldCrop(i, pl.crop, pl.x, pl.y, stage, time);
+        this.drawFieldCrop(i, pl.crop, at.x, at.y, stage, time);
         if (pr >= 1 && Math.floor(time * 3 + i) % 4 === 0) {
-          px(pl.x + 9, pl.y - 12, 0xfffbe0, 1, 3);
-          px(pl.x + 8, pl.y - 11, 0xfffbe0, 3, 1);
+          px(at.x + 9, at.y - 12, 0xfffbe0, 1, 3);
+          px(at.x + 8, at.y - 11, 0xfffbe0, 3, 1);
         }
         return;
       }
-      const X = pl.tx * T;
-      const Y = pl.ty * T;
-      for (let k = 0; k < 3; k++) drawPlant(px, X + 4 + k * 4, Y + 12 - (k % 2), pl.crop, stage);
+      const c = this.sp((pl.tx + 0.5) * T, (pl.ty + 0.5) * T);
+      for (let k = 0; k < 3; k++) drawPlant(px, Math.round(c.x - 4 + k * 4), Math.round(c.y + 3 - (k % 2)), pl.crop, stage);
       if (pr >= 1) {
         if (Math.floor(time * 4 + pl.tx) % 3 === 0) {
-          px(X + 13, Y + 1, 0xfffbe0, 1, 3);
-          px(X + 12, Y + 2, 0xfffbe0, 3, 1);
+          px(c.x + 5, c.y - 7, 0xfffbe0, 1, 3);
+          px(c.x + 4, c.y - 6, 0xfffbe0, 3, 1);
         }
       } else {
-        px(X + 2, Y + 14, 0x1e1008, 12, 2, 0.85);
-        px(X + 2, Y + 14, parseInt(CROPS[pl.crop].color.slice(1), 16), Math.max(1, Math.round(12 * pr)), 2);
+        px(c.x - 6, c.y + 5, 0x1e1008, 12, 2, 0.85);
+        px(c.x - 6, c.y + 5, parseInt(CROPS[pl.crop].color.slice(1), 16), Math.max(1, Math.round(12 * pr)), 2);
       }
     });
   }
 
-  /** Feed in the trough, eggs in the nest basket (laid ones and ones still hatching), love hearts. */
+  /** Eggs in the nest (laid ones and ones still hatching), feed in the trough, love hearts. */
   private drawCoopLive(px: (x: number, y: number, c: number, w?: number, h?: number, a?: number) => void, time: number): void {
     const r = this.s.ranch;
     const R = TUNING.ranch;
     const fill = Math.min(1, r.trough / R.troughMax);
-    // the painted map has no trough or nest: a plank trough and a straw nest
-    px(TROUGH.x - 7, TROUGH.y - 3, 0x7a4a26, 14, 5);
-    px(TROUGH.x - 6, TROUGH.y - 2, 0x4a2c16, 12, 2);
-    px(NEST.x - 6, NEST.y - 2, 0xb08a48, 12, 4);
-    px(NEST.x - 5, NEST.y - 3, 0xd8b868, 10, 2);
+    const tr = this.sp(TROUGH.x, TROUGH.y);
     if (fill > 0) {
       const w = Math.max(2, Math.round(12 * fill));
-      px(TROUGH.x - 6, TROUGH.y - 2, 0xe8d890, w, 2);
-      for (let k = 0; k < w; k += 3) px(TROUGH.x - 6 + k, TROUGH.y - 3, 0xc8a050, 1, 1);
+      px(tr.x - 6, tr.y - 2, 0xe8d890, w, 2);
+      for (let k = 0; k < w; k += 3) px(tr.x - 6 + k, tr.y - 3, 0xc8a050, 1, 1);
     }
-    // eggs in the basket: up to 5 drawn, the label carries the count
+    // eggs: up to 5 drawn, the label carries the count
+    const ne = this.sp(NEST.x, NEST.y);
     const eggs = Math.min(5, basketCount(r));
     const spots = [[-3, -2], [1, -2], [-1, -3], [3, -3], [-4, -3]] as const;
     for (let i = 0; i < eggs; i++) {
       const [dx, dy] = spots[i] ?? [0, 0];
-      px(NEST.x + dx, NEST.y + dy, 0xf6ead0, 2, 3);
-      px(NEST.x + dx, NEST.y + dy, 0xffffff, 1, 1);
+      px(ne.x + dx, ne.y + dy, 0xf6ead0, 2, 3);
+      px(ne.x + dx, ne.y + dy, 0xffffff, 1, 1);
     }
     // eggs still hatching wobble now and then
     r.nest.forEach((_, i) => {
       const wob = Math.sin(time * 9 + i * 2) > 0.85 ? 1 : 0;
-      const x = NEST.x + 4 - i * 4 + wob;
-      px(x, NEST.y - 4, 0xd8b88a, 3, 4);
-      px(x + 1, NEST.y - 3, 0x9a7a4a, 1, 1);
+      const x = ne.x + 4 - i * 4 + wob;
+      px(x, ne.y - 4, 0xd8b88a, 3, 4);
+      px(x + 1, ne.y - 3, 0x9a7a4a, 1, 1);
     });
     // a heart over hens that can be petted again (only once the player is close)
     const p = this.s.player;
     if (Math.hypot(COOP_CENTER.x - p.x, COOP_CENTER.y - p.y) < 70) {
       for (const h of r.hens) {
         if (!canLove(h, this.s.now)) continue;
-        const y = Math.round(h.y - 14 + Math.sin(time * 3 + h.id) * 1.2);
-        const x = Math.round(h.x);
+        const hp = this.sp(h.x, h.y);
+        const y = Math.round(hp.y - 14 + Math.sin(time * 3 + h.id) * 1.2);
+        const x = Math.round(hp.x);
         px(x - 2, y, 0xff6a8a, 2, 2);
         px(x + 1, y, 0xff6a8a, 2, 2);
         px(x - 1, y + 2, 0xff6a8a, 3, 1);
@@ -1194,8 +1235,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   }
 
   /**
-   * Paddy and pond crops: rice and lotus are textures swapped by stage (no progress bars on the
-   * field; the menu and the ripe label carry that), fish are a few shadows circling under ripples.
+   * Paddy and pond crops (x, y on screen): rice and lotus are textures swapped by stage, fish are a
+   * few shadows circling under ripples.
    */
   private drawFieldCrop(i: number, crop: string, x: number, y: number, stage: number, time: number): void {
     let img = this.cropImgs.get(i);
@@ -1235,18 +1276,19 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const img = this.nodeImgs.get(n.id);
       if (!img) continue;
       img.setVisible(n.ready);
+      const at = this.sp(n.x, n.y);
       if (!n.ready) {
-        g.fillStyle(0x000000, 0.18).fillRect(n.x - 3, n.y + 2, 6, 2);
+        g.fillStyle(0x000000, 0.18).fillRect(at.x - 3, at.y + 2, 6, 2);
         continue;
       }
       const bob = n.kind === 'herb' ? Math.round(Math.sin(time * 2 + n.tx) * 0.6) : 0;
-      img.setPosition(Math.round(n.x), Math.round(n.y - 1 + bob));
-      g.fillStyle(0x142814, 0.25).fillEllipse(n.x, n.y + 4, 10, 3.2);
-      if ((Math.floor(time * 1.5) + n.tx) % 4 === 0) g.fillStyle(0xfffbe0, 1).fillRect(n.x + 3, n.y - 7 - Math.round(((time * 6) % 1) * 2), 1, 1);
+      img.setPosition(Math.round(at.x), Math.round(at.y - 1 + bob));
+      g.fillStyle(0x142814, 0.25).fillEllipse(at.x, at.y + 4, 10, 3.2);
+      if ((Math.floor(time * 1.5) + n.tx) % 4 === 0) g.fillStyle(0xfffbe0, 1).fillRect(at.x + 3, at.y - 7 - Math.round(((time * 6) % 1) * 2), 1, 1);
       if (p.gatherNode === n.id && p.gatherT > 0) {
         g.lineStyle(2, 0xffd166, 1);
         g.beginPath();
-        g.arc(n.x, n.y - 1, 9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (p.gatherT / TUNING.gather.holdTime));
+        g.arc(at.x, at.y - 1, 9, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (p.gatherT / TUNING.gather.holdTime));
         g.strokePath();
       }
     }
@@ -1254,6 +1296,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
   private drawTelegraphs(time: number): void {
     const g = this.gTele.clear();
+    const v = this.v;
     const pulse = 0.55 + 0.45 * Math.sin(time * 22);
     const edge = Phaser.Display.Color.GetColor(255, Math.round(80 + pulse * 100), 70);
     for (const m of this.s.monsters) {
@@ -1261,16 +1304,19 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       if (m.mode !== 'tele' || !sh) continue;
       const prog = Math.min(1, 1 - m.t / m.tt);
       if (sh.kind === 'circle') {
-        g.fillStyle(0xe6281e, 0.2).fillCircle(sh.cx, sh.cy, sh.r);
-        g.fillStyle(0xff3c28, 0.38).fillCircle(sh.cx, sh.cy, sh.r * prog);
-        g.lineStyle(1, edge, 1).strokeCircle(sh.cx, sh.cy, sh.r);
+        // a world circle is an ellipse on the isometric map
+        const cx = v.x(sh.cx, sh.cy);
+        const cy = v.y(sh.cx, sh.cy);
+        g.fillStyle(0xe6281e, 0.2).fillEllipse(cx, cy, v.rx(sh.r) * 2, v.ry(sh.r) * 2);
+        g.fillStyle(0xff3c28, 0.38).fillEllipse(cx, cy, v.rx(sh.r * prog) * 2, v.ry(sh.r * prog) * 2);
+        g.lineStyle(1, edge, 1).strokeEllipse(cx, cy, v.rx(sh.r) * 2, v.ry(sh.r) * 2);
       } else {
         const quad = (len: number): Phaser.Types.Math.Vector2Like[] => {
           const nx = -sh.uy * (sh.wd / 2);
           const ny = sh.ux * (sh.wd / 2);
           const ex = sh.sx + sh.ux * len;
           const ey = sh.sy + sh.uy * len;
-          return [{ x: sh.sx + nx, y: sh.sy + ny }, { x: ex + nx, y: ey + ny }, { x: ex - nx, y: ey - ny }, { x: sh.sx - nx, y: sh.sy - ny }];
+          return [[sh.sx + nx, sh.sy + ny], [ex + nx, ey + ny], [ex - nx, ey - ny], [sh.sx - nx, sh.sy - ny]].map(([x, y]) => ({ x: v.x(x ?? 0, y ?? 0), y: v.y(x ?? 0, y ?? 0) }));
         };
         g.fillStyle(0xe6281e, 0.2).fillPoints(quad(sh.len), true);
         g.fillStyle(0xff3c28, 0.38).fillPoints(quad(sh.len * prog), true);
@@ -1281,56 +1327,57 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
 
   private drawEntities(time: number): void {
     const s = this.s;
+    const v = this.v;
     const sh = this.gShadow.clear();
     const sa = this.gShadowAdd.clear();
     const p = s.player;
-    sh.fillStyle(0x142814, 0.3).fillEllipse(p.x, p.y + 8, 12, 4);
+    const ps = this.sp(p.x, p.y);
+    sh.fillStyle(0x142814, 0.3).fillEllipse(ps.x, ps.y + 8, 12, 4);
 
     const alive = new Set<number>();
     for (const m of s.monsters) {
       alive.add(m.id);
-      let v = this.monsterViews.get(m.id);
-      if (!v) {
-        v = new MonsterView(this, this.inWorld, m);
-        this.monsterViews.set(m.id, v);
+      let mv = this.monsterViews.get(m.id);
+      if (!mv) {
+        mv = new MonsterView(this, this.inWorld, m);
+        this.monsterViews.set(m.id, mv);
       }
-      v.update(m, time);
+      mv.update(m, time, v);
       const size = MONSTERS[m.kind].size;
-      v.img.setVisible(!m.burrow);
+      const ms = this.sp(m.x, m.y);
+      mv.img.setVisible(!m.burrow);
       // fliers circle well above their shadow
-      if (m.air) v.img.y -= 16 + Math.round(Math.sin(time * 4 + m.id) * 2);
+      if (m.air) mv.img.y -= 16 + Math.round(Math.sin(time * 4 + m.id) * 2);
       if (m.burrow) {
         // underground: a moving ridge of loose earth instead of the sprite
         for (let i = 0; i < 4; i++) {
           const k = Math.sin(time * 14 + i * 1.7);
-          sh.fillStyle(i % 2 ? 0x8a6a4a : 0x6a4a30, 0.85).fillEllipse(m.x - m.dirX * i * 3, m.y + 2 - Math.max(0, k), 6 - i, 3);
+          sh.fillStyle(i % 2 ? 0x8a6a4a : 0x6a4a30, 0.85).fillEllipse(ms.x - m.dirX * i * 3, ms.y + 2 - Math.max(0, k), 6 - i, 3);
         }
         continue;
       }
-      const feet = MonsterView.feet(m, v.img.height);
-      sh.fillStyle(0x142814, 0.3).fillEllipse(m.x, feet, size * 1.9, size * 0.64);
-      if (m.rage) sa.fillStyle(0xff501e, 0.14 + 0.08 * Math.sin(time * 10)).fillEllipse(m.x, m.y, (size + 6) * 2, size * 1.6);
+      const feet = MonsterView.feet(m, mv.img.height, v);
+      sh.fillStyle(0x142814, 0.3).fillEllipse(ms.x, feet, size * 1.9, size * 0.64);
+      if (m.rage) sa.fillStyle(0xff501e, 0.14 + 0.08 * Math.sin(time * 10)).fillEllipse(ms.x, ms.y, (size + 6) * 2, size * 1.6);
       if (m.vet) {
         // veteran: a slow golden ring at the feet; alpha: a faster crimson one
         const k = 0.5 + 0.5 * Math.sin(time * (m.alpha ? 6 : 3) + m.id);
-        sa.lineStyle(m.alpha ? 1.5 : 1, m.alpha ? 0xff4a6a : 0xffcf4a, 0.35 + 0.25 * k).strokeEllipse(m.x, feet, size * 2.3 + k * 3, size * 0.8 + k);
+        sa.lineStyle(m.alpha ? 1.5 : 1, m.alpha ? 0xff4a6a : 0xffcf4a, 0.35 + 0.25 * k).strokeEllipse(ms.x, feet, size * 2.3 + k * 3, size * 0.8 + k);
       }
     }
-    for (const [id, v] of this.monsterViews) {
+    for (const [id, mv] of this.monsterViews) {
       if (alive.has(id)) continue;
-      v.destroy();
+      mv.destroy();
       this.monsterViews.delete(id);
     }
     this.updateHens(sh);
-    if (s.area === 'home') this.village.update(s.player.x, s.player.y, time, Math.min(0.05, this.game.loop.delta / 1000), this.cameras.main.worldView);
-    {
-      for (const n of s.npcs) {
-        if (!npcActive(s, n.id)) continue;
-        this.npcViews.get(n.id)?.update(n, time);
-        sh.fillStyle(0x142814, 0.3).fillEllipse(n.x, n.y + 8, 12, 4);
-      }
+    if (s.area === 'home') this.village.update(ps.x, ps.y, time, Math.min(0.05, this.game.loop.delta / 1000), this.cameras.main.worldView);
+    for (const n of s.npcs) {
+      if (!npcActive(s, n.id)) continue;
+      this.npcViews.get(n.id)?.update(n, time, v, ps.x);
+      sh.fillStyle(0x142814, 0.3).fillEllipse(v.x(n.x, n.y), v.y(n.x, n.y) + 8, 12, 4);
     }
-    this.playerView.update(s, time, this.hitstop > 0 ? 0 : Math.min(0.05, this.game.loop.delta / 1000));
+    this.playerView.update(s, time, this.hitstop > 0 ? 0 : Math.min(0.05, this.game.loop.delta / 1000), v);
 
     for (const c of this.corpses) {
       const t = Math.max(0, c.t);
@@ -1348,39 +1395,42 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const pl = this.s.player;
     if (pl.grab) {
       // the python's coils around the player
+      const ps = this.sp(pl.x, pl.y);
       for (let i = 0; i < 3; i++) {
-        const y = pl.y - 2 - i * 5 + Math.sin(time * 9 + i) * 0.6;
-        g.lineStyle(3, 0x8a7a4a, 1).strokeEllipse(pl.x, y, 16 - i, 6);
-        g.lineStyle(1, 0xd8c890, 1).strokeEllipse(pl.x, y - 1, 14 - i, 4);
+        const y = ps.y - 2 - i * 5 + Math.sin(time * 9 + i) * 0.6;
+        g.lineStyle(3, 0x8a7a4a, 1).strokeEllipse(ps.x, y, 16 - i, 6);
+        g.lineStyle(1, 0xd8c890, 1).strokeEllipse(ps.x, y - 1, 14 - i, 4);
       }
     }
     const s = this.s;
     const lock = findMonster(s, s.player.lockId);
     if (lock) {
       const sz = MONSTERS[lock.kind].size + 5;
+      const ls = this.sp(lock.x, lock.y);
       g.fillStyle(0xffd166, 0.6 + 0.4 * Math.sin(time * 8));
       for (const [qx, qy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
-        const cx = Math.round(lock.x + qx * sz);
-        const cy = Math.round(lock.y + qy * sz * 0.8);
+        const cx = Math.round(ls.x + qx * sz);
+        const cy = Math.round(ls.y + qy * sz * 0.8);
         g.fillRect(cx - (qx > 0 ? 2 : 0), cy, 3, 1);
         g.fillRect(cx, cy - (qy > 0 ? 2 : 0), 1, 3);
       }
     }
     for (const m of s.monsters) {
-      const v = this.monsterViews.get(m.id);
-      if (!v) continue;
+      const mv = this.monsterViews.get(m.id);
+      if (!mv) continue;
       const def = MONSTERS[m.kind];
+      const ms = this.sp(m.x, m.y);
       if (m.mode === 'stun') {
         for (let i = 0; i < 3; i++) {
           const a = time * 5 + i * 2.09;
-          g.fillStyle(0xffd35c, 1).fillRect(Math.round(m.x + Math.cos(a) * 9), Math.round(m.y - v.img.height / 2 - 4 + Math.sin(a) * 2), 2, 2);
+          g.fillStyle(0xffd35c, 1).fillRect(Math.round(ms.x + Math.cos(a) * 9), Math.round(ms.y - mv.img.height / 2 - 4 + Math.sin(a) * 2), 2, 2);
         }
       }
       if (!(m.aggro || lock === m) || m.burrow) continue;
       const bw = def.size * 2;
-      const yy = Math.round(m.y - v.img.height / 2 - 5);
-      g.fillStyle(0x151c2b, 1).fillRect(m.x - bw / 2 - 1, yy - 1, bw + 2, 4);
-      g.fillStyle(0xf08a3c, 1).fillRect(m.x - bw / 2, yy, Math.max(0, Math.round((bw * m.hp) / m.maxHp)), 2);
+      const yy = Math.round(ms.y - mv.img.height / 2 - 5);
+      g.fillStyle(0x151c2b, 1).fillRect(ms.x - bw / 2 - 1, yy - 1, bw + 2, 4);
+      g.fillStyle(0xf08a3c, 1).fillRect(ms.x - bw / 2, yy, Math.max(0, Math.round((bw * m.hp) / m.maxHp)), 2);
     }
   }
 
@@ -1394,9 +1444,11 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     }
   }
 
-  /** Additive warm glows; anything off-screen is hidden so it costs nothing. */
+  /** Additive warm glows; anything off-screen is hidden so it costs nothing. Light positions are world px. */
   private drawGlows(time: number): void {
-    const place = (img: Phaser.GameObjects.Image, x: number, y: number, r: number, alpha: number): void => {
+    const place = (img: Phaser.GameObjects.Image, wx: number, wy: number, r: number, alpha: number): void => {
+      const x = this.v.x(wx, wy);
+      const y = this.v.y(wx, wy);
       const rr = r + Math.sin(time * 5 + x) * 1.5;
       const vis = this.inView(x, y, rr);
       img.setVisible(vis);
@@ -1425,6 +1477,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const s = this.s;
     const p = s.player;
     const t = this.text;
+    // labels are placed in screen px: world anchor projected, then nudged up by dy
+    const label = (text: string, at: { x: number; y: number }, dy: number, color: string): void => t.label(this, text, this.v.x(at.x, at.y), this.v.y(at.x, at.y) + dy, color);
     t.begin();
     // villagers within earshot talk; their station's name label steps aside for the bubble
     // only the nearest one talks, so two bubbles never overlap
@@ -1433,28 +1487,29 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const roleTalking = (role: string): boolean => talking.some((n) => NPCS[n.id].role === role);
     if (p.inVillage && !p.dead) {
       const near = (o: { x: number; y: number }): boolean => Math.hypot(o.x - p.x, o.y - p.y) < 90;
-      if (near(ANVIL) && !roleTalking('forge')) t.label(this, th.places.forge, ANVIL.x, ANVIL.y - 14, '#ffe7a6');
-      if (near(POT) && !roleTalking('kitchen')) t.label(this, th.places.kitchen, POT.x, POT.y - 16, '#ffe7a6');
+      if (near(ANVIL) && !roleTalking('forge')) label(th.places.forge, ANVIL, -14, '#ffe7a6');
+      if (near(POT) && !roleTalking('kitchen')) label(th.places.kitchen, POT, -22, '#ffe7a6');
       if (near(FARM_CENTER)) {
         const ripe = s.plots.filter((pl) => isRipe(pl, s.now)).length;
-        t.label(this, ripe ? th.places.farmRipe(ripe) : th.places.farm, FARM_CENTER.x, (FARM.y0 - 1) * T - 4, ripe ? '#ffe08a' : '#ffe7a6');
+        label(ripe ? th.places.farmRipe(ripe) : th.places.farm, FARM_CENTER, -20, ripe ? '#ffe08a' : '#ffe7a6');
       }
       if (near(COOP_CENTER)) {
         const eggs = basketCount(s.ranch);
-        t.label(this, eggs ? th.places.coopEggs(eggs) : th.places.coop, COOP_CENTER.x - 8, COOP.y * T - 6, eggs ? '#ffe08a' : '#ffe7a6');
+        label(eggs ? th.places.coopEggs(eggs) : th.places.coop, COOP_CENTER, -26, eggs ? '#ffe08a' : '#ffe7a6');
       }
       for (const [bed, at, name] of [['paddy', PADDY_CENTER, th.places.paddy], ['pond', POND_CENTER, th.places.pond]] as const) {
         if (!near(at)) continue;
         const ripe = s.plots.filter((pl) => pl.bed === bed && isRipe(pl, s.now)).length;
-        t.label(this, ripe ? th.places.bedRipe(name, ripe) : name, at.x, at.y - 30, ripe ? '#ffe08a' : '#ffe7a6');
+        label(ripe ? th.places.bedRipe(name, ripe) : name, at, -30, ripe ? '#ffe08a' : '#ffe7a6');
       }
     }
-    if (s.area === 'home' && p.inVillage && !p.dead && !roleTalking('requests') && Math.hypot(BOARD.x * T + 8 - p.x, BOARD.y * T + 8 - p.y) < 90) {
-      t.label(this, requestReady(s) ? th.places.boardReady : th.places.board, BOARD.x * T + 8, BOARD.y * T - 6, requestReady(s) ? '#ffe08a' : '#ffe7a6');
+    const board = { x: (BOARD.x + 1) * T, y: (BOARD.y + 0.5) * T };
+    if (s.area === 'home' && p.inVillage && !p.dead && !roleTalking('requests') && Math.hypot(board.x - p.x, board.y - p.y) < 90) {
+      label(requestReady(s) ? th.places.boardReady : th.places.board, board, -30, requestReady(s) ? '#ffe08a' : '#ffe7a6');
     }
     if (s.map.camp && !p.dead && !roleTalking('ranger') && Math.hypot(s.map.camp.x - p.x, s.map.camp.y - p.y) < 110) {
       const c = s.map.camp;
-      t.label(this, th.places.camp, c.tent.x * T + c.tent.w * 8, c.tent.y * T - 8, '#ffe7a6');
+      label(th.places.camp, { x: (c.tent.x + c.tent.w / 2) * T, y: c.tent.y * T }, -8, '#ffe7a6');
     }
     if (!p.dead) {
       // signposts: one label per arm, stacked above the post in the order the arms are painted
@@ -1465,7 +1520,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         const n = sg.arms.length;
         // labels are 19 screen px tall: step by screen px so they stack snugly at any zoom
         const gap = (21 * this.dpr) / this.S;
-        sg.arms.forEach((a, i) => t.label(this, `${SIGN_ARROWS[a.edge]} ${th.areas[a.to]}`, sg.x, sg.y - 18 - n * 5 - (n - 1 - i) * gap, '#fff3c4'));
+        sg.arms.forEach((a, i) => label(`${SIGN_ARROWS[a.edge]} ${th.areas[a.to]}`, sg, -18 - n * 5 - (n - 1 - i) * gap, '#fff3c4'));
       }
     }
     t.endLabels();
@@ -1473,13 +1528,13 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       const reqById = (id: string) => REQUESTS.find((r) => r.id === id);
       for (const n of talking) {
         const line = lineText(npcLine(s, n.id, this.talkN[n.id] ?? 0), reqById);
-        t.bubble(this, n.id, th.npcs[n.id].name, line, n.x, n.y - 16);
+        t.bubble(this, n.id, th.npcs[n.id].name, line, this.v.x(n.x, n.y), this.v.y(n.x, n.y) - 16);
       }
     }
     t.endBubbles();
     for (const m of s.monsters) {
-      const v = this.monsterViews.get(m.id);
-      if (m.mode === 'tele' && v) t.warning(this, m.id, m.x, m.y - v.img.height / 2 - 10, time);
+      const mv = this.monsterViews.get(m.id);
+      if (m.mode === 'tele' && mv) t.warning(this, m.id, this.v.x(m.x, m.y), this.v.y(m.x, m.y) - mv.img.height / 2 - 10, time);
     }
     t.endWarnings();
     t.setDead(p.dead, this.scale.width, this.scale.height, this.dpr, !!this.s.map.camp);

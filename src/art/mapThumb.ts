@@ -52,15 +52,7 @@ function tileColour(map: WorldMap, x: number, y: number, p: ThumbPalette): strin
 
 const cache = new Map<AreaId, string>();
 
-let homeThumb = '';
-
-/** The home map is painted art: BootScene composes its thumbnail once the images are loaded. */
-export function setHomeThumb(url: string): void {
-  homeThumb = url;
-}
-
 export function areaThumbUrl(map: WorldMap): string {
-  if (map.area === 'home' && homeThumb) return homeThumb;
   let url = cache.get(map.area);
   if (url) return url;
   const c = document.createElement('canvas');

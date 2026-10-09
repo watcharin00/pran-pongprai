@@ -56,56 +56,41 @@ const GEN_SMITH: Rect = { x: 6, y: 18, w: 5, h: 4 };
 const GEN_INN: Rect = { x: 19, y: 18, w: 5, h: 4 };
 const GEN_FARM = { x0: 6, y0: 30, x1: 9, y1: 31 } as const;
 
-// --- Painted village (tile coordinates, matching src/assets/maps/home.webp) ---
+// --- The isometric village (tile coordinates; layout in src/core/homeLayout.ts, tools/village/layout.py) ---
 /** Village bounds for gameplay (HP regen, menus, monster leash). */
-export const VILLAGE = { x0: 13, y0: 12, x1: 45, y1: 38 } as const;
+export const VILLAGE = { x0: 14, y0: 10, x1: 47, y1: 40 } as const;
 /** Plaza / fountain centre (a tile corner); the fountain covers the 2x2 tiles up-left of it. */
 export const PLAZA = { x: 32, y: 24 } as const;
-/** Smithy (north-west house, forge on its south wall) and the inn / kitchen (north-east house). */
-export const SMITH: Rect = { x: 23, y: 13, w: 5, h: 5 };
-export const INN: Rect = { x: 36, y: 13, w: 5, h: 5 };
-/** Fenced vegetable plot west of the smithy: 4x2 soil tiles, one plot each. */
-export const FARM = { x0: 18, y0: 15, x1: 21, y1: 16 } as const;
+/** Smithy (north-west of the plaza) and the inn (north-east); HOUSE footprints. */
+export const SMITH: Rect = { x: 23, y: 14, w: 3, h: 3 };
+export const INN: Rect = { x: 38, y: 13, w: 4, h: 3 };
+/** Fenced vegetable plot west of the plaza: 4x2 soil tiles, one plot each. */
+export const FARM = { x0: 19, y0: 26, x1: 22, y1: 27 } as const;
 
 // --- Points of interest (pixel coordinates) ---
-/** Anvil beside the smithy's forge. */
-export const ANVIL = { x: 432, y: 292 } as const;
-/** Cooking spot at the inn's front door. */
-export const POT = { x: 601, y: 296 } as const;
+/** Anvil at the smithy's east side. */
+export const ANVIL = { x: 26.4 * T, y: 16.6 * T } as const;
+/** The kitchen: the roasting fire in front of the inn. */
+export const POT = { x: 40 * T, y: 18.6 * T } as const;
 export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
-/** The smithy's forge chimney (smoke puffs). */
-export const CHIMNEY = { x: 421, y: 226 } as const;
 
-/** Village elder's house (gives hunt requests), south-west of the plaza. */
-export const ELDER_HOUSE: Rect = { x: 18, y: 20, w: 6, h: 4 };
-/** Two thatched huts at the south end of the village. */
-export const HUTS: readonly Rect[] = [
-  { x: 15, y: 34, w: 5, h: 4 },
-  { x: 21, y: 34, w: 5, h: 4 },
-];
-/** Granary: the little house on the cliff ledge west of the village. */
-export const GRANARY: Rect = { x: 8, y: 18, w: 4, h: 4 };
-/** Hunt request board: the lamp post by the elder's house (one tile). */
-export const BOARD = { x: 26, y: 20 } as const;
+/** Hunt request board by the plaza (one tile); the elder stands beside it. */
+export const BOARD = { x: 24, y: 27 } as const;
 
-// --- Fields: rice paddy east of the south road, fish pond south of the plaza ---
-/** The flooded field: 6x4 tiles, split by bunds into six 2x2 sections (กระทง), one plot each. */
-export const PADDY = { x0: 36, y0: 28, x1: 41, y1: 31 } as const;
+// --- Fields: rice paddy north-east, fish pond south of the plaza ---
+/** The flooded field: 6x4 tiles, split into six 2x2 sections (กระทง), one plot each. */
+export const PADDY = { x0: 41, y0: 18, x1: 46, y1: 21 } as const;
 export const PADDY_SECTIONS: readonly Rect[] = [0, 1].flatMap((r) => [0, 1, 2].map((c) => ({ x: PADDY.x0 + c * 2, y: PADDY.y0 + r * 2, w: 2, h: 2 })));
-/** Field hut on stilts (ห้างนา) at the paddy's east edge. */
-export const FIELD_HUT: Rect = { x: 42, y: 28, w: 2, h: 3 };
 
 /** Tiles around the pond, bank included. */
-export const POND_AREA = { x0: 23, y0: 26, x1: 30, y1: 32 } as const;
-/** The pond as an ellipse (px), drawn inside the painted water. */
-export const POND_SHAPE = { cx: 27 * T, cy: 29.2 * T, rx: 2.9 * T, ry: 2.3 * T } as const;
-/** Small open pavilion (ศาลา) on the pond's south-east bank. */
-export const SALA: Rect = { x: 27, y: 31, w: 3, h: 2 };
-/** Wooden jetty (ท่าน้ำ) out over the water from the sala: walkable. */
+export const POND_AREA = { x0: 36, y0: 28, x1: 44, y1: 34 } as const;
+/** The pond as an ellipse (px), inside the water tiles. */
+export const POND_SHAPE = { cx: 40.2 * T, cy: 31.4 * T, rx: 3.4 * T, ry: 2.7 * T } as const;
+/** Wooden jetty (ท่าน้ำ) from the west bank: walkable. */
 export const JETTY: readonly (readonly [number, number])[] = [
-  [27, 30],
-  [28, 30],
+  [37, 31],
+  [38, 31],
 ];
 
 /** 0 at the pond centre, 1 at the waterline, >1 on the bank. */
@@ -115,32 +100,30 @@ export function pondDepth(px: number, py: number): number {
 
 /** Where lotus / fish go: in the water near the bank or the jetty, so they can be reached from dry ground. */
 export const POND_SLOTS: readonly { x: number; y: number }[] = [
-  { x: 25.3 * T, y: 27.6 * T },
-  { x: 29.3 * T, y: 28.2 * T },
-  { x: 26.3 * T, y: 31.2 * T },
-  { x: 27.6 * T, y: 29.6 * T },
+  { x: 39.2 * T, y: 31.2 * T },
+  { x: 40.5 * T, y: 29 * T },
+  { x: 38.9 * T, y: 32.9 * T },
+  { x: 43.3 * T, y: 30.8 * T },
 ];
 
 export const PADDY_CENTER = { x: ((PADDY.x0 + PADDY.x1 + 1) * T) / 2, y: ((PADDY.y0 + PADDY.y1 + 1) * T) / 2 } as const;
 export const POND_CENTER = { x: POND_SHAPE.cx, y: POND_SHAPE.cy } as const;
 
-// --- Chicken coop (west of the pond) ---
+// --- Chicken coop (south-west of the plaza) ---
 /** fenced pen, fence included */
-export const COOP: Rect = { x: 16, y: 28, w: 7, h: 5 };
-/** henhouse on stilts in the pen's north-east corner (HOUSE tiles) */
-export const HENHOUSE: Rect = { x: 21, y: 28, w: 2, h: 2 };
-/** gap in the south fence the player walks in through (this tile and the one east of it) */
-export const COOP_GATE = { x: 18, y: 32 } as const;
+export const COOP: Rect = { x: 17, y: 31, w: 7, h: 5 };
+/** gap in the north fence the player walks in through (this tile and the one east of it) */
+export const COOP_GATE = { x: 20, y: 31 } as const;
 /** feed trough by the west fence (px) */
-export const TROUGH = { x: 17 * T + 10, y: 31 * T + 8 } as const;
-/** nest basket in front of the henhouse door: eggs and hatching go here (px) */
-export const NEST = { x: 21 * T + 8, y: 30 * T + 8 } as const;
-/** where hens stroll (px), clear of the henhouse and the nest */
-export const HEN_ROAM = { x0: 17 * T + 4, y0: 29 * T + 8, x1: 21 * T - 3, y1: 32 * T - 5 } as const;
+export const TROUGH = { x: 18.6 * T, y: 33.8 * T } as const;
+/** nest in the north-east corner: eggs and hatching go here (px) */
+export const NEST = { x: 22.4 * T, y: 32.6 * T } as const;
+/** where hens stroll (px), clear of the fence */
+export const HEN_ROAM = { x0: 18 * T + 4, y0: 32 * T + 6, x1: 23 * T - 4, y1: 35 * T - 4 } as const;
 export const COOP_CENTER = { x: (COOP.x + COOP.w / 2) * T, y: (COOP.y + COOP.h / 2) * T } as const;
 
-/** Red canyon on the home map: the sandy river flats south-east of the village (gaur, canyon ore). */
-export const HOME_CANYON = { x0: 44, y0: 33, x1: 63, y1: 47 } as const;
+/** Red canyon on the home map: the sandy flats east of the stream (gaur, canyon ore). */
+export const HOME_CANYON = { x0: 51, y0: 28, x1: 63, y1: 43 } as const;
 
 export type Edge = 'n' | 's' | 'e' | 'w';
 /** Ground palette / decoration set used by the terrain painter. */
