@@ -4,6 +4,8 @@
 import Phaser from 'phaser';
 import { ENTITY_DEPTH } from '../entities/Player';
 import { villageProps, type VillageProp } from '../art/villageLayout';
+import { ISO } from './view';
+import { T } from '../core/mapgen';
 import { TEX } from './textures';
 
 interface Placed {
@@ -32,10 +34,37 @@ export class VillageView {
       img.setScale(p.flip ? -s : s, s).setDepth(ENTITY_DEPTH + (p.depth ?? p.y));
       const h = img.height * s;
       this.items.push({ p, img, x0: p.x - p.w / 2, x1: p.x + p.w / 2, top: p.y - h, alpha: 1, phase: (p.x * 0.013 + p.y * 0.021) % 6.28 });
-      // soft contact shadow, an isometric ellipse under the foot
-      const sw = p.shadow ?? 0;
-      if (sw > 0) this.shadows.fillStyle(0x0e2410, 0.26).fillEllipse(p.x + 2, p.y - 3, sw, sw / 2);
+      if ((p.shadow ?? 0) > 0) this.drawShadow(p);
     }
+  }
+
+  /**
+   * Soft contact shadow, darkest where the thing meets the ground and fading outwards (layers of a
+   * low alpha), nudged down-right away from the light. Buildings get their footprint's diamond, so
+   * they sit on the ground instead of floating over a disc; trees, bushes and rocks an ellipse.
+   */
+  private drawShadow(p: VillageProp): void {
+    const g = this.shadows;
+    const COLOR = 0x10200c;
+    if (p.foot) {
+      const [x, y, w, h] = p.foot;
+      for (const [grow, a] of [[0.6, 0.09], [0.36, 0.11], [0.14, 0.14], [-0.1, 0.18]] as const) {
+        const x0 = (x - grow) * T + 3;
+        const y0 = (y - grow) * T + 2;
+        const x1 = (x + w + grow) * T + 3;
+        const y1 = (y + h + grow) * T + 2;
+        const pts = [
+          [x0, y0],
+          [x1, y0],
+          [x1, y1],
+          [x0, y1],
+        ].map(([wx, wy]) => new Phaser.Math.Vector2(ISO.x(wx ?? 0, wy ?? 0), ((wx ?? 0) + (wy ?? 0)) / 2));
+        g.fillStyle(COLOR, a).fillPoints(pts, true);
+      }
+      return;
+    }
+    const sw = p.shadow ?? 0;
+    for (const [k, a] of [[1, 0.1], [0.78, 0.12], [0.55, 0.15]] as const) g.fillStyle(COLOR, a).fillEllipse(p.x + 2, p.y - 3, sw * k, (sw * k) / 2);
   }
 
   setVisible(v: boolean): void {

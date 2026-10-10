@@ -5,9 +5,16 @@ Offline art tool, not part of the npm build. Needs numpy, scipy and pillow:
 
 Every surface comes from the owner's seamless textures in tools/village/textures (grass, dirt road,
 plaza slabs, soil, water). Masks are worked out on the flat tile grid (src/core/homeLayout.ts) with
-soft, ragged edges, then the picture is drawn in the isometric screen space of scenes/view.ts ISO:
-grass, dirt, soil and water are laid flat on screen (so their painting is not skewed), the plaza's
-slabs are projected so they become diamonds like the rest of the world. Buildings, trees, fences,
+soft, ragged edges. The game draws the ground with a shader (scenes/groundShader.ts) at full screen
+resolution, so it is as sharp as the houses; this script writes what it needs to src/assets/terrain:
+  tex-grass|dirt|water|soil|plaza.webp   the owner's textures as 1024px repeating tiles
+  masks.webp (lossless)                  world-space fields, 1 px per world px, 4 quadrants:
+      (0, 0)     R dirt   G water  B forest          (0.5 = the edge; the shader sharpens it)
+      (1024, 0)  R plaza  G soil   B east-west road (turns the ruts in the dirt)
+      (0, 1024)  R shade  G water depth
+It also paints ground.webp, a small picture of the whole ground for the minimap and for browsers
+without WebGL: grass, dirt, soil and water laid flat on screen (so their painting is not skewed), the
+plaza's slabs projected so they become diamonds like the rest of the world. Buildings, trees, fences,
 bridges and rocks are separate sprites placed by the game.
 """
 import os
@@ -21,8 +28,9 @@ from scipy import ndimage
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
 TEX_DIR = os.path.join(os.path.dirname(__file__), 'textures')
 OUT_DIR = os.path.join(ROOT, 'src', 'assets', 'village')
+TERRAIN_DIR = os.path.join(ROOT, 'src', 'assets', 'terrain')
 TILE = 16
-R = 2.25  # image px per screen px
+R = 1.25  # image px per screen px of the fallback picture (src/ui/minimap.ts HOME_GROUND_SCALE)
 
 
 def load_rows():
@@ -169,3 +177,52 @@ fl = Image.open(os.path.join(TEX_DIR, 'ground-grass.png')).convert('RGB').resize
 fl = Image.fromarray((np.asarray(fl).astype(np.float32) * np.array([0.6, 0.7, 0.58])).astype(np.uint8))
 fl.save(os.path.join(OUT_DIR, 'floor.webp'), quality=86, method=6)
 print('wrote', W, 'x', H, os.path.getsize(os.path.join(OUT_DIR, 'ground.webp')) // 1024, 'KB', file=sys.stderr)
+
+# --- the shader's inputs ----------------------------------------------------------------------
+print('shader masks...', file=sys.stderr)
+
+
+def field(tm, wobble=0.25, blur=0.5, seed=1, nearest=False):
+    """Tile mask -> world-space field (1 px per world px): 0.5 on a ragged edge, a ~10px ramp across it."""
+    big = np.asarray(Image.fromarray(tm, 'F').resize((MW * TILE * M, MH * TILE * M), Image.NEAREST if nearest else Image.BILINEAR))
+    big = ndimage.gaussian_filter(big, TILE * M * blur)
+    if wobble:
+        n = value_noise(big.shape, TILE * M, seed) * 0.6 + value_noise(big.shape, TILE * M // 3, seed + 1) * 0.4 - 0.5
+        big = big + n * wobble
+    small = big.reshape(MH * TILE, M, MW * TILE, M).mean(axis=(1, 3))
+    return np.clip(0.5 + (small - 0.5) * 1.6, 0, 1)
+
+
+def world(m):
+    """A world-space mask at M px per world px -> 1 px per world px."""
+    return m.reshape(MH * TILE, M, MW * TILE, M).mean(axis=(1, 3))
+
+
+f_dirt = field(tile_mask(lambda x, y, c: c == ':' or (c == '=' and not near(x, y, 'WO'))), wobble=0.3, seed=3)
+f_water = field(tile_mask(is_water), wobble=0.18, blur=0.35)
+f_forest = world(soft(tile_mask(lambda x, y, c: c == 'T'), wobble=0.4, blur=0.9, sharp=10))
+f_plaza = field(tile_mask(lambda x, y, c: c in '#U'), wobble=0, blur=0.06, nearest=True)
+f_soil = field(tile_mask(lambda x, y, c: c == 'S'), wobble=0.05, blur=0.2, seed=4)
+f_horiz = world(ndimage.gaussian_filter(np.asarray(Image.fromarray(horiz_t, 'F').resize((MW * TILE * M, MH * TILE * M), Image.BILINEAR)), TILE * M * 0.6))
+f_shade = value_noise((MH * TILE, MW * TILE), TILE * 3, 7)
+f_deep = np.clip(ndimage.distance_transform_edt(f_water > 0.5) / (TILE * 1.2), 0, 1)
+
+Q = 1024  # quadrant size
+masks = np.zeros((2 * Q, 2 * Q, 3), np.float32)
+masks[:MH * TILE, :MW * TILE] = np.dstack([f_dirt, f_water, f_forest])
+masks[:MH * TILE, Q:Q + MW * TILE] = np.dstack([f_plaza, f_soil, f_horiz])
+masks[Q:Q + MH * TILE, :MW * TILE, 0] = f_shade
+masks[Q:Q + MH * TILE, :MW * TILE, 1] = f_deep
+os.makedirs(TERRAIN_DIR, exist_ok=True)
+Image.fromarray(np.clip(masks * 255 + 0.5, 0, 255).astype(np.uint8), 'RGB').save(os.path.join(TERRAIN_DIR, 'masks.webp'), lossless=True, quality=100, method=6)
+
+# the owner's textures as square 1024px repeating tiles
+for name in ('grass', 'dirt', 'soil', 'plaza'):
+    Image.open(os.path.join(TEX_DIR, f'ground-{name}.png')).convert('RGB').resize((1024, 1024), Image.LANCZOS).save(os.path.join(TERRAIN_DIR, f'tex-{name}.webp'), quality=90, method=6)
+# water: the top of the painting, mirrored so it repeats top to bottom, squeezed square (the shader stretches it back)
+wim = Image.open(os.path.join(TEX_DIR, 'ground-water.png')).convert('RGB').crop((0, 0, 1024, 640))
+both = Image.new('RGB', (1024, 1280))
+both.paste(wim, (0, 0))
+both.paste(wim.transpose(Image.Transpose.FLIP_TOP_BOTTOM), (0, 640))
+both.resize((1024, 1024), Image.LANCZOS).save(os.path.join(TERRAIN_DIR, 'tex-water.webp'), quality=90, method=6)
+print('wrote', TERRAIN_DIR, file=sys.stderr)

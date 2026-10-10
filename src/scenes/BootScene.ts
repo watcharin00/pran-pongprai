@@ -10,9 +10,17 @@ import { TEX } from './textures';
 import { deckLift, LAMP_LIGHT, VILLAGE_SPRITES, villageProps } from '../art/villageLayout';
 import { T } from '../core/mapgen';
 import { ISO, setIsoLift } from './view';
+import { TERRAIN_TEX } from './groundShader';
 
-// the painted village: one pre-painted ground image plus a sprite per house / tree / lamp
+// the painted village: the ground (a shader, or a small pre-painted picture without WebGL) plus a sprite per house / tree / lamp
 const villageUrls = import.meta.glob<string>('../assets/village/*.webp', { eager: true, import: 'default' });
+// the home ground's shader inputs (tools/village/build_ground.py): the owner's textures as tiles + baked fields
+const terrainUrls = import.meta.glob<string>('../assets/terrain/*.webp', { eager: true, import: 'default' });
+const terrainUrl = (file: string): string => {
+  const url = terrainUrls[`../assets/terrain/${file}`];
+  if (!url) throw new Error(`missing terrain ${file}`);
+  return url;
+};
 const villageUrl = (name: string): string => {
   const url = villageUrls[`../assets/village/${name}.webp`];
   if (!url) throw new Error(`missing village art ${name}`);
@@ -43,6 +51,8 @@ export class BootScene extends Phaser.Scene {
     // the home map is painted art (src/core/homeLayout.ts is its collision); wild areas are still painted in code
     this.load.image(TEX.ground, villageUrl('ground'));
     for (const k of VILLAGE_SPRITES) this.load.image(TEX.village(k), villageUrl(k));
+    for (const k of ['grass', 'dirt', 'water', 'soil', 'plaza'] as const) this.load.image(TERRAIN_TEX[k], terrainUrl(`tex-${k}.webp`));
+    this.load.image(TERRAIN_TEX.masks, terrainUrl('masks.webp'));
   }
 
   create(): void {

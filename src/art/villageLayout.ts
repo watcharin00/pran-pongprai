@@ -32,6 +32,8 @@ export interface VillageProp {
   sway?: boolean;
   /** soft contact shadow width (0 = none) */
   shadow?: number;
+  /** tiles it stands on (x, y, w, h): its shadow is that diamond rather than an ellipse */
+  foot?: readonly [number, number, number, number];
 }
 
 const sx = (x: number, y: number): number => ISO.x(x * T, y * T);
@@ -44,7 +46,7 @@ const sy = (x: number, y: number): number => ((x + y) * T) / 2;
  */
 function onFootprint(key: VillageSprite, x: number, y: number, w: number, h: number, width: number, extra: Partial<VillageProp> = {}, lift = 0): VillageProp {
   const front = sy(x + w, y + h);
-  return { key, x: sx(x + w / 2, y + h / 2), y: front + lift, w: width, shadow: width * 0.75, ...extra };
+  return { key, x: sx(x + w / 2, y + h / 2), y: front + lift, w: width, shadow: width * 0.75, foot: [x, y, w, h], ...extra };
 }
 
 /** y-sort key that puts a bridge under every character and shadow (ENTITY_DEPTH + this < the shadow layer) */
@@ -99,7 +101,7 @@ const PLACED: readonly VillageProp[] = [
   onFootprint('pier', 45, 30, 3, 3, 100, { fade: true, flip: true, shadow: 0 }, 6),
   onFootprint('tent', 12, 18, 2, 2, 70, { fade: true }, 4),
   onFootprint('bedroll', 15, 20, 1, 1, 34, {}, 2),
-  onFootprint('fountain', 31, 23, 2, 2, 66, {}, 4),
+  onFootprint('fountain', 31, 23, 2, 2, 66, { foot: undefined }, 4), // round: an ellipse shadow
   // lamps at the plaza corners and by the notice board
   ...([[27.5, 19.5], [37.5, 19.5], [27.5, 29.5], [37.5, 29.5], [26.6, 20.4]] as const).map(([x, y]) => ({
     key: 'lamp' as const, x: sx(x, y), y: sy(x, y) + 2, w: 14, shadow: 8, flip: x > 32,

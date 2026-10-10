@@ -10,7 +10,7 @@ import { FLAT, ISO } from '../scenes/view';
 import homeGround from '../assets/village/ground.webp';
 
 /** image px per screen px in the isometric home ground (tools/village/build_ground.py R) */
-const HOME_GROUND_SCALE = 2.25;
+const HOME_GROUND_SCALE = 1.25;
 
 /** Tiles visible from the centre to the rim. */
 const RADIUS_TILES = 14;
