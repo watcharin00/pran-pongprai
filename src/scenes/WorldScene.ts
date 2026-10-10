@@ -38,7 +38,7 @@ import { TextLayer, type ScreenMapper } from './TextLayer';
 import { VillageView } from './VillageView';
 import { TEX } from './textures';
 import { FLAT, ISO, type View } from './view';
-import { canShadeGround, makeGroundShaders } from './groundShader';
+import { canShadeGround, GroundTiles } from './groundShader';
 import { buildNorthFill, buildSouthFill, buildTerrain, EDGE_FILL_ROWS } from '../art/terrain';
 import { distanceGain, parseSoundSettings, Sfx, type SfxName } from '../audio/sfx';
 import { Music, nextMood } from '../audio/music';
@@ -147,8 +147,8 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   private dynGlows = new Map<number, Phaser.GameObjects.Image>();
   private clouds: { x: number; y: number; rx: number; ry: number; v: number }[] = [];
   private groundImg!: Phaser.GameObjects.Image;
-  /** the home ground drawn sharp by shaders (scenes/groundShader.ts); empty without WebGL */
-  private groundShaders: Phaser.GameObjects.Shader[] = [];
+  /** the home ground painted sharp by a shader into cached tiles (scenes/groundShader.ts); null without WebGL */
+  private groundTiles: GroundTiles | null = null;
   private canopyImg!: Phaser.GameObjects.Image;
   /** forest strip drawn above the map, seen only when the camera overscrolls north */
   private northGround!: Phaser.GameObjects.Image;
@@ -211,7 +211,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     const w = this.inWorld;
     this.floor = w(this.add.tileSprite(-400, -400, ISO.width + 800, ISO.height + 800, TEX.village('floor')).setOrigin(0).setDepth(D.ground - 1).setTileScale(0.25));
     this.groundImg = w(this.add.image(0, 0, TEX.ground).setOrigin(0).setDepth(D.ground));
-    if (canShadeGround(this)) this.groundShaders = makeGroundShaders(this).map((g, i) => w(g.setDepth(D.ground + 0.01 * (i + 1))));
+    if (canShadeGround(this)) this.groundTiles = new GroundTiles(this, w, D.ground + 0.01);
     // hidden until syncEdgeFills() paints the strips (the placeholder texture is the whole map)
     this.northGround = w(this.add.image(0, -EDGE_FILL, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
     this.southGround = w(this.add.image(0, (MH - 1) * T, TEX.ground).setOrigin(0).setDepth(D.ground).setVisible(false));
@@ -1047,9 +1047,10 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
     if (home) this.groundImg.setDisplaySize(this.v.width, this.v.height);
     else this.groundImg.setScale(1);
     this.canopyImg.setVisible(!home);
-    this.floor.setVisible(home);
-    for (const g of this.groundShaders) g.setVisible(home);
-    this.groundImg.setVisible(!home || this.groundShaders.length === 0);
+    // the shader's tiles also cover the forest beyond the map's diamond
+    this.floor.setVisible(home && !this.groundTiles);
+    this.groundTiles?.setVisible(home);
+    this.groundImg.setVisible(!home || !this.groundTiles);
     this.village.setVisible(home);
     for (const img of [this.northGround, this.southGround, this.northCanopy, this.southCanopy]) if (home) img.setVisible(false);
     this.gEdgeShade?.setVisible(!home);
@@ -1377,6 +1378,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       this.monsterViews.delete(id);
     }
     this.updateHens(sh);
+    if (s.area === 'home') this.groundTiles?.update(this.viewRect(), this.S);
     if (s.area === 'home') this.village.update(ps.x, ps.y, time, Math.min(0.05, this.game.loop.delta / 1000), this.cameras.main.worldView);
     for (const n of s.npcs) {
       if (!npcActive(s, n.id)) continue;
