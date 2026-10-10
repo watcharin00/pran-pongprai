@@ -4,7 +4,7 @@ import type { WeaponId } from '../data/types';
 import { areaMap } from '../core/areas';
 import { MONSTER_FRAME_COUNT } from '../core/state';
 import { buildGlow, buildHerb, buildOre, buildNpcFrames, buildHenFrames, buildChickFrames, buildPlayerFrames, buildWeapon, MONSTER_SPRITES } from '../art/sprites';
-import { buildLotus, buildRiceSection } from '../art/fields';
+import { buildLotus } from '../art/fields';
 import type { StaticLight } from '../art/buildings';
 import { TEX } from './textures';
 import { deckLift, LAMP_LIGHT, VILLAGE_SPRITES, villageProps } from '../art/villageLayout';
@@ -22,7 +22,6 @@ const villageUrl = (name: string): string => {
 /** Warm glows on the home map (world px): the smithy's forge and the lamp lanterns. */
 const HOME_LIGHTS: StaticLight[] = [
   { x: 26.2 * T, y: 15.6 * T, r: 18, c: '255,150,60', ga: 0.26 },
-  { x: 40 * T, y: 18 * T, r: 16, c: '255,150,60', ga: 0.22 },
   ...villageProps()
     .filter((p) => p.key === 'lamp')
     .map((p) => {
@@ -71,10 +70,8 @@ export class BootScene extends Phaser.Scene {
     t.addCanvas(TEX.herb, buildHerb());
     t.addCanvas(TEX.glow, buildGlow());
     for (let st = 0; st < 4; st++) {
-      t.addCanvas(TEX.rice(st, false), buildRiceSection(st, false));
       t.addCanvas(TEX.lotus(st), buildLotus(st));
     }
-    t.addCanvas(TEX.rice(3, true), buildRiceSection(3, true));
 
     const fontsReady = Promise.all(FONTS.map((f) => document.fonts.load(f))).catch(() => undefined);
     const timeout = new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT_MS));

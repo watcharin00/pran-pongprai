@@ -524,7 +524,7 @@ export const areas = {
 
 /** One-line description of each area for the world map. */
 export const areaInfo = {
-  home: 'หมู่บ้านพรานริมป่าดงดิบ มีโรงตีเหล็ก ครัว แปลงผัก นาข้าว บ่อปลา และหุบผาแดงทางตะวันออก',
+  home: 'หมู่บ้านพรานริมป่าดงดิบ มีโรงตีเหล็ก ครัว แปลงผัก บ่อปลา และหุบผาแดงทางตะวันออก',
   bamboo: 'ป่าไผ่ทึบทางเหนือ ลิงกังซุกซนและงูเห่าแผ่แม่เบี้ยรออยู่',
   swamp: 'บึงน้ำจืดทางใต้ ตะกวดกับจระเข้ฟาดหางใส่คนที่อ้อมไปข้างหลัง',
   limestone: 'ดอยหินปูนทางตะวันออก เลียงผาพุ่งชนไกล หมีควายยืนทุบวงใหญ่',
@@ -596,7 +596,6 @@ export const places = {
   kitchen: 'โรงครัว',
   farm: 'แปลงผัก',
   farmRipe: (n: number) => `แปลงผัก · พร้อมเก็บ ${n}`,
-  paddy: 'นาข้าว',
   pond: 'บ่อปลา',
   bedRipe: (name: string, n: number) => `${name} · พร้อมเก็บ ${n}`,
   coop: 'คอกไก่',
@@ -714,7 +713,6 @@ export const menu = {
     kitchen: 'ครัว',
     farm: 'แปลงผัก',
     elder: 'ผู้ใหญ่บ้าน',
-    paddy: 'นาข้าว',
     pond: 'บ่อปลา',
     legendMonster: 'สัตว์',
     legendBoss: 'บอส',
@@ -866,7 +864,7 @@ export const menu = {
   useFert: (have: number) => `ใส่ปุ๋ยซาก โตเร็วขึ้น 2 เท่า (มี ${have})`,
   plantAllHelp: 'ปลูกเมล็ดที่เลือกลงทุกช่องว่างที่ปลูกได้',
   plantAll: 'ปลูกทั้งหมด',
-  beds: { soil: 'แปลงผัก', paddy: 'นาข้าว', pond: 'บ่อปลา' },
+  beds: { soil: 'แปลงผัก', pond: 'บ่อปลา' },
   growsIn: (bed: string) => `ปลูกที่${bed}`,
   plotEmpty: 'ว่าง',
   plotTapToPlant: 'แตะเพื่อปลูก',

@@ -1,41 +1,5 @@
-// Rice and lotus drawn on the paddy / pond plots: small pre-built textures swapped by growth stage.
+// Lotus drawn on the pond plots: small pre-built textures swapped by growth stage.
 import { createBuffer, ell, rect, sp, toCanvas, type PixelBuffer } from './pixelBuffer';
-
-/** One paddy section's rice (32x32, transparent where the water shows). */
-export function buildRiceSection(stage: number, sway: boolean): HTMLCanvasElement {
-  const b = createBuffer(32, 32);
-  const tall = [2, 4, 7, 8][stage] ?? 2;
-  for (let row = 0; row < 6; row++) {
-    for (let col = 0; col < 7; col++) {
-      const x = 4 + col * 4 + (row % 2) * 2;
-      const y = 8 + row * 4;
-      if (x > 28 || y > 29) continue;
-      if (stage === 0) {
-        if ((row + col) % 2) continue;
-        sp(b, x, y, '#7ad866');
-        sp(b, x + 1, y - 1, '#5fb84e');
-        continue;
-      }
-      const golden = stage === 3;
-      const dark = golden ? '#a88a30' : '#3f8a3a';
-      const mid = golden ? '#d0b048' : '#5fb84e';
-      const light = golden ? '#f0d470' : '#8ee070';
-      for (let k = 0; k < tall; k++) {
-        sp(b, x, y - k, k > tall - 3 ? light : mid);
-        if (k < tall - 1) sp(b, x - 1, y - k + 1, dark);
-        if (k < tall - 2) sp(b, x + 1, y - k + 1, mid);
-      }
-      if (golden) {
-        // drooping grain heads
-        const dx = sway ? 1 : 0;
-        sp(b, x + 1 + dx, y - tall, '#ffd35c');
-        sp(b, x + 2 + dx, y - tall + 1, '#ffd35c');
-        sp(b, x + 2 + dx, y - tall + 2, '#e0a830');
-      }
-    }
-  }
-  return toCanvas(b);
-}
 
 // ---------------------------------------------------------------- pond
 

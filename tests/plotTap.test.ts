@@ -34,10 +34,10 @@ describe('tapping farm plots', () => {
   it('plants one crop in every empty plot of its bed', () => {
     const s = game();
     for (const p of s.plots) p.crop = null;
-    s.inv.seed_rice = 10;
-    const paddies = s.plots.filter((p) => p.bed === 'paddy').length;
-    expect(plantAllOf(s, 'rice')).toBe(paddies);
-    expect(s.selCrop).toBe('rice');
+    s.inv.fry = 10;
+    const ponds = s.plots.filter((p) => p.bed === 'pond').length;
+    expect(plantAllOf(s, 'fish')).toBe(ponds);
+    expect(s.selCrop).toBe('fish');
     expect(s.plots.filter((p) => p.bed === 'soil' && p.crop).length).toBe(0);
   });
 });

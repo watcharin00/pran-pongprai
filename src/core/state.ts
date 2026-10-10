@@ -204,7 +204,7 @@ export interface Plot {
   /** grow duration in ms */
   dur: number;
   fert: boolean;
-  /** soil, paddy or pond: which crops it takes */
+  /** soil or pond: which crops it takes */
   bed: CropBed;
 }
 

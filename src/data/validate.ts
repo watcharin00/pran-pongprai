@@ -420,7 +420,7 @@ export function loadCrops(v: unknown, materials: readonly string[]): CropsData {
       yield: { item: oneOf(y.item, `${p}.yield.item`, materials) as MaterialId, min, max: num(y.max, `${p}.yield.max`, min) },
       seedBack: num(c.seedBack, `${p}.seedBack`, 0, 1),
       color: color(c.color, `${p}.color`),
-      bed: c.bed === undefined ? 'soil' : oneOf(c.bed, `${p}.bed`, ['soil', 'paddy', 'pond'] as const),
+      bed: c.bed === undefined ? 'soil' : oneOf(c.bed, `${p}.bed`, ['soil', 'pond'] as const),
     };
   }
   return {

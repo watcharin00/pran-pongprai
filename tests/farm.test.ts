@@ -80,7 +80,7 @@ describe('farm menu: plant one of a crop', () => {
     expect(freePlotsFor(s, 'rice')).toBe(free - 1);
     const planted = s.plots.filter((p) => p.crop === 'rice');
     expect(planted).toHaveLength(1);
-    expect(planted[0]?.bed).toBe('paddy');
+    expect(planted[0]?.bed).toBe('soil');
   });
 
   it('does nothing without seeds or without a free plot', () => {

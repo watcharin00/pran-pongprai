@@ -78,12 +78,11 @@ rect(47, 23, 50, 24, '=')
 rect(45, 29, 46, 32, 'W')
 rect(45, 30, 47, 32, 'D')
 
-# smithy (with the woodpile beside it), inn with crates, the kitchen fire in front of the inn
+# smithy (with the woodpile beside it), the shop house (kitchen) with its crates
 rect(23, 14, 25, 16, 'H')
 rect(21, 16, 22, 16, 'H')
 rect(38, 13, 40, 15, 'H')
 put(42, 15, 'H')
-rect(39, 17, 40, 17, 'H')
 
 # Thai houses round the village (owner's art): the elder's spired house with the notice board,
 # stilt houses, bamboo huts, a sala, a family compound. Clear a ring of grass round each one.
@@ -116,9 +115,6 @@ for y in range(28, 35):
     for x in range(36, 45):
         if ((x + 0.5 - 40.2) / 3.4) ** 2 + ((y + 0.5 - 31.4) / 2.7) ** 2 < 1:
             put(x, y, 'O')
-
-# rice paddy north-east, between the inn and the stream
-rect(41, 18, 46, 21, 'P')
 
 # hunter's camp west of the village: tent, bedroll, in its own clearing
 rect(10, 16, 17, 22, '.')

@@ -27,7 +27,7 @@ export const cropsForBed = (bed: CropBed): CropId[] => (Object.keys(CROPS) as Cr
 
 /**
  * What goes into a plot when the player just taps it: the selected crop if it grows there,
- * otherwise the first crop for that bed that has seeds (rice in the paddy, lotus/fish in the pond).
+ * otherwise the first crop for that bed that has seeds (lotus/fish in the pond).
  */
 export function cropFor(s: GameState, bed: CropBed): CropId | null {
   if (CROPS[s.selCrop].bed === bed) return s.selCrop;
@@ -37,7 +37,7 @@ export function cropFor(s: GameState, bed: CropBed): CropId | null {
 
 /** How close the player must be to a plot to plant or auto-harvest (pond slots are water, reached from the bank). */
 export function plotReach(plot: Plot): number {
-  return plot.bed === 'pond' ? TUNING.village.pondReach : plot.bed === 'paddy' ? TUNING.village.paddyReach : TUNING.village.harvestRadius;
+  return plot.bed === 'pond' ? TUNING.village.pondReach : TUNING.village.harvestRadius;
 }
 
 /**
@@ -114,8 +114,8 @@ export function plantAll(s: GameState): number {
   return n;
 }
 
-/** Tap radius (px) around a plot's centre, by bed: soil plots are one tile, paddy sections 2×2, pond slots a lily spot. */
-const TAP_RADIUS: Record<CropBed, number> = { soil: 10, paddy: 17, pond: 13 };
+/** Tap radius (px) around a plot's centre, by bed: soil plots are one tile, pond slots a lily spot. */
+const TAP_RADIUS: Record<CropBed, number> = { soil: 10, pond: 13 };
 
 /** The plot under world point (wx, wy), or -1. Pure: used for tapping plots on screen. */
 export function plotAt(s: GameState, wx: number, wy: number): number {

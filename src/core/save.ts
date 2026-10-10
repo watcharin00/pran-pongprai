@@ -150,6 +150,11 @@ export function parseSave(raw: string | null): SaveData | null {
       else plots.push({ crop: null, at: 0, dur: 0, fert: false });
     }
   }
+  // saves from when the village had a rice paddy: 8 soil plots, then 6 paddy sections, then the pond.
+  // The paddy is gone; whatever grew there goes back to the bag as its seed.
+  if (plots.length > 12) {
+    for (const p of plots.splice(8, 6)) if (p.crop) inv[CROPS[p.crop].seed] += 1;
+  }
 
   const requestsDone: string[] = [];
   if (Array.isArray(d.requestsDone)) for (const r of d.requestsDone) if (typeof r === 'string' && REQUESTS.some((q) => q.id === r)) requestsDone.push(r);

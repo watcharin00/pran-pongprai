@@ -333,11 +333,11 @@ export interface CropDef {
   /** chance to get one seed back on harvest */
   seedBack: number;
   color: string;
-  /** where it grows: farm soil (default), the rice paddy, or the fish pond */
+  /** where it grows: farm soil (default) or the fish pond */
   bed: CropBed;
 }
 
-export type CropBed = 'soil' | 'paddy' | 'pond';
+export type CropBed = 'soil' | 'pond';
 
 export interface CropsData {
   /** grow time multiplier when fertilised */
@@ -476,8 +476,6 @@ export interface Tuning {
     harvestRadius: number;
     /** pond slots are water: reach them from the bank within this many px */
     pondReach: number;
-    /** paddy plots are 2x2-tile sections: wading anywhere in one reaches it */
-    paddyReach: number;
     /** close enough for the context button to talk to an NPC */
     npcTalkRadius: number;
     /** close enough for an NPC's speech bubble to show */

@@ -5,7 +5,7 @@ import { ARMOR_SLOTS, MEDALS, type CropBed, type MealEffect, type AreaId, type A
 import { freePlotsFor, plantAll, plantOne, plotProgress, tapPlot } from '../core/farm';
 import { weaponSkills } from '../core/skills';
 import { AREA_IDS, areaMap } from '../core/areas';
-import { BOARD, FARM_CENTER, PADDY_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
+import { BOARD, FARM_CENTER, POND_CENTER, INN, MH, MW, SMITH, T } from '../core/mapgen';
 import { allRequestsDone, currentRequest } from '../core/requests';
 import { hasMedal, medalCount } from '../core/medals';
 import { requestText, rewardText } from './talk';
@@ -65,7 +65,7 @@ type ForgeSub = 'craft' | 'upgrade' | 'armor';
 type BagSub = 'items' | 'hunt' | 'settings';
 type MealFilter = 'all' | 'hp' | 'atk' | 'def' | 'st';
 type BedFilter = 'all' | CropBed;
-const BED_FILTERS: readonly BedFilter[] = ['all', 'soil', 'paddy', 'pond'];
+const BED_FILTERS: readonly BedFilter[] = ['all', 'soil', 'pond'];
 const MEAL_FILTERS: readonly MealFilter[] = ['all', 'hp', 'atk', 'def', 'st'];
 /** Which effect groups a meal belongs to (a meal can be in several). */
 function mealGroups(e: MealEffect): MealFilter[] {
@@ -796,7 +796,7 @@ export class Sheet {
 
     // plots, one grid per bed
     let plots = `<h3 class="sec">${F.plots}</h3>`;
-    for (const bed of ['soil', 'paddy', 'pond'] as const) {
+    for (const bed of ['soil', 'pond'] as const) {
       const idx = s.plots.map((pl, i) => [pl, i] as const).filter(([pl]) => pl.bed === bed);
       if (idx.length) plots += `<h4>${th.menu.beds[bed]}</h4>${this.plotGrid(s, idx)}`;
     }
@@ -915,7 +915,7 @@ export class Sheet {
     }
     h += `<ul class="winfo">${rows.join('')}</ul>`;
     if (id === 'home') {
-      const marks = [M.forge, M.kitchen, M.farm, M.elder, M.paddy, M.pond].map((n) => `<span>${n}</span>`).join('');
+      const marks = [M.forge, M.kitchen, M.farm, M.elder, M.pond].map((n) => `<span>${n}</span>`).join('');
       h += `<h4>${M.landmarks}</h4><div class="wmarks">${marks}</div>`;
     }
     const fight = inFight(s);
@@ -963,7 +963,6 @@ export class Sheet {
             [{ x: (INN.x + INN.w / 2) * T, y: (INN.y + 1) * T }, M.kitchen],
             [FARM_CENTER, M.farm],
             [{ x: (BOARD.x + 1) * T, y: (BOARD.y + 1) * T }, M.elder],
-            [PADDY_CENTER, M.paddy],
             [POND_CENTER, M.pond],
           ]
             .map(([o, name]) => `<span class="mplace" style="left:${pct((o as { x: number }).x, W)};top:${pct((o as { y: number }).y, H)}">${name as string}</span>`)

@@ -61,7 +61,7 @@ const GEN_FARM = { x0: 6, y0: 30, x1: 9, y1: 31 } as const;
 export const VILLAGE = { x0: 14, y0: 10, x1: 47, y1: 40 } as const;
 /** Plaza / fountain centre (a tile corner); the fountain covers the 2x2 tiles up-left of it. */
 export const PLAZA = { x: 32, y: 24 } as const;
-/** Smithy (north-west of the plaza) and the inn (north-east); HOUSE footprints. */
+/** Smithy (north-west of the plaza) and the market shop house that is the kitchen (north-east); HOUSE footprints. */
 export const SMITH: Rect = { x: 23, y: 14, w: 3, h: 3 };
 export const INN: Rect = { x: 38, y: 13, w: 3, h: 3 };
 /** Fenced vegetable plot west of the plaza: 4x2 soil tiles, one plot each. */
@@ -70,19 +70,15 @@ export const FARM = { x0: 19, y0: 26, x1: 22, y1: 27 } as const;
 // --- Points of interest (pixel coordinates) ---
 /** Anvil at the smithy's east side. */
 export const ANVIL = { x: 26.4 * T, y: 16.6 * T } as const;
-/** The kitchen: the roasting fire in front of the inn. */
-export const POT = { x: 40 * T, y: 18.6 * T } as const;
+/** The kitchen: the front of the shop house, where its counter faces the road. */
+export const POT = { x: 39.5 * T, y: 16.6 * T } as const;
 export const SPAWN = { x: PLAZA.x * T, y: (PLAZA.y + 2) * T + 8 } as const;
 export const FARM_CENTER = { x: ((FARM.x0 + FARM.x1 + 1) * T) / 2, y: ((FARM.y0 + FARM.y1 + 1) * T) / 2 } as const;
 
 /** Hunt request board beside the elder's house (one tile); the elder stands by it. */
 export const BOARD = { x: 25, y: 21 } as const;
 
-// --- Fields: rice paddy north-east, fish pond south of the plaza ---
-/** The flooded field: 6x4 tiles, split into six 2x2 sections (กระทง), one plot each. */
-export const PADDY = { x0: 41, y0: 18, x1: 46, y1: 21 } as const;
-export const PADDY_SECTIONS: readonly Rect[] = [0, 1].flatMap((r) => [0, 1, 2].map((c) => ({ x: PADDY.x0 + c * 2, y: PADDY.y0 + r * 2, w: 2, h: 2 })));
-
+// --- Fish pond south-east of the plaza ---
 /** Tiles around the pond, bank included. */
 export const POND_AREA = { x0: 36, y0: 28, x1: 44, y1: 34 } as const;
 /** The pond as an ellipse (px), inside the water tiles. */
@@ -103,7 +99,6 @@ export const POND_SLOTS: readonly { x: number; y: number }[] = [
   { x: 38.6 * T, y: 29.7 * T },
 ];
 
-export const PADDY_CENTER = { x: ((PADDY.x0 + PADDY.x1 + 1) * T) / 2, y: ((PADDY.y0 + PADDY.y1 + 1) * T) / 2 } as const;
 export const POND_CENTER = { x: POND_SHAPE.cx, y: POND_SHAPE.cy } as const;
 
 // --- Chicken coop (south-west of the plaza) ---
@@ -356,8 +351,6 @@ export function farmPlots(): PlotSpot[] {
   };
   // soil first, so plot indices of older saves (8 soil plots) stay the same
   for (let y = FARM.y0; y <= FARM.y1; y++) for (let x = FARM.x0; x <= FARM.x1; x++) add(x, y, 'soil');
-  // one plot per paddy section, centred in its 2x2 tiles
-  for (const r of PADDY_SECTIONS) out.push({ tx: r.x, ty: r.y, x: (r.x + 1) * T, y: (r.y + 1) * T, bed: 'paddy' });
   for (const p of POND_SLOTS) out.push({ tx: Math.floor(p.x / T), ty: Math.floor(p.y / T), x: p.x, y: p.y, bed: 'pond' });
   return out;
 }

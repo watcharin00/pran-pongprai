@@ -8,7 +8,7 @@ import { autoIntent, createAutoPilot, type AutoPilotState } from '../core/autoPi
 import { findMonster } from '../core/combat';
 import { harvest, isRipe, plant, plotAt, plotProgress } from '../core/farm';
 import { PlotPopup } from '../ui/plotPopup';
-import { ANVIL, BOARD, COOP_CENTER, FARM_CENTER, NEST, TROUGH, PADDY_CENTER, POND_CENTER, MH, MW, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
+import { ANVIL, BOARD, COOP_CENTER, FARM_CENTER, NEST, TROUGH, POND_CENTER, MH, MW, POT, T, Tile, tileAt, zoneAtPx, type WorldMap } from '../core/mapgen';
 import { areaBoss, nextBoss, npcActive, npcLine, npcNear } from '../core/npc';
 import { SIGN_READ_RADIUS, signposts, type Signpost } from '../core/signs';
 import { claimRequest, requestReady } from '../core/requests';
@@ -118,7 +118,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   // views
   private playerView!: PlayerView;
   private monsterViews = new Map<number, MonsterView>();
-  /** paddy / pond crop images by plot index */
+  /** pond crop images by plot index */
   private cropImgs = new Map<number, Phaser.GameObjects.Image>();
   /** signposts of the current area (labels show when the player walks up to one) */
   private signs: Signpost[] = [];
@@ -1235,7 +1235,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
   }
 
   /**
-   * Paddy and pond crops (x, y on screen): rice and lotus are textures swapped by stage, fish are a
+   * Pond crops (x, y on screen): lotus is a texture swapped by stage, fish are a
    * few shadows circling under ripples.
    */
   private drawFieldCrop(i: number, crop: string, x: number, y: number, stage: number, time: number): void {
@@ -1260,13 +1260,13 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
       }
       return;
     }
-    const key = crop === 'rice' ? TEX.rice(stage, stage === 3 && Math.sin(time * 1.4 + i) > 0) : TEX.lotus(stage);
+    const key = TEX.lotus(stage);
     if (!img) {
       img = this.inWorld(this.add.image(x, y, key).setDepth(D.groundFx + 0.5));
       this.cropImgs.set(i, img);
     }
-    // rice sections are centred on their 2x2 tiles; lotus sits on the water at its slot
-    img.setTexture(key).setPosition(Math.round(x), Math.round(crop === 'rice' ? y : y - 4)).setVisible(true);
+    // lotus sits on the water at its slot
+    img.setTexture(key).setPosition(Math.round(x), Math.round(y - 4)).setVisible(true);
   }
 
   private drawNodes(time: number): void {
@@ -1497,7 +1497,7 @@ export class WorldScene extends Phaser.Scene implements ScreenMapper {
         const eggs = basketCount(s.ranch);
         label(eggs ? th.places.coopEggs(eggs) : th.places.coop, COOP_CENTER, -26, eggs ? '#ffe08a' : '#ffe7a6');
       }
-      for (const [bed, at, name] of [['paddy', PADDY_CENTER, th.places.paddy], ['pond', POND_CENTER, th.places.pond]] as const) {
+      for (const [bed, at, name] of [['pond', POND_CENTER, th.places.pond]] as const) {
         if (!near(at)) continue;
         const ripe = s.plots.filter((pl) => pl.bed === bed && isRipe(pl, s.now)).length;
         label(ripe ? th.places.bedRipe(name, ripe) : name, at, -30, ripe ? '#ffe08a' : '#ffe7a6');
@@ -1570,6 +1570,13 @@ function drawPlant(px: Px, x: number, y: number, kind: string, st: number): void
     px(x + 2, y - 5, 0xffffff);
     px(x, y - 6, 0xffffff);
     px(x, y - 5, 0xffd84a);
+  } else if (kind === 'rice') {
+    // golden ears bowing over
+    px(x - 2, y - 5, 0xe8c050);
+    px(x - 1, y - 6, 0xf0d870);
+    px(x + 2, y - 6, 0xe8c050);
+    px(x + 1, y - 7, 0xf0d870);
+    px(x, y - 6, 0xd0a83a);
   } else if (kind === 'yam') {
     px(x - 1, y - 1, 0xd0803e, 3, 2);
     px(x - 1, y - 1, 0xf0b070);

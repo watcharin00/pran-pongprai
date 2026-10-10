@@ -10,7 +10,7 @@ import { ISO } from '../scenes/view';
 
 export const VILLAGE_SPRITES = [
   'smithy', 'shop', 'spire', 'stilt', 'cluster', 'bamboohut', 'thaisala', 'pier',
-  'fountain', 'crates', 'firewood', 'campfire', 'board', 'tent', 'bedroll',
+  'fountain', 'crates', 'firewood', 'board', 'tent', 'bedroll',
   'rock', 'rockpile', 'tree1', 'tree2', 'pine1', 'pine2', 'bush', 'lamp',
   'railfence', 'picket', 'wall', 'thaibridge', 'floor',
 ] as const;
@@ -79,12 +79,11 @@ export function deckLift(wx: number, wy: number): number {
 }
 
 const PLACED: readonly VillageProp[] = [
-  // forge (the smithy with its woodpile), the market shop house is the kitchen with its cooking fire
+  // forge (the smithy with its woodpile), the market shop house is the kitchen
   onFootprint('smithy', 23, 14, 3, 3, 92, { fade: true }, 4),
   onFootprint('firewood', 21, 16, 2, 1, 40, {}, 2),
   onFootprint('shop', 38, 13, 3, 3, 100, { fade: true }, 4),
   onFootprint('crates', 42, 15, 1, 1, 40, { fade: true }, 4),
-  onFootprint('campfire', 39, 17, 2, 1, 44, {}, 4),
   // Thai houses round the village: the elder's spired house with the notice board, stilt houses,
   // bamboo huts, a family compound, a sala; a waterside sala with its boat stands in the fish pond
   onFootprint('spire', 21, 19, 3, 3, 100, { fade: true }, 4),
