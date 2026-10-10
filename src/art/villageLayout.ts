@@ -97,7 +97,7 @@ const PLACED: readonly VillageProp[] = [
   onFootprint('bamboohut', 14, 27, 2, 2, 70, { fade: true, flip: true }, 4),
   onFootprint('bamboohut', 26, 36, 2, 2, 70, { fade: true }, 4),
   onFootprint('thaisala', 40, 25, 2, 2, 70, { fade: true }, 4),
-  onFootprint('pier', 42, 30, 3, 3, 100, { fade: true, shadow: 0 }, 6),
+  onFootprint('pier', 45, 30, 3, 3, 100, { fade: true, flip: true, shadow: 0 }, 6),
   onFootprint('tent', 12, 18, 2, 2, 70, { fade: true }, 4),
   onFootprint('bedroll', 15, 20, 1, 1, 34, {}, 2),
   onFootprint('fountain', 31, 23, 2, 2, 66, {}, 4),

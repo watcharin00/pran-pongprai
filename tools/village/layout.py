@@ -66,15 +66,17 @@ for (x, y) in [(27, 19), (37, 19), (27, 29), (37, 29), (28, 19), (27, 20), (36, 
     put(x, y, '.')
 rect(31, 23, 32, 24, 'U')
 
-# stream east of the village, the east road crosses it on the stone bridge
+# stream east of the village, 4 tiles wide to match the arched Thai bridge on the east road
 for y in range(MH):
-    sx = 48 + round(math.sin(y * 0.22) * 1.2)
+    sx = 47 + round(math.sin(y * 0.22) * 1.2)
     if 20 <= y <= 27:
-        sx = 48
-    for x in range(sx, sx + 3):
+        sx = 47
+    for x in range(sx, sx + 4):
         put(x, y, 'W')
-rect(47, 23, 51, 24, '=')
-put(47, 23, ':'), put(47, 24, ':'), put(51, 23, ':'), put(51, 24, ':')
+rect(47, 23, 50, 24, '=')
+# a little inlet on the west bank where the waterside sala with its boat stands
+rect(45, 29, 46, 32, 'W')
+rect(45, 30, 47, 32, 'D')
 
 # smithy (with the woodpile beside it), inn with crates, the kitchen fire in front of the inn
 rect(23, 14, 25, 16, 'H')
@@ -109,13 +111,11 @@ rect(17, 31, 23, 35, 'F')
 rect(18, 32, 22, 34, ':')
 put(20, 31, ':'), put(21, 31, ':')
 
-# fish pond with a jetty from the west bank
+# fish pond south-east of the plaza
 for y in range(28, 35):
     for x in range(36, 45):
         if ((x + 0.5 - 40.2) / 3.4) ** 2 + ((y + 0.5 - 31.4) / 2.7) ** 2 < 1:
             put(x, y, 'O')
-# waterside sala with its boat on the pond's east side: stands in the water ('D': solid, painted as water)
-rect(42, 30, 44, 32, 'D')
 
 # rice paddy north-east, between the inn and the stream
 rect(41, 18, 46, 21, 'P')
@@ -126,7 +126,7 @@ rect(12, 18, 13, 19, 'H')
 put(15, 20, 'H')
 
 # rocks at the forest edge and around the camp
-for (x, y) in [(10, 21), (11, 27), (17, 12), (25, 37), (46, 33), (14, 30), (27, 10), (38, 40), (20, 39)]:
+for (x, y) in [(10, 21), (11, 27), (17, 12), (25, 37), (14, 30), (27, 10), (38, 40), (20, 39)]:
     put(x, y, 'R')
 # a few bushes and trees inside the village
 for (x, y) in [(26, 12), (35, 11), (19, 21), (44, 26), (28, 34), (35, 36), (16, 26)]:
